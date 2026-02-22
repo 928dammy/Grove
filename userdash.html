@@ -26,7 +26,6 @@
         .broadcast-ticker { background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); overflow: hidden; white-space: nowrap; }
         .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 10px 0; }
         @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
-        .badge { display: none; position: absolute; top: 6px; right: 15%; width: 4px; height: 4px; background: var(--gold); border-radius: 50%; }
     </style>
 </head>
 <body class="max-w-md mx-auto">
@@ -64,7 +63,7 @@
             <nav class="nav-pill mb-6">
                 <div id="btn-orchard" class="tab-trigger active" onclick="openTab('t-orchard')">Orchard</div>
                 <div id="btn-vault" class="tab-trigger" onclick="openTab('t-vault')">Vault</div>
-                <div id="btn-comm" class="tab-trigger" onclick="openTab('t-comm')">Comm <div id="comm-badge" class="badge"></div></div>
+                <div id="btn-comm" class="tab-trigger" onclick="openTab('t-comm')">Comm</div>
                 <div id="btn-ledger" class="tab-trigger" onclick="openTab('t-ledger')">Ledger</div>
             </nav>
 
@@ -129,9 +128,13 @@
                 if (rem <= 0) {
                     if(el) el.innerText = "EXPIRED";
                     if(btn && btn.innerText === "Capture") {
-                        btn.innerText = "MISSED"; btn.className = "px-5 py-2 bg-slate-700 text-slate-400 font-black text-[8px] uppercase rounded-lg cursor-not-allowed";
+                        btn.innerText = "MISSED";
+                        btn.className = "px-5 py-2 bg-slate-700 text-slate-400 font-black text-[8px] uppercase rounded-lg cursor-not-allowed";
+                        btn.onclick = null;
                     }
-                } else if(el) el.innerText = `${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')}`;
+                } else if(el) {
+                    el.innerText = `${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')}`;
+                }
             });
         }
 
@@ -157,7 +160,6 @@
             document.getElementById('v-balance').innerText = `GH₵${vaultedSum.toFixed(2)}`;
             document.getElementById('m-avail').innerText = `GH₵${vaultedSum.toFixed(2)}`;
 
-            // Orchard
             const { data: broadcasts } = await _gv.from('ledger').select('*').eq('entry_type', 'gift_sent');
             const now = Date.now();
             document.getElementById('orchard-list').innerHTML = (broadcasts || []).filter(b => !myClaims.includes(b.id.toString())).map(g => {
@@ -165,19 +167,23 @@
                 const expiry = parts[1] ? new Date(parts[1]).getTime() : null;
                 const isExpired = isWither && expiry && expiry <= now;
                 if (isWither && parts[1]) timers[g.id] = expiry;
+
                 return `
                 <div id="card-${g.id}" class="bg-white/5 p-4 flex justify-between items-center rounded-2xl border border-white/5 ${isExpired ? 'opacity-50' : ''}">
                     <div>
                         <p class="text-sm font-black text-emerald-400 italic">GH₵${parseFloat(g.amount).toFixed(2)}</p>
                         <p class="text-[7px] font-black uppercase tracking-widest ${isWither ? 'text-rose-400' : 'text-emerald-500/40'}">
-                            ${parts[0]} ${isWither ? `• <span id="timer-${g.id}">${isExpired?'EXPIRED':'--:--'}</span>` : ''}
+                            ${parts[0]} ${isWither ? `• <span id="timer-${g.id}">${isExpired ? 'EXPIRED' : '--:--'}</span>` : ''}
                         </p>
                     </div>
-                    <button id="btn-${g.id}" onclick="${isExpired?'':`claim('${g.id}',${g.amount})`}" class="px-5 py-2 ${isExpired?'bg-slate-700 text-slate-400':'bg-emerald-600 text-white'} font-black text-[8px] uppercase rounded-lg">${isExpired?'MISSED':'Capture'}</button>
+                    <button id="btn-${g.id}" 
+                        onclick="${isExpired ? '' : `claim('${g.id}', ${g.amount})`}" 
+                        class="px-5 py-2 ${isExpired ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-emerald-600 text-white active:scale-90'} font-black text-[8px] uppercase rounded-lg">
+                        ${isExpired ? 'MISSED' : 'Capture'}
+                    </button>
                 </div>`;
             }).join('') || '<p class="text-center py-20 opacity-10 text-[9px] font-black uppercase">Orchard Resting</p>';
 
-            // Ledger & Messages
             document.getElementById('ledger-content').innerHTML = myLedger.slice(0, 15).map(l => `
                 <div class="p-4 flex justify-between items-center text-[8px] font-black uppercase">
                     <span class="text-emerald-500/40 truncate mr-4">${l.description}</span>
@@ -195,6 +201,8 @@
         }
 
         async function claim(id, amt) {
+            const btn = document.getElementById(`btn-${id}`);
+            if(btn.innerText === "MISSED") return;
             await _gv.from('ledger').insert([{ user_id: userObj.id, amount: amt, entry_type: 'gift_received', description: `Claim: ${id}` }]);
             sync();
         }
@@ -207,7 +215,7 @@
 
         async function requestWithdrawal() {
             const amt = parseFloat(document.getElementById('w-amount').value);
-            if (!amt || amt > vaultedSum) return;
+            if (!amt || amt > vaultedSum) return alert("Insufficient Balance");
             await _gv.from('ledger').insert([{ user_id: userObj.id, amount: -amt, entry_type: 'withdrawal', description: `Momo Payout (2% Fee Ded.)` }]);
             toggleModal('withdrawModal', false); sync();
         }
