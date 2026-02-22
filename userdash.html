@@ -25,13 +25,10 @@
         .tab-content.active { display: block; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .vault-zone { position: relative; overflow: hidden; background: rgba(255,255,255,0.02); border-radius: 1.5rem; }
-        .cedi { position: absolute; color: var(--emerald); font-weight: 900; top: -30px; animation: fall linear infinite; pointer-events: none; font-size: 14px; }
-        @keyframes fall { to { transform: translateY(350px) rotate(360deg); opacity: 0; } }
         .broadcast-ticker { background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); overflow: hidden; white-space: nowrap; }
         .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 10px 0; }
         @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
         .givr-modal { display: none; position: fixed; inset: 0; background: rgba(6, 26, 20, 0.98); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 1.5rem; }
-        .msg-bubble { background: rgba(255,255,255,0.04); border-left: 2px solid var(--gold); padding: 12px; border-radius: 12px; margin-bottom: 8px; }
     </style>
 </head>
 <body class="max-w-md mx-auto">
@@ -92,7 +89,6 @@
             
             <section id="t-vault" class="tab-content">
                 <div class="vault-zone p-8 text-center border border-emerald-900/10">
-                    <div class="rain-container" id="rain-box"></div>
                     <div class="relative z-10">
                         <p class="text-[8px] font-black text-emerald-500/40 uppercase mb-1 italic">Claim Vaulted</p>
                         <h2 id="v-balance" class="text-3xl font-black italic text-white mb-6 tracking-tighter">GH₵0.00</h2>
@@ -140,12 +136,11 @@
     </div>
 
     <script>
-        // --- API FALLBACK LOGIC ---
         const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
         const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
 
         const _gv = supabase.createClient(SB_URL, SB_KEY);
-        let userObj = null, capturableSum = 0, vaultedSum = 0, currentProfile = null, timers = {};
+        let userObj = null, capturableSum = 0, vaultedSum = 0, timers = {};
 
         async function init() {
             const { data: { user } } = await _gv.auth.getUser();
@@ -154,22 +149,18 @@
             document.getElementById('user-display').innerText = user.email.split('@')[0].toUpperCase();
             sync();
             _gv.channel('realtime').on('postgres_changes', { event: '*', schema: 'public' }, () => sync()).subscribe();
-            
-            // Start the global timer loop
             setInterval(updateTimers, 1000);
         }
 
         function updateTimers() {
             Object.keys(timers).forEach(id => {
                 const element = document.getElementById(`timer-${id}`);
-                const btn = document.getElementById(`btn-${id}`);
                 const card = document.getElementById(`card-${id}`);
                 if (!element) return;
-
                 const remaining = Math.max(0, Math.floor((timers[id] - Date.now()) / 1000));
                 if (remaining <= 0) {
-                    // Item expired - hide it
-                    if(card) card.style.display = 'none';
+                    if(card) card.remove();
+                    delete timers[id];
                 } else {
                     const mins = Math.floor(remaining / 60);
                     const secs = remaining % 60;
@@ -180,39 +171,26 @@
 
         async function sync() {
             const { data: profile } = await _gv.from('profiles').select('*').eq('id', userObj.id).single();
-            currentProfile = profile;
-            
             if(profile) {
                 document.getElementById('frozen-lock').style.display = profile.is_suspended ? 'flex' : 'none';
-                if(profile.direct_message) {
-                    const msg = profile.direct_message;
-                    document.getElementById('msg-text').innerText = msg;
-                    document.getElementById('direct-msg-box').classList.remove('hidden');
-                    document.getElementById('comm-badge').style.display = 'block';
-                    await _gv.from('ledger').insert([{ user_id: userObj.id, amount: 0, entry_type: 'notification', description: `Archive: ${msg}` }]);
-                    await _gv.from('profiles').update({ direct_message: null }).eq('id', userObj.id);
-                }
-                const min = profile.current_range_min || 0, max = profile.current_range_max || '∞';
-                document.getElementById('range-hint').innerText = `Range: GH₵${min} - GH₵${max}`;
+                document.getElementById('range-hint').innerText = `Range: GH₵${profile.current_range_min || 0} - GH₵${profile.current_range_max || '∞'}`;
             }
 
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
             const myLedger = (ledger || []).filter(l => l.user_id === userObj.id);
-            
-            // Stats Logic
-            let totalRec = 0, totalVault = 0, totalWith = 0, seedAmt = 0;
             const myClaims = myLedger.filter(l => l.entry_type === 'gift_received').map(c => c.description.split(': ')[1]?.split(' ')[0]);
-            
+
+            let totalRec = 0, totalVault = 0, totalWith = 0, seedAmt = 0;
             myLedger.forEach(l => {
                 const val = parseFloat(l.amount) || 0;
-                const desc = l.description.toLowerCase();
-                
-                // Fix: Case-insensitive check for Seed base
-                if (desc.includes('seed')) seedAmt += val;
+                const desc = (l.description || "").toLowerCase();
+                // FIX: Look for 'seed' anywhere in the description to capture activation seeds
+                if (l.entry_type === 'seed' || desc.includes('seed')) seedAmt += val;
                 if(l.entry_type === 'gift_received') totalRec += val;
                 if(desc === 'vault transfer') totalVault += val;
                 if(l.entry_type === 'withdrawal') totalWith += Math.abs(val);
             });
+
             capturableSum = Math.max(0, totalRec - totalVault);
             vaultedSum = Math.max(0, totalVault - totalWith);
             
@@ -221,27 +199,19 @@
             document.getElementById('v-balance').innerText = `GH₵${vaultedSum.toFixed(2)}`;
             document.getElementById('m-avail').innerText = `GH₵${vaultedSum.toFixed(2)}`;
 
-            // Orchard Logic
             const { data: broadcasts } = await _gv.from('ledger').select('*').eq('entry_type', 'gift_sent');
-            
-            // Fix: Filter out expired broadcasts and already claimed items
             const avail = (broadcasts || []).filter(b => {
                 const parts = b.description.split(' | ');
                 const isWither = parts[0] === 'Wither Grace';
                 const expiry = parts[1] ? new Date(parts[1]).getTime() : null;
-                const isExpired = isWither && expiry && expiry < Date.now();
-                
-                return !myClaims.includes(b.id.toString()) && !isExpired;
+                // HARD FILTER: Only show if not claimed and (not wither OR expiry is in the future)
+                return !myClaims.includes(b.id.toString()) && (!isWither || (expiry && expiry > Date.now()));
             });
             
             document.getElementById('orchard-list').innerHTML = avail.map(g => {
                 const parts = g.description.split(' | ');
                 const isWither = parts[0] === 'Wither Grace';
-                const expiryStr = parts[1];
-                
-                if (isWither && expiryStr) {
-                    timers[g.id] = new Date(expiryStr).getTime();
-                }
+                if (isWither && parts[1]) timers[g.id] = new Date(parts[1]).getTime();
 
                 return `
                 <div id="card-${g.id}" class="bg-white/5 p-4 flex justify-between items-center rounded-2xl border border-white/5">
@@ -255,7 +225,6 @@
                 </div>`;
             }).join('') || '<p class="text-center py-20 opacity-10 text-[9px] font-black uppercase">Orchard Resting</p>';
 
-            // Ledger
             document.getElementById('ledger-content').innerHTML = myLedger.slice(0, 10).map(l => `
                 <div class="p-4 flex justify-between items-center text-[8px] font-black uppercase">
                     <span class="text-emerald-500/40 truncate mr-4">${l.description.split(' | ')[0]}</span>
@@ -264,12 +233,11 @@
             `).join('');
         }
 
-        function openTab(id) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            document.getElementById('btn-' + id.split('-')[1]).classList.add('active');
-            if(id === 't-vault') createRain();
+        async function claim(id, amt) {
+            const btn = document.getElementById(`btn-${id}`);
+            if(btn) btn.disabled = true;
+            await _gv.from('ledger').insert([{ user_id: userObj.id, amount: amt, entry_type: 'gift_received', description: `Claim: ${id}` }]);
+            sync();
         }
 
         async function vaultAll() {
@@ -285,21 +253,22 @@
             toggleModal('withdrawModal', false); sync();
         }
 
-        async function claim(id, amt) {
-            await _gv.from('ledger').insert([{ user_id: userObj.id, amount: amt, entry_type: 'gift_received', description: `Claim: ${id}` }]);
-            sync();
-        }
-
         function calcCharge() {
             const amt = parseFloat(document.getElementById('w-amount').value) || 0;
             const fee = amt * 0.02;
             document.getElementById('charge-info').innerText = `Fee (2%): GH₵${fee.toFixed(2)} | Net: GH₵${(amt - fee).toFixed(2)}`;
         }
 
+        function openTab(id) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('btn-' + id.split('-')[1]).classList.add('active');
+        }
+
         function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
         function dismissPopup() { document.getElementById('direct-msg-box').classList.add('hidden'); }
         async function logout() { await _gv.auth.signOut(); window.location.href = "index.html"; }
-        function createRain() { /* existing rain logic */ }
         
         init();
     </script>
