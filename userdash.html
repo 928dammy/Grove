@@ -102,27 +102,19 @@
             const { data: { user } } = await _gv.auth.getUser();
             if(!user) return window.location.href = "index.html";
             userObj = user;
+            document.getElementById('user-display').innerText = user.email.split('@')[0].toUpperCase();
             sync();
             _gv.channel('realtime').on('postgres_changes', { event: '*', schema: 'public' }, () => sync()).subscribe();
             setInterval(updateTimers, 1000);
         }
 
         function updateTimers() {
+            const now = Date.now();
             Object.keys(timers).forEach(id => {
-                const element = document.getElementById(`timer-${id}`);
-                const card = document.getElementById(`card-${id}`);
-                if (!element) return;
-                const remaining = Math.max(0, Math.floor((timers[id] - Date.now()) / 1000));
-                
-                // FORCE REMOVAL IF EXPIRED
-                if (remaining <= 0) {
-                    if(card) card.remove();
-                    delete timers[id];
-                } else {
-                    const mins = Math.floor(remaining / 60);
-                    const secs = remaining % 60;
-                    element.innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
-                }
+                const el = document.getElementById(`timer-${id}`), card = document.getElementById(`card-${id}`);
+                const rem = Math.max(0, Math.floor((timers[id] - now) / 1000));
+                if (rem <= 0) { if(card) card.remove(); delete timers[id]; }
+                else if(el) el.innerText = `${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')}`;
             });
         }
 
@@ -134,49 +126,33 @@
             let totalRec = 0, totalVault = 0, totalWith = 0, seedAmt = 0;
 
             myLedger.forEach(l => {
-                const val = parseFloat(l.amount) || 0;
-                const desc = (l.description || "").toLowerCase();
-                const type = (l.entry_type || "").toLowerCase();
-
-                // AGGRESSIVE SEED SEARCH: Check type OR description
-                if (type === 'seed' || desc.includes('seed') || desc.includes('activation')) {
-                    // Only count as seed base if it's NOT a "vault transfer" (which is internal)
-                    if(!desc.includes('vault transfer')) seedAmt += val;
-                }
-                
-                if(type === 'gift_received') totalRec += val;
-                if(desc.includes('vault transfer')) totalVault += val;
-                if(type === 'withdrawal') totalWith += Math.abs(val);
+                const val = parseFloat(l.amount) || 0, desc = (l.description || "").toLowerCase(), type = (l.entry_type || "").toLowerCase();
+                if ((type === 'seed' || desc.includes('seed')) && !desc.includes('vault transfer')) seedAmt += val;
+                if (type === 'gift_received') totalRec += val;
+                if (desc.includes('vault transfer')) totalVault += val;
+                if (type === 'withdrawal') totalWith += Math.abs(val);
             });
 
             capturableSum = Math.max(0, totalRec - totalVault);
             vaultedSum = Math.max(0, totalVault - totalWith);
             
-            document.getElementById('s-seed').innerText = `GH₵${seedAmt.toFixed(2)}`;
-            document.getElementById('s-reclaim').innerText = `GH₵${capturableSum.toFixed(2)}`;
-            document.getElementById('v-balance').innerText = `GH₵${vaultedSum.toFixed(2)}`;
-            document.getElementById('m-avail').innerText = `GH₵${vaultedSum.toFixed(2)}`;
+            ['s-seed','s-reclaim','v-balance','m-avail'].forEach((id, i) => {
+                const vals = [seedAmt, capturableSum, vaultedSum, vaultedSum];
+                document.getElementById(id).innerText = `GH₵${vals[i].toFixed(2)}`;
+            });
 
-            // ORCHARD FILTERING
             const { data: broadcasts } = await _gv.from('ledger').select('*').eq('entry_type', 'gift_sent');
             const now = Date.now();
 
             const avail = (broadcasts || []).filter(b => {
-                const parts = b.description.split(' | ');
-                const isWither = parts[0] === 'Wither Grace';
+                const parts = b.description.split(' | '), isWither = parts[0] === 'Wither Grace';
                 const expiry = parts[1] ? new Date(parts[1]).getTime() : null;
-                const alreadyClaimed = myClaims.includes(b.id.toString());
-                
-                // KILL SWITCH: Do not show if claimed OR if expired
-                const isExpired = isWither && expiry && expiry < now;
-                return !alreadyClaimed && !isExpired;
+                return !myClaims.includes(b.id.toString()) && (!isWither || (expiry && expiry > now));
             });
             
             document.getElementById('orchard-list').innerHTML = avail.map(g => {
-                const parts = g.description.split(' | ');
-                const isWither = parts[0] === 'Wither Grace';
+                const parts = g.description.split(' | '), isWither = parts[0] === 'Wither Grace';
                 if (isWither && parts[1]) timers[g.id] = new Date(parts[1]).getTime();
-
                 return `
                 <div id="card-${g.id}" class="bg-white/5 p-4 flex justify-between items-center rounded-2xl border border-white/5">
                     <div>
@@ -187,7 +163,7 @@
                     </div>
                     <button onclick="claim('${g.id}', ${g.amount})" class="px-5 py-2 bg-emerald-600 text-white font-black text-[8px] uppercase rounded-lg active:scale-90">Capture</button>
                 </div>`;
-            }).join('') || '<p class="text-center py-20 opacity-10 text-[9px] font-black uppercase">Orchard Resting</p>';
+            }).join('') || '<p class="text-center py-20 opacity-10 text-[9px] font-black uppercase tracking-widest">Orchard Resting</p>';
 
             document.getElementById('ledger-content').innerHTML = myLedger.slice(0, 10).map(l => `
                 <div class="p-4 flex justify-between items-center text-[8px] font-black uppercase">
@@ -216,20 +192,17 @@
         }
 
         function calcCharge() {
-            const amt = parseFloat(document.getElementById('w-amount').value) || 0;
-            const fee = amt * 0.02;
-            document.getElementById('charge-info').innerText = `Fee (2%): GH₵${fee.toFixed(2)}`;
+            const val = (parseFloat(document.getElementById('w-amount').value) || 0) * 0.02;
+            document.getElementById('charge-info').innerText = `Fee (2%): GH₵${val.toFixed(2)}`;
         }
 
         function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
         function openTab(id) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content, .tab-trigger').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             document.getElementById('btn-' + id.split('-')[1]).classList.add('active');
         }
         async function logout() { await _gv.auth.signOut(); window.location.href = "index.html"; }
-        
         init();
     </script>
 </body>
