@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GIVR | Sovereign Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
+    <script src="config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
@@ -110,8 +110,10 @@
     </nav>
 
     <script>
-        const SB_URL = 'SB_URL';
-        const SB_KEY = 'SB_KEY';
+        // --- API FALLBACK LOGIC ---
+        const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
+        const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
+
         const _gv = supabase.createClient(SB_URL, SB_KEY);
 
         function openTab(evt, name) {
@@ -129,28 +131,26 @@
             let globalSeeded = 0, globalWithdrawn = 0, totalVaulted = 0;
             const nodeDetails = {};
 
-            // Initialize user tracking
             nodes?.forEach(n => { nodeDetails[n.id] = { seeded: 0, vaulted: 0, withdrawn: 0, email: n.email }; });
 
             ledger?.forEach(l => {
                 const val = parseFloat(l.amount) || 0;
-                if(l.entry_type === 'seed' && l.description !== 'Vault Transfer') globalSeeded += val;
+                const desc = l.description.toLowerCase();
+
+                if(l.entry_type === 'seed' && desc !== 'vault transfer') globalSeeded += val;
                 if(l.entry_type === 'withdrawal') globalWithdrawn += Math.abs(val);
 
                 if (l.user_id && nodeDetails[l.user_id]) {
-                    if (l.entry_type === 'seed' && l.description !== 'Vault Transfer') nodeDetails[l.user_id].seeded += val;
-                    if (l.description === 'Vault Transfer') nodeDetails[l.user_id].vaulted += val;
+                    if (l.entry_type === 'seed' && desc !== 'vault transfer') nodeDetails[l.user_id].seeded += val;
+                    if (desc === 'vault transfer') nodeDetails[l.user_id].vaulted += val;
                     if (l.entry_type === 'withdrawal') nodeDetails[l.user_id].withdrawn += Math.abs(val);
                 }
             });
 
-            // Calculate global liabilities (Total money users have in vaults right now)
             Object.values(nodeDetails).forEach(u => { totalVaulted += Math.max(0, u.vaulted - u.withdrawn); });
-
             const totalBurn = missions?.reduce((sum, m) => sum + (parseFloat(m.cost_to_settle) || 0), 0) || 0;
             const grovePool = globalSeeded - totalBurn - globalWithdrawn;
 
-            // Update Global Stats
             document.getElementById('stat-pool').innerText = `GH₵${grovePool.toFixed(2)}`;
             document.getElementById('stat-vaulted').innerText = `GH₵${totalVaulted.toFixed(2)}`;
             document.getElementById('stat-seeded').innerText = `GH₵${globalSeeded.toFixed(0)}`;
@@ -164,7 +164,6 @@
                 health.innerText = "HEALTHY BALANCE"; health.classList.remove('text-rose-500', 'animate-pulse');
             }
 
-            // Detailed Node Management Console
             document.getElementById('nodeList').innerHTML = nodes?.map(n => {
                 const stats = nodeDetails[n.id];
                 const currentInVault = Math.max(0, stats.vaulted - stats.withdrawn);
@@ -205,7 +204,6 @@
                 </div>
             `;}).join('');
 
-            // Ledger
             document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 15).map(l => {
                 const user = nodes?.find(p => p.id === l.user_id)?.email.split('@')[0] || 'SYS';
                 return `<div class="p-4 flex justify-between items-center text-[10px]"><div><p class="font-black uppercase text-slate-500 text-[8px]">${user}</p><p class="italic text-emerald-500 text-[9px]">${l.entry_type}</p></div><p class="font-black ${l.amount < 0 ? 'text-rose-500' : 'text-white'}">GH₵${Math.abs(l.amount).toFixed(2)}</p></div>`;
@@ -238,8 +236,8 @@
             sync(); alert("Grace Dispatched.");
         }
 
-        init();
         async function init() { sync(); _gv.channel('pulse').on('postgres_changes', {event:'*', schema:'public'}, () => sync()).subscribe(); }
+        init();
         setInterval(sync, 15000);
     </script>
 </body>
