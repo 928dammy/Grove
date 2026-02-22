@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GROVE |  Givers Never Lack</title>
+    <title>GROVE | Givers Never Lack</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
+    <script src="config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -41,7 +41,6 @@
             font-size: 0.9rem; 
         }
         .input-box:focus { border-color: var(--gold); box-shadow: 0 0 15px rgba(251, 191, 36, 0.1); }
-        
         .btn-gold { 
             background: var(--gold); 
             color: black; 
@@ -57,32 +56,14 @@
             cursor: pointer;
         }
         .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3); }
-        
         .tab-trigger { 
-            color: #64748b; 
-            font-size: 0.7rem; 
-            font-weight: 800; 
-            cursor: pointer; 
-            text-transform: uppercase; 
-            letter-spacing: 0.1em; 
-            transition: 0.3s; 
-            padding-bottom: 4px; 
-            border-bottom: 2px solid transparent; 
+            color: #64748b; font-size: 0.7rem; font-weight: 800; cursor: pointer; 
+            text-transform: uppercase; letter-spacing: 0.1em; transition: 0.3s; 
+            padding-bottom: 4px; border-bottom: 2px solid transparent; 
         }
         .tab-trigger.active { color: var(--gold); border-bottom-color: var(--gold); }
         .gold-glow { text-shadow: 0 0 15px rgba(251, 191, 36, 0.4); }
-
-        #seed-overlay {
-            position: fixed;
-            inset: 0;
-            background: black;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
+        #seed-overlay { position: fixed; inset: 0; background: black; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -99,16 +80,15 @@
         </div>
 
         <div id="login-form">
-            <input type="email" id="login-email" placeholder=" Email" class="input-box">
+            <input type="email" id="login-email" placeholder="Email" class="input-box">
             <input type="password" id="login-pass" placeholder="Password" class="input-box">
             <button onclick="handleLogin()" class="btn-gold mb-6">LOGIN</button>
             <p onclick="handleRecovery()" class="text-center text-[9px] text-slate-500 cursor-pointer hover:text-white uppercase font-black tracking-widest transition">Password Recovery</p>
         </div>
 
         <div id="signup-form" class="hidden">
-            <input type="email" id="reg-email" placeholder=" Email" class="input-box">
+            <input type="email" id="reg-email" placeholder="Email" class="input-box">
             <input type="password" id="reg-pass" placeholder="Create Password" class="input-box">
-            
             <div class="mb-6 p-4 bg-black/20 rounded-xl border border-white/5">
                 <label class="text-[9px] font-black text-slate-500 uppercase block mb-3 tracking-widest">Plant a Seed</label>
                 <input type="range" id="gift-slider" min="100" max="1000" step="10" value="170" class="w-full accent-emerald-500 cursor-pointer" oninput="updateVal(this.value)">
@@ -117,14 +97,17 @@
                     <span class="text-lg font-black italic text-emerald-400" id="slider-val">GH₵ 170</span>
                 </div>
             </div>
-            
             <button onclick="handleSignup()" class="btn-gold">Confirm & Activate</button>
         </div>
     </div>
 
     <script>
-        
-        const _gv = supabase.createClient(CONFIG.SB_URL, CONFIG.SB_KEY);
+        // --- SECURITY FALLBACK LOGIC ---
+        // This ensures the app doesn't crash if config.js is missing on GitHub/Vercel
+        const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
+        const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
+
+        const _gv = supabase.createClient(SB_URL, SB_KEY);
 
         function toggleAuth(mode) {
             document.getElementById('login-form').classList.toggle('hidden', mode === 'signup');
@@ -139,68 +122,49 @@
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-pass').value;
             if(!email || !password) return alert("Credentials required.");
-
             const { data, error } = await _gv.auth.signInWithPassword({ email, password });
             if (error) alert("Access Denied: " + error.message);
             else window.location.href = "userdash.html";
         }
 
         async function handleSignup() {
-    const email = document.getElementById('reg-email').value;
-    const password = document.getElementById('reg-pass').value;
-    const gift = parseFloat(document.getElementById('gift-slider').value);
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-pass').value;
+            const gift = parseFloat(document.getElementById('gift-slider').value);
+            if(!email || !password) return alert("Credentials required.");
 
-    if(!email || !password) return alert("Credentials required.");
+            const overlay = document.createElement('div');
+            overlay.id = "seed-overlay";
+            overlay.innerHTML = `<div class="w-12 h-12 border-4 border-t-amber-400 border-white/10 rounded-full animate-spin"></div>`;
+            document.body.appendChild(overlay);
 
-    const overlay = document.createElement('div');
-    overlay.id = "seed-overlay";
-    overlay.className = "fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center text-center p-10";
-    overlay.innerHTML = `<div class="w-12 h-12 border-4 border-t-amber-400 border-white/10 rounded-full animate-spin"></div>`;
-    document.body.appendChild(overlay);
-
-    try {
-        // 1. AUTH - Create the user credentials
-        const { data, error: authErr } = await _gv.auth.signUp({ email, password });
-        if (authErr) throw authErr;
-
-        if (data?.user) {
-            const userId = data.user.id;
-
-            // 2. PROFILE - Use UPSERT to prevent "Duplicate Key" errors
-            const { error: profErr } = await _gv.from('profiles').upsert({ 
-                id: userId, 
-                email: email,
-                full_name: email.split('@')[0],
-                current_range_max: gift
-            }, { onConflict: 'id' }); // This specifically tells DB to ignore duplicates and update instead
-            
-            if (profErr) throw profErr;
-
-            // 3. LEDGER - Record the initial seed
-            const { error: ledgerErr } = await _gv.from('ledger').insert([{ 
-                user_id: userId, 
-                amount: gift, 
-                entry_type: 'seed',
-                description: 'Sovereign Node Activation'
-            }]);
-            if (ledgerErr) throw ledgerErr;
-
-            overlay.innerHTML = `<h2 class="text-amber-400 font-black italic uppercase">Node Activated</h2>`;
-            setTimeout(() => { window.location.href = "userdash.html"; }, 1500);
+            try {
+                const { data, error: authErr } = await _gv.auth.signUp({ email, password });
+                if (authErr) throw authErr;
+                if (data?.user) {
+                    const userId = data.user.id;
+                    const { error: profErr } = await _gv.from('profiles').upsert({ 
+                        id: userId, email: email, full_name: email.split('@')[0], current_range_max: gift 
+                    });
+                    if (profErr) throw profErr;
+                    const { error: ledgerErr } = await _gv.from('ledger').insert([{ 
+                        user_id: userId, amount: gift, entry_type: 'seed', description: 'Node Activation' 
+                    }]);
+                    if (ledgerErr) throw ledgerErr;
+                    overlay.innerHTML = `<h2 class="text-amber-400 font-black italic uppercase">Node Activated</h2>`;
+                    setTimeout(() => { window.location.href = "userdash.html"; }, 1500);
+                }
+            } catch (err) {
+                overlay.remove();
+                alert("Activation Error: " + err.message);
+            }
         }
-    } catch (err) {
-        overlay.remove();
-        console.error("Critical Failure:", err);
-        alert("Activation Error: " + err.message);
-    }
-}
-
 
         async function handleRecovery() {
             const email = document.getElementById('login-email').value;
             if (!email) return alert("Input Registered Email first.");
             const { error } = await _gv.auth.resetPasswordForEmail(email);
-            alert(error ? error.message : "Recovery link sent to your node.");
+            alert(error ? error.message : "Recovery link sent.");
         }
     </script>
 </body>
