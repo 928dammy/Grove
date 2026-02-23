@@ -34,8 +34,8 @@
         @keyframes morph { 0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .terminal-parent { background: var(--grove-deep); border-radius: 2rem; color: #ecfdf5; min-height: 540px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; }
-        .broadcast-ticker { position: relative; height: 40px; overflow: hidden; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(16, 185, 129, 0.1); }
-        .ticker-move { display: inline-block; animation: ticker 30s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
+        .broadcast-ticker { position: relative; height: 40px; overflow: hidden; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(16, 185, 129, 0.05); }
+        .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
         @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
 
         .gardener-zone { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem 0; }
@@ -109,7 +109,7 @@
 
     <main class="terminal-parent">
         <div class="broadcast-ticker">
-            <div id="ticker-output" class="ticker-move italic">GIVERS NEVER LACK • INITIALIZING NODE...</div>
+            <div id="ticker-output" class="ticker-move italic">GIVERS NEVER LACK • HARVEST IN PROGRESS • SYNCING NODES...</div>
         </div>
         <div class="p-4">
             <nav class="nav-pill mb-6">
@@ -135,7 +135,7 @@
                 </div>
             </section>
 
-            <section id="t-comm" class="tab-content"><div id="comm-list" class="space-y-2 py-10 text-center text-[8px] font-black opacity-30 uppercase tracking-[0.4em]">No Directives</div></section>
+            <section id="t-comm" class="tab-content"><div id="comm-list" class="space-y-3"></div></section>
             <section id="t-ledger" class="tab-content"><div id="ledger-content" class="bg-black/20 rounded-2xl divide-y divide-white/5 overflow-hidden"></div></section>
         </div>
     </main>
@@ -187,21 +187,36 @@
         }
 
         async function sync() {
-            // 1. FETCH DATA FROM BOTH TABLES
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
             const { data: missions } = await _gv.from('settled_needs').select('description').order('created_at', { ascending: false });
+            
+            // FETCH DIRECTIVES FROM ADMIN
+            const { data: messages } = await _gv.from('messages').select('*').eq('receiver_id', userObj.id).order('created_at', { ascending: false });
 
-            // 2. UPDATE TICKER (MISSION BROADCAST)
+            // UPDATE TICKER
             const tickerEl = document.getElementById('ticker-output');
             const slogan = "GIVERS NEVER LACK";
             if (missions && missions.length > 0) {
                 const missionText = missions.map(m => m.description).join(' • ');
-                tickerEl.innerText = `${missionText} • ${slogan} • HARVEST IN PROGRESS • SYNCING NODES...`;
+                tickerEl.innerText = `${missionText} • ${slogan} • HARVEST IN PROGRESS...`;
             } else {
                 tickerEl.innerText = `${slogan} • HARVEST IN PROGRESS • SYNCING NODES...`;
             }
 
-            // 3. PROCESS USER LEDGER
+            // UPDATE COMM TAB
+            const commList = document.getElementById('comm-list');
+            if (messages && messages.length > 0) {
+                commList.innerHTML = messages.map(msg => `
+                    <div class="bg-white/5 p-4 rounded-2xl border-l-2 border-emerald-500 text-left">
+                        <p class="text-[7px] font-black text-emerald-500 uppercase mb-1">${msg.sender_name || 'SYSTEM'}</p>
+                        <p class="text-[10px] font-bold text-white leading-tight uppercase tracking-tight">${msg.content}</p>
+                        <p class="text-[6px] text-white/20 mt-2 font-black uppercase">${new Date(msg.created_at).toLocaleTimeString()}</p>
+                    </div>
+                `).join('');
+            } else {
+                commList.innerHTML = `<div class="py-10 text-center text-[8px] font-black opacity-30 uppercase tracking-[0.4em]">No Directives</div>`;
+            }
+
             const myLedger = (ledger || []).filter(l => l.user_id === userObj.id);
             const myClaims = myLedger.filter(l => l.entry_type === 'gift_received').map(c => c.description.split(': ')[1]?.trim());
             
@@ -214,28 +229,18 @@
                 if (type === 'withdrawal') totalWith += Math.abs(val);
             });
             
-            capturableSum = Math.max(0, totalRec - totalVault); 
-            vaultedSum = Math.max(0, totalVault - totalWith);
-
+            capturableSum = Math.max(0, totalRec - totalVault); vaultedSum = Math.max(0, totalVault - totalWith);
             document.getElementById('s-seed').innerText = `GH₵${seedAmt.toFixed(2)}`;
             document.getElementById('s-reclaim').innerText = `GH₵${capturableSum.toFixed(2)}`;
             document.getElementById('v-balance').innerText = `GH₵${vaultedSum.toFixed(2)}`;
             document.getElementById('m-avail').innerText = `GH₵${vaultedSum.toFixed(2)}`;
 
-            // 4. UPDATE ORCHARD (GIFTS)
             const { data: broadcasts } = await _gv.from('ledger').select('*').eq('entry_type', 'gift_sent');
             const availableGifts = (broadcasts || []).filter(b => !myClaims.includes(b.id.toString()));
             
             const orchardContainer = document.getElementById('orchard-list');
             if (availableGifts.length > 0) {
-                orchardContainer.innerHTML = availableGifts.map(g => `
-                <div class="bg-white/5 p-4 flex justify-between items-center rounded-2xl border border-white/5">
-                    <div>
-                        <p class="text-sm font-black text-emerald-400 italic">GH₵${parseFloat(g.amount).toFixed(2)}</p>
-                        <p class="text-[7px] font-black uppercase text-emerald-500/50">Grace Available</p>
-                    </div>
-                    <button onclick="claim('${g.id}', ${g.amount})" class="px-5 py-2 bg-emerald-600 text-white font-black text-[8px] uppercase rounded-lg">Capture</button>
-                </div>`).join('');
+                orchardContainer.innerHTML = availableGifts.map(g => `<div class="bg-white/5 p-4 flex justify-between items-center rounded-2xl border border-white/5"><div><p class="text-sm font-black text-emerald-400 italic">GH₵${parseFloat(g.amount).toFixed(2)}</p><p class="text-[7px] font-black uppercase text-emerald-500/50">Grace Available</p></div><button onclick="claim('${g.id}', ${g.amount})" class="px-5 py-2 bg-emerald-600 text-white font-black text-[8px] uppercase rounded-lg">Capture</button></div>`).join('');
             } else {
                 orchardContainer.innerHTML = `
                 <div class="gardener-zone">
@@ -256,7 +261,6 @@
                 }
             }
 
-            // 5. UPDATE LEDGER DISPLAY
             document.getElementById('ledger-content').innerHTML = myLedger.slice(0, 10).map(l => `
                 <div class="p-4 flex justify-between items-center bg-white/5">
                     <div>
