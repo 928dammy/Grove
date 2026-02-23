@@ -12,7 +12,6 @@
         :root { --emerald: #10b981; --grove-deep: #061a14; --grove-leaf: #064e3b; --gold: #fbbf24; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; min-height: 100vh; padding: 1rem; margin: 0; overflow-x: hidden; color: #1e293b; }
         
-        /* RESTORED HEADER SEEDS */
         .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
         .seed-scatter { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; border-radius: 2rem; }
         .seed { position: absolute; background: var(--emerald); border-radius: 50%; opacity: 0; animation: scatterGrow 4s infinite ease-out; }
@@ -22,27 +21,23 @@
             100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
         }
 
-        /* FIXED FLOATING MENU */
         .node-menu { position: fixed; top: 75px; right: 2rem; width: 180px; background: white; border-radius: 1.5rem; border: 1px solid #f1f5f9; box-shadow: 0 15px 35px rgba(0,0,0,0.15); display: none; z-index: 100; overflow: hidden; }
         .node-menu.active { display: block; animation: menuFade 0.2s ease-out; }
         @keyframes menuFade { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .menu-item { width: 100%; padding: 14px 20px; text-align: left; font-size: 9px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #f8fafc; color: #64748b; cursor: pointer; }
         .menu-item:active { background: #f8fafc; color: var(--emerald); }
 
-        /* SOUL CORE */
         .soul-container { position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 10; }
         .soul-core { width: 6px; height: 6px; background: var(--emerald); border-radius: 50%; box-shadow: 0 0 10px var(--emerald); animation: breathe 3s infinite; }
         .soul-aura { position: absolute; inset: 0; border: 1.5px solid rgba(16, 185, 129, 0.2); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; animation: morph 8s infinite linear; }
         @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.3); opacity: 1; } }
         @keyframes morph { 0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* COMPACT TICKER (40px) */
         .terminal-parent { background: var(--grove-deep); border-radius: 2rem; color: #ecfdf5; min-height: 540px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; }
-        .broadcast-ticker { position: relative; height: 40px; overflow: hidden; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(16, 185, 129, 0.05); }
-        .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
+        .broadcast-ticker { position: relative; height: 40px; overflow: hidden; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(16, 185, 129, 0.1); }
+        .ticker-move { display: inline-block; animation: ticker 30s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
         @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
 
-        /* SOW & GROW EMOJI ANIMATION */
         .gardener-zone { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem 0; }
         .garden-plot { position: relative; width: 200px; height: 80px; }
         .gardener-emoji { position: absolute; font-size: 40px; bottom: 0; animation: walkAndSowEmoji 8s infinite ease-in-out; z-index: 10; }
@@ -51,27 +46,25 @@
         @keyframes walkAndSowEmoji {
             0% { transform: translateX(0) scaleX(1); }
             30% { transform: translateX(80px) scaleX(1); }
-            40% { transform: translateX(80px) rotate(25deg); } /* Lean down to sow */
+            40% { transform: translateX(80px) rotate(25deg); }
             55% { transform: translateX(80px) rotate(0deg); }
-            75% { transform: translateX(0) scaleX(-1); } /* Walk back */
+            75% { transform: translateX(0) scaleX(-1); }
             100% { transform: translateX(0) scaleX(-1); }
         }
         @keyframes growthCycleEmoji {
             0%, 40% { font-size: 0px; opacity: 0; }
-            50% { font-size: 24px; opacity: 1; } /* Sprout */
-            65% { font-size: 32px; } /* Leafy */
-            80% { font-size: 55px; transform: translateY(-10px); } /* Full Tree */
+            50% { font-size: 24px; opacity: 1; }
+            65% { font-size: 32px; }
+            80% { font-size: 55px; transform: translateY(-10px); }
             95% { opacity: 0; }
             100% { opacity: 0; }
         }
 
-        /* VAULT RAIN RESTORED */
         .vault-bg { position: relative; background: linear-gradient(to bottom, #061a14, #064e3b); border-radius: 2.5rem; overflow: hidden; min-height: 300px; display: flex; align-items: center; justify-content: center; }
         .cedis-rain { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
         .cedi-symbol { position: absolute; color: rgba(16, 185, 129, 0.15); font-weight: 900; font-size: 24px; animation: fall linear infinite; }
         @keyframes fall { from { transform: translateY(-50px) rotate(0deg); opacity: 1; } to { transform: translateY(350px) rotate(360deg); opacity: 0; } }
 
-        /* TABS */
         .nav-pill { background: rgba(0, 0, 0, 0.3); padding: 4px; border-radius: 12px; display: flex; width: 100%; gap: 4px; }
         .tab-trigger { flex: 1; color: rgba(255,255,255,0.3); font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 10px 0; text-align: center; border-radius: 8px; }
         .tab-trigger.active { color: #fff; background: var(--grove-leaf); }
@@ -116,7 +109,7 @@
 
     <main class="terminal-parent">
         <div class="broadcast-ticker">
-            <div class="ticker-move italic">GIVERS NEVER LACK • HARVEST IN PROGRESS • SYNCING NODES...</div>
+            <div id="ticker-output" class="ticker-move italic">GIVERS NEVER LACK • INITIALIZING NODE...</div>
         </div>
         <div class="p-4">
             <nav class="nav-pill mb-6">
@@ -194,7 +187,21 @@
         }
 
         async function sync() {
+            // 1. FETCH DATA FROM BOTH TABLES
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
+            const { data: missions } = await _gv.from('settled_needs').select('description').order('created_at', { ascending: false });
+
+            // 2. UPDATE TICKER (MISSION BROADCAST)
+            const tickerEl = document.getElementById('ticker-output');
+            const slogan = "GIVERS NEVER LACK";
+            if (missions && missions.length > 0) {
+                const missionText = missions.map(m => m.description).join(' • ');
+                tickerEl.innerText = `${missionText} • ${slogan} • HARVEST IN PROGRESS • SYNCING NODES...`;
+            } else {
+                tickerEl.innerText = `${slogan} • HARVEST IN PROGRESS • SYNCING NODES...`;
+            }
+
+            // 3. PROCESS USER LEDGER
             const myLedger = (ledger || []).filter(l => l.user_id === userObj.id);
             const myClaims = myLedger.filter(l => l.entry_type === 'gift_received').map(c => c.description.split(': ')[1]?.trim());
             
@@ -207,18 +214,28 @@
                 if (type === 'withdrawal') totalWith += Math.abs(val);
             });
             
-            capturableSum = Math.max(0, totalRec - totalVault); vaultedSum = Math.max(0, totalVault - totalWith);
+            capturableSum = Math.max(0, totalRec - totalVault); 
+            vaultedSum = Math.max(0, totalVault - totalWith);
+
             document.getElementById('s-seed').innerText = `GH₵${seedAmt.toFixed(2)}`;
             document.getElementById('s-reclaim').innerText = `GH₵${capturableSum.toFixed(2)}`;
             document.getElementById('v-balance').innerText = `GH₵${vaultedSum.toFixed(2)}`;
             document.getElementById('m-avail').innerText = `GH₵${vaultedSum.toFixed(2)}`;
 
+            // 4. UPDATE ORCHARD (GIFTS)
             const { data: broadcasts } = await _gv.from('ledger').select('*').eq('entry_type', 'gift_sent');
             const availableGifts = (broadcasts || []).filter(b => !myClaims.includes(b.id.toString()));
             
             const orchardContainer = document.getElementById('orchard-list');
             if (availableGifts.length > 0) {
-                orchardContainer.innerHTML = availableGifts.map(g => `<div class="bg-white/5 p-4 flex justify-between items-center rounded-2xl border border-white/5"><div><p class="text-sm font-black text-emerald-400 italic">GH₵${parseFloat(g.amount).toFixed(2)}</p><p class="text-[7px] font-black uppercase text-emerald-500/50">Grace Available</p></div><button onclick="claim('${g.id}', ${g.amount})" class="px-5 py-2 bg-emerald-600 text-white font-black text-[8px] uppercase rounded-lg">Capture</button></div>`).join('');
+                orchardContainer.innerHTML = availableGifts.map(g => `
+                <div class="bg-white/5 p-4 flex justify-between items-center rounded-2xl border border-white/5">
+                    <div>
+                        <p class="text-sm font-black text-emerald-400 italic">GH₵${parseFloat(g.amount).toFixed(2)}</p>
+                        <p class="text-[7px] font-black uppercase text-emerald-500/50">Grace Available</p>
+                    </div>
+                    <button onclick="claim('${g.id}', ${g.amount})" class="px-5 py-2 bg-emerald-600 text-white font-black text-[8px] uppercase rounded-lg">Capture</button>
+                </div>`).join('');
             } else {
                 orchardContainer.innerHTML = `
                 <div class="gardener-zone">
@@ -226,19 +243,20 @@
                         <div class="gardener-emoji">🧑‍🌾</div>
                         <div class="tree-stage">🌱</div>
                     </div>
-                    <p class="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-500/40 italic mt-8">Givers Never Lack</p>
+                    <p class="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-500/40 italic mt-8">${slogan}</p>
                     <p class="text-[7px] font-bold text-slate-500 uppercase mt-2">The Orchard is resting...</p>
                 </div>`;
                 const stage = orchardContainer.querySelector('.tree-stage');
-                setInterval(() => {
-                    if(!stage) return;
-                    if(stage.innerText === '🌱') stage.innerText = '🌿';
-                    else if(stage.innerText === '🌿') stage.innerText = '🌳';
-                    else stage.innerText = '🌱';
-                }, 2000);
+                if(stage) {
+                    setInterval(() => {
+                        if(stage.innerText === '🌱') stage.innerText = '🌿';
+                        else if(stage.innerText === '🌿') stage.innerText = '🌳';
+                        else stage.innerText = '🌱';
+                    }, 2000);
+                }
             }
 
-            // RESTORED LEDGER DISPLAY
+            // 5. UPDATE LEDGER DISPLAY
             document.getElementById('ledger-content').innerHTML = myLedger.slice(0, 10).map(l => `
                 <div class="p-4 flex justify-between items-center bg-white/5">
                     <div>
