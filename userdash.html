@@ -9,247 +9,265 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --emerald: #10b981; --grove-deep: #061a14; --gold: #fbbf24; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; min-height: 100vh; margin: 0; color: #1e293b; overflow-x: hidden; }
+        :root { --emerald: #10b981; --grove-deep: #061a14; --grove-leaf: #064e3b; --gold: #fbbf24; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; min-height: 100vh; padding: 1rem; margin: 0; overflow-x: hidden; color: #1e293b; transition: filter 0.5s ease; }
         
-        /* THE WITHERED STATE (SUSPENSION) */
-        body.withered { filter: grayscale(1) brightness(0.6); pointer-events: none; }
-        #suspension-overlay { 
-            display: none; position: fixed; inset: 0; z-index: 9999; 
-            background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
-            align-items: center; justify-content: center; pointer-events: auto;
+        /* SUSPENSION / WITHERED STATE */
+        body.withered { filter: grayscale(1) brightness(0.7); background: #020617; }
+        body.withered .terminal-parent { border-color: rgba(255, 0, 0, 0.3); }
+        #suspension-overlay { display: none; }
+        body.withered #suspension-overlay { 
+            display: flex; position: fixed; inset: 0; z-index: 45; 
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(2px);
+            align-items: center; justify-content: center; pointer-events: none;
+        }
+        body.withered *:not(.node-menu):not(.node-menu *):not(header):not(header *) { pointer-events: none !important; }
+        body.withered .node-menu .menu-item:not(:last-child) { opacity: 0.2; pointer-events: none; }
+
+        /* HEADER STYLES */
+        .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; box-shadow: 0 4px 15px rgba(0,0,0,0.02); z-index: 50; }
+        .seed-scatter { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; border-radius: 2rem; }
+        .seed { position: absolute; background: var(--emerald); border-radius: 50%; opacity: 0; animation: scatterGrow 4s infinite ease-out; }
+        @keyframes scatterGrow {
+            0% { transform: translateY(20px) scale(0); opacity: 0; }
+            30% { opacity: 0.4; }
+            100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
         }
 
-        /* ANIMATIONS: SEEDS & SOUL */
-        .seed-header { position: relative; background: white; border-radius: 0 0 2.5rem 2.5rem; padding: 2rem 1.5rem; border-bottom: 1px solid #f1f5f9; box-shadow: 0 10px 30px rgba(0,0,0,0.03); }
-        .seed { position: absolute; background: var(--emerald); border-radius: 50%; opacity: 0; animation: scatter 4s infinite ease-out; }
-        @keyframes scatter { 0% { transform: translateY(0) scale(0); opacity: 0; } 50% { opacity: 0.5; } 100% { transform: translateY(-100px) scale(1.5); opacity: 0; } }
+        /* NODE MENU */
+        .node-menu { position: fixed; top: 75px; right: 2rem; width: 180px; background: white; border-radius: 1.5rem; border: 1px solid #f1f5f9; box-shadow: 0 15px 35px rgba(0,0,0,0.15); display: none; z-index: 100; overflow: hidden; }
+        .node-menu.active { display: block; animation: menuFade 0.2s ease-out; }
+        @keyframes menuFade { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .menu-item { width: 100%; padding: 14px 20px; text-align: left; font-size: 9px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #f8fafc; color: #64748b; cursor: pointer; }
 
-        /* THE GARDENER (ORCHARD EMPTY STATE) */
-        .gardener-zone { display: flex; flex-direction: column; align-items: center; padding: 4rem 0; }
-        .gardener-emoji { font-size: 50px; animation: walk 6s infinite ease-in-out; }
-        @keyframes walk { 0%, 100% { transform: translateX(-20px) scaleX(1); } 50% { transform: translateX(20px) scaleX(-1); } }
+        /* SOUL CORE */
+        .soul-container { position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .soul-core { width: 6px; height: 6px; background: var(--emerald); border-radius: 50%; box-shadow: 0 0 10px var(--emerald); animation: breathe 3s infinite; }
+        .soul-aura { position: absolute; inset: 0; border: 1.5px solid rgba(16, 185, 129, 0.2); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; animation: morph 8s infinite linear; }
+        @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.3); opacity: 1; } }
+        @keyframes morph { 0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* TABS & NAVIGATION */
-        .tab-content { display: none; }
+        /* TERMINAL & TICKER */
+        .terminal-parent { background: var(--grove-deep); border-radius: 2rem; color: #ecfdf5; min-height: 540px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; }
+        .broadcast-ticker { position: relative; height: 40px; overflow: hidden; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(16, 185, 129, 0.05); }
+        .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
+        @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
+
+        /* GARDENER & VAULT RAIN */
+        .gardener-zone { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem 0; }
+        .garden-plot { position: relative; width: 200px; height: 80px; }
+        .gardener-emoji { position: absolute; font-size: 40px; bottom: 0; animation: walkAndSowEmoji 8s infinite ease-in-out; z-index: 10; }
+        .tree-stage { position: absolute; bottom: 0; left: 130px; font-size: 0px; opacity: 0; animation: growthCycleEmoji 8s infinite; }
+        @keyframes walkAndSowEmoji { 0% { transform: translateX(0) scaleX(1); } 30% { transform: translateX(80px) scaleX(1); } 40% { transform: translateX(80px) rotate(25deg); } 55% { transform: translateX(80px) rotate(0deg); } 75% { transform: translateX(0) scaleX(-1); } 100% { transform: translateX(0) scaleX(-1); } }
+        @keyframes growthCycleEmoji { 0%, 40% { font-size: 0px; opacity: 0; } 50% { font-size: 24px; opacity: 1; } 65% { font-size: 32px; } 80% { font-size: 55px; transform: translateY(-10px); } 95% { opacity: 0; } 100% { opacity: 0; } }
+
+        .vault-bg { position: relative; background: linear-gradient(to bottom, #061a14, #064e3b); border-radius: 2.5rem; overflow: hidden; min-height: 300px; display: flex; align-items: center; justify-content: center; }
+        .cedis-rain { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+        .cedi-symbol { position: absolute; color: rgba(16, 185, 129, 0.15); font-weight: 900; font-size: 24px; animation: fall linear infinite; }
+        @keyframes fall { from { transform: translateY(-50px) rotate(0deg); opacity: 1; } to { transform: translateY(350px) rotate(360deg); opacity: 0; } }
+
+        .nav-pill { background: rgba(0, 0, 0, 0.3); padding: 4px; border-radius: 12px; display: flex; width: 100%; gap: 4px; }
+        .tab-trigger { flex: 1; color: rgba(255,255,255,0.3); font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 10px 0; text-align: center; border-radius: 8px; }
+        .tab-trigger.active { color: #fff; background: var(--grove-leaf); }
+        .tab-content { display: none; padding-top: 5px; }
         .tab-content.active { display: block; }
-        .nav-bar { position: fixed; bottom: 20px; left: 20px; right: 20px; background: var(--grove-deep); border-radius: 2rem; display: flex; justify-content: space-around; padding: 15px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.4); z-index: 100; }
-        .nav-item { color: rgba(255,255,255,0.4); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: 0.3s; }
-        .nav-item.active { color: var(--emerald); }
-
-        /* WITHDRAWAL MODAL */
-        #withdrawModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; align-items: center; justify-content: center; padding: 2rem; }
     </style>
 </head>
-<body class="max-w-md mx-auto">
+<body class="max-w-md mx-auto" onclick="closeMenu()">
 
     <div id="suspension-overlay">
-        <div class="text-center p-8">
-            <h2 class="text-rose-500 font-black tracking-widest uppercase mb-2">Node Withered</h2>
-            <p class="text-white/60 text-[10px] uppercase mb-8">Activation Seed Required: <span id="req-amt" class="text-emerald-400 font-black">GH₵0</span></p>
-            <div class="bg-white/5 border border-white/10 p-6 rounded-3xl mb-8">
-                <p class="text-white font-black text-2xl tracking-tighter">05XXXXXXXX</p>
-                <p class="text-[8px] text-emerald-500 font-bold mt-2 uppercase">Momo Admin Reference: [Email]</p>
-            </div>
-            <button onclick="location.reload()" class="text-white font-black text-[9px] uppercase tracking-widest">Check Status</button>
+        <div class="text-center p-8 bg-black/60 rounded-3xl backdrop-blur-md border border-white/10">
+            <p class="text-[10px] font-black text-rose-500 tracking-[0.5em] uppercase italic">Node Suspended</p>
+            <p class="text-[7px] text-white/40 uppercase mt-2 font-bold tracking-widest">Givers Never Lack • Restore Protocol Required</p>
         </div>
     </div>
 
+    <div id="nodeMenu" class="node-menu">
+        <button onclick="requestOp('Email Update Requested')" class="menu-item">Change Email</button>
+        <button onclick="requestOp('Phone Addition Requested')" class="menu-item">Add Phone</button>
+        <button onclick="requestOp('Support Issue Reported')" class="menu-item">Report Issue</button>
+        <button onclick="confirmOp('Delete Account?')" class="menu-item text-rose-500">Delete Account</button>
+        <button onclick="logout()" class="menu-item text-red-500 font-black">Exit</button>
+    </div>
+
     <header class="seed-header">
-        <div id="particles" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
-        <div class="relative z-10 flex justify-between items-start mb-8">
-            <div>
-                <h1 class="text-2xl font-black italic tracking-tighter text-slate-900">GROVE</h1>
-                <p class="text-[8px] font-black text-emerald-500 uppercase tracking-widest italic">"Givers Never Lack"</p>
+        <div class="seed-scatter" id="seed-box"></div>
+        <div class="relative z-10 flex justify-between items-center mb-5">
+            <div class="flex items-center gap-3">
+                <div class="soul-container"><div class="soul-aura"></div><div class="soul-core"></div></div>
+                <div>
+                    <h1 class="text-base font-black tracking-tighter italic text-slate-900">GROVE</h1>
+                    <p id="user-display" class="text-[7px] font-black text-emerald-600 uppercase italic">NODE ACTIVE</p>
+                </div>
             </div>
-            <button onclick="toggleGifterSignup()" class="bg-amber-400 text-black px-4 py-2 rounded-full font-black text-[8px] uppercase">Become a Gifter</button>
+            <button onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 uppercase border border-slate-100 px-4 py-1.5 rounded-lg bg-white">Node Ops</button>
         </div>
         
-        <div class="relative z-10 grid grid-cols-2 gap-4">
-            <div class="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-                <p class="text-[7px] font-black text-slate-400 uppercase mb-1">Seed Value</p>
-                <p id="stat-seed" class="text-lg font-black text-slate-900 italic">₵0.00</p>
+        <div class="relative z-10 flex gap-3">
+            <div class="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Seed Base</p>
+                <div class="text-sm font-black text-slate-900 tracking-tighter" id="s-seed">GH₵0.00</div>
             </div>
-            <div class="bg-emerald-50 p-5 rounded-3xl border border-emerald-100">
-                <p class="text-[7px] font-black text-emerald-600 uppercase mb-1">Unclaimed Grace</p>
-                <p id="stat-grace" class="text-lg font-black text-emerald-600 italic">₵0.00</p>
+            <div class="flex-1 bg-emerald-50 p-4 rounded-2xl border-b-2 border-emerald-200">
+                <p class="text-[8px] font-black text-emerald-600 uppercase mb-1">Available Grace</p>
+                <p id="s-reclaim" class="text-sm font-black text-emerald-600 tracking-tighter">GH₵0.00</p>
             </div>
         </div>
     </header>
 
-    <main class="p-6 pb-32">
-        <section id="orchard" class="tab-content active">
-            <div id="gift-feed" class="space-y-4">
-                </div>
-            <div id="orchard-empty" class="gardener-zone hidden">
-                <div class="gardener-emoji">🧑‍🌾</div>
-                <p class="text-[9px] font-black text-slate-300 uppercase mt-4 italic">The Gardener is sowing new grace...</p>
-            </div>
-        </section>
+    <main class="terminal-parent">
+        <div class="broadcast-ticker">
+            <div id="ticker-output" class="ticker-move italic">GIVERS NEVER LACK • HARVEST IN PROGRESS...</div>
+        </div>
+        <div class="p-4">
+            <nav class="nav-pill mb-6">
+                <div id="btn-orchard" class="tab-trigger active" onclick="openTab('t-orchard')">Orchard</div>
+                <div id="btn-vault" class="tab-trigger" onclick="openTab('t-vault')">Vault</div>
+                <div id="btn-comm" class="tab-trigger" onclick="openTab('t-comm')">Comm</div>
+                <div id="btn-ledger" class="tab-trigger" onclick="openTab('t-ledger')">Ledger</div>
+            </nav>
 
-        <section id="vault" class="tab-content">
-            <div class="bg-slate-900 p-10 rounded-[3rem] text-center border border-white/5 relative overflow-hidden">
-                <div class="relative z-10">
-                    <p class="text-[8px] font-black text-emerald-400 uppercase mb-2 tracking-widest">Claim Vaulted</p>
-                    <h2 id="stat-vault" class="text-5xl font-black text-white italic mb-10 tracking-tighter">₵0.00</h2>
-                    <div class="space-y-3">
-                        <button onclick="vaultGrace()" class="w-full py-4 bg-emerald-500 text-slate-950 font-black rounded-2xl text-[10px] uppercase">Vault All Grace</button>
-                        <button onclick="openWithdraw()" class="w-full py-4 bg-white/5 text-white font-black rounded-2xl text-[10px] uppercase border border-white/10">Withdraw to Momo</button>
+            <section id="t-orchard" class="tab-content active"><div id="orchard-list" class="space-y-3"></div></section>
+            
+            <section id="t-vault" class="tab-content">
+                <div class="vault-bg p-12 text-center">
+                    <div class="cedis-rain" id="cedis-box"></div>
+                    <div class="relative z-10">
+                        <p class="text-[8px] font-black text-emerald-400 uppercase mb-2 italic">Claim Vaulted</p>
+                        <h2 id="v-balance" class="text-4xl font-black italic text-white mb-8 tracking-tighter">GH₵0.00</h2>
+                        <div class="space-y-3">
+                            <button onclick="vaultAll()" class="w-full py-4 bg-emerald-500 text-emerald-950 font-black uppercase text-[10px] rounded-2xl">Vault Grace</button>
+                            <button onclick="toggleModal('withdrawModal', true)" class="w-full py-4 bg-white/10 text-white font-black uppercase text-[10px] rounded-2xl border border-white/10">Withdraw</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <section id="ledger" class="tab-content">
-            <h3 class="text-[9px] font-black text-slate-400 uppercase mb-4 tracking-widest">Transaction History</h3>
-            <div id="ledger-list" class="bg-white rounded-3xl border border-slate-100 divide-y divide-slate-50 overflow-hidden">
-                </div>
-        </section>
+            <section id="t-comm" class="tab-content"><div id="comm-list" class="space-y-3"></div></section>
+            <section id="t-ledger" class="tab-content"><div id="ledger-content" class="bg-black/20 rounded-2xl divide-y divide-white/5 overflow-hidden"></div></section>
+        </div>
     </main>
 
-    <div id="withdrawModal">
-        <div class="bg-white p-8 rounded-[3rem] w-full max-w-sm">
-            <p class="text-center text-[10px] font-black text-emerald-600 uppercase mb-6 tracking-widest">Momo Authorization</p>
-            <div class="space-y-4 mb-6">
-                <div>
-                    <label class="text-[8px] font-black text-slate-400 uppercase ml-2">Available for Withdrawal</label>
-                    <div id="wd-avail" class="text-xl font-black text-slate-900 p-4 bg-slate-50 rounded-2xl mt-1">₵0.00</div>
-                </div>
-                <input type="number" id="wd-amount" placeholder="Amount to Withdraw" class="w-full p-4 bg-slate-50 rounded-2xl font-black outline-none border border-slate-100" oninput="calculateFee()">
-            </div>
-            <div class="p-4 bg-rose-50 rounded-2xl mb-8">
-                <div class="flex justify-between text-[8px] font-black uppercase text-rose-500">
-                    <span>2% Service Charge</span>
-                    <span id="wd-fee">₵0.00</span>
-                </div>
-                <div class="flex justify-between text-[10px] font-black uppercase text-slate-900 mt-2">
-                    <span>Net Payout</span>
-                    <span id="wd-net">₵0.00</span>
-                </div>
-            </div>
-            <button onclick="submitWithdraw()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl text-[10px] uppercase mb-4">Confirm Payout</button>
-            <button onclick="closeModals()" class="w-full text-[8px] font-black text-slate-400 uppercase">Cancel</button>
+    <div id="withdrawModal" class="fixed inset-0 bg-black/95 hidden z-[200] items-center justify-center p-6 text-slate-900">
+        <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-xs">
+            <p class="text-[10px] font-black uppercase text-emerald-600 mb-1">Withdrawal</p>
+            <p class="text-[8px] font-bold text-slate-400 mb-6 italic uppercase">Available: <span id="m-avail" class="text-slate-900">GH₵0.00</span></p>
+            <input type="number" id="w-amount" placeholder="Amount (₵)" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl mb-2 font-black text-center text-lg outline-none" oninput="calcCharge()">
+            <p id="charge-info" class="text-[7px] font-black text-emerald-600 uppercase text-center mb-6">2% Service Charge Deductible: GH₵0.00</p>
+            <button onclick="requestWithdrawal()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl text-[10px] uppercase">Authorize</button>
+            <button onclick="toggleModal('withdrawModal', false)" class="w-full text-[8px] font-black text-slate-400 uppercase py-4">Cancel</button>
         </div>
     </div>
 
-    <nav class="nav-bar">
-        <div class="nav-item active" onclick="switchTab('orchard', this)">Orchard</div>
-        <div class="nav-item" onclick="switchTab('vault', this)">Vault</div>
-        <div class="nav-item" onclick="switchTab('ledger', this)">Ledger</div>
-    </nav>
-
     <script>
-        const _gv = supabase.createClient(window.CONFIG.SB_URL, window.CONFIG.SB_KEY);
-        let user = null, grace = 0, vaulted = 0;
+        const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
+        const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
+        const _gv = supabase.createClient(SB_URL, SB_KEY);
+        let userObj = null, capturableSum = 0, vaultedSum = 0;
+
+        function toggleMenu(e) { e.stopPropagation(); document.getElementById('nodeMenu').classList.toggle('active'); }
+        function closeMenu() { document.getElementById('nodeMenu').classList.remove('active'); }
+        function requestOp(msg) { alert(msg); closeMenu(); }
+        function confirmOp(msg) { if(confirm(msg)) alert("Request Sent"); closeMenu(); }
+
+        function createParticles() {
+            const seedBox = document.getElementById('seed-box'), cediBox = document.getElementById('cedis-box');
+            seedBox.innerHTML = ''; cediBox.innerHTML = '';
+            for(let i=0; i<15; i++) {
+                const s = document.createElement('div'); s.className = 'seed';
+                s.style.width = s.style.height = `${Math.random()*4+2}px`;
+                s.style.left = `${Math.random()*100}%`; s.style.top = `${Math.random()*100}%`;
+                s.style.animationDelay = `${Math.random()*4}s`; seedBox.appendChild(s);
+            }
+            for(let i=0; i<12; i++) {
+                const c = document.createElement('div'); c.className = 'cedi-symbol';
+                c.innerText = '₵'; c.style.left = `${Math.random()*100}%`;
+                c.style.animationDuration = `${Math.random()*3+2}s`;
+                c.style.animationDelay = `${Math.random()*5}s`; cediBox.appendChild(c);
+            }
+        }
 
         async function init() {
-            const { data } = await _gv.auth.getUser();
-            if (!data.user) return window.location.href = 'index.html';
-            user = data.user;
-            createSeeds(); sync();
-            _gv.channel('db').on('postgres_changes', {event:'*', schema:'public'}, sync).subscribe();
+            const { data: { user } } = await _gv.auth.getUser();
+            if(!user) return window.location.href = "index.html";
+            userObj = user;
+            createParticles(); sync();
+            _gv.channel('any').on('postgres_changes', {event:'*', schema:'public'}, () => sync()).subscribe();
         }
 
         async function sync() {
-            // Profile & Suspension
-            const { data: profile } = await _gv.from('profiles').select('*').eq('id', user.id).single();
+            // CHECK SUSPENSION
+            const { data: profile } = await _gv.from('profiles').select('is_suspended').eq('id', userObj.id).single();
             if (profile?.is_suspended) {
                 document.body.classList.add('withered');
-                document.getElementById('suspension-overlay').style.display = 'flex';
-                document.getElementById('req-amt').innerText = `GH₵${profile.pledged_seed}`;
-            }
-
-            // Accounting Logic (No Pruning)
-            const { data: ledger } = await _gv.from('ledger').select('*').eq('user_id', user.id).order('created_at', {ascending: false});
-            const { data: allGifts } = await _gv.from('ledger').select('*').eq('entry_type', 'gift_sent');
-
-            let totalGrace = 0, totalVaulted = 0, totalSeed = 0, consumedGrace = 0;
-            const claimedIds = ledger.filter(l => l.entry_type === 'gift_received').map(l => l.description.replace('Claim: ', ''));
-
-            ledger.forEach(l => {
-                if (l.entry_type === 'seed' && !l.description.includes('Vault')) totalSeed += l.amount;
-                if (l.entry_type === 'gift_received') totalGrace += l.amount;
-                if (l.description.includes('Vault Transfer')) consumedGrace += l.amount;
-                if (l.description.includes('Vault Transfer')) totalVaulted += l.amount;
-                if (l.entry_type === 'withdrawal') totalVaulted += l.amount; // amount is negative
-            });
-
-            grace = totalGrace - consumedGrace;
-            vaulted = totalVaulted;
-
-            document.getElementById('stat-seed').innerText = `₵${totalSeed.toFixed(2)}`;
-            document.getElementById('stat-grace').innerText = `₵${grace.toFixed(2)}`;
-            document.getElementById('stat-vault').innerText = `₵${vaulted.toFixed(2)}`;
-            document.getElementById('wd-avail').innerText = `₵${vaulted.toFixed(2)}`;
-
-            // Feed Logic
-            const avail = allGifts.filter(g => !claimedIds.includes(g.id.toString()));
-            const feed = document.getElementById('gift-feed');
-            if (avail.length === 0) {
-                feed.innerHTML = ''; document.getElementById('orchard-empty').classList.remove('hidden');
+                document.getElementById('user-display').innerText = "NODE SUSPENDED";
             } else {
-                document.getElementById('orchard-empty').classList.add('hidden');
-                feed.innerHTML = avail.map(g => `
-                    <div class="bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center">
-                        <div><p class="text-[8px] font-black text-slate-400 uppercase">Available Grace</p>
-                        <p class="text-xl font-black text-emerald-500 italic">₵${g.amount.toFixed(2)}</p></div>
-                        <button onclick="claimGrace('${g.id}', ${g.amount})" class="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-[9px] uppercase">Capture</button>
-                    </div>
-                `).join('');
+                document.body.classList.remove('withered');
+                document.getElementById('user-display').innerText = userObj.email.split('@')[0].toUpperCase();
             }
 
-            // Ledger Logic
-            document.getElementById('ledger-list').innerHTML = ledger.map(l => `
-                <div class="p-4 flex justify-between items-center">
-                    <span class="text-[9px] font-bold text-slate-500 uppercase">${l.description || l.entry_type}</span>
-                    <span class="text-xs font-black ${l.amount < 0 ? 'text-rose-500' : 'text-emerald-500'}">${l.amount < 0 ? '-' : '+'}₵${Math.abs(l.amount).toFixed(2)}</span>
-                </div>
-            `).join('');
-        }
+            const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
+            const { data: missions } = await _gv.from('settled_needs').select('description').eq('status', 'LIVE').order('created_at', { ascending: false });
+            const { data: messages } = await _gv.from('messages').select('*').eq('receiver_id', userObj.id).order('created_at', { ascending: false });
 
-        function calculateFee() {
-            const val = parseFloat(document.getElementById('wd-amount').value) || 0;
-            const fee = val * 0.02;
-            document.getElementById('wd-fee').innerText = `₵${fee.toFixed(2)}`;
-            document.getElementById('wd-net').innerText = `₵${(val - fee).toFixed(2)}`;
-        }
-
-        async function submitWithdraw() {
-            const val = parseFloat(document.getElementById('wd-amount').value);
-            if (val > vaulted || val <= 0) return alert("Invalid Amount");
-            await _gv.from('ledger').insert([{ user_id: user.id, amount: -val, entry_type: 'withdrawal', description: 'PENDING: Momo Payout' }]);
-            closeModals(); sync();
-        }
-
-        async function claimGrace(id, amt) {
-            await _gv.from('ledger').insert([{ user_id: user.id, amount: amt, entry_type: 'gift_received', description: `Claim: ${id}` }]);
-            sync();
-        }
-
-        async function vaultGrace() {
-            if (grace <= 0) return;
-            await _gv.from('ledger').insert([{ user_id: user.id, amount: grace, entry_type: 'seed', description: 'Vault Transfer' }]);
-            sync();
-        }
-
-        function switchTab(tab, el) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById(tab).classList.add('active');
-            el.classList.add('active');
-        }
-
-        function createSeeds() {
-            const box = document.getElementById('particles');
-            for(let i=0; i<15; i++){
-                const s = document.createElement('div'); s.className = 'seed';
-                s.style.left = Math.random()*100+'%'; s.style.width = s.style.height = (Math.random()*4+2)+'px';
-                s.style.animationDelay = Math.random()*4+'s'; box.appendChild(s);
+            // TICKER
+            const tickerEl = document.getElementById('ticker-output');
+            const slogan = "GIVERS NEVER LACK";
+            if (missions?.length > 0) {
+                tickerEl.innerText = `${missions.map(m => m.description).join(' • ')} • ${slogan} • HARVEST IN PROGRESS...`;
+            } else {
+                tickerEl.innerText = `${slogan} • HARVEST IN PROGRESS • SYNCING NODES...`;
             }
+
+            // COMM
+            document.getElementById('comm-list').innerHTML = messages?.length ? messages.map(msg => `
+                <div class="bg-white/5 p-4 rounded-2xl border-l-2 border-emerald-500 mb-2">
+                    <p class="text-[7px] font-black text-emerald-500 uppercase mb-1">SYSTEM</p>
+                    <p class="text-[10px] font-bold text-white uppercase">${msg.content}</p>
+                </div>`).join('') : `<div class="py-10 text-center text-[8px] font-black opacity-30 uppercase tracking-[0.4em]">No Directives</div>`;
+
+            // ACCOUNTING
+            const myLedger = (ledger || []).filter(l => l.user_id === userObj.id);
+            const myClaims = myLedger.filter(l => l.entry_type === 'gift_received').map(c => c.description.split(': ')[1]?.trim());
+            let tr=0, tv=0, tw=0, sa=0;
+            myLedger.forEach(l => {
+                const v = parseFloat(l.amount) || 0, t = l.entry_type?.toLowerCase(), d = l.description?.toLowerCase();
+                if ((t === 'seed' || d.includes('seed')) && !d.includes('vault transfer')) sa += v;
+                if (t === 'gift_received') tr += v;
+                if (d.includes('vault transfer')) tv += v;
+                if (t === 'withdrawal') tw += Math.abs(v);
+            });
+            capturableSum = Math.max(0, tr - tv); vaultedSum = Math.max(0, tv - tw);
+            document.getElementById('s-seed').innerText = `GH₵${sa.toFixed(2)}`;
+            document.getElementById('s-reclaim').innerText = `GH₵${capturableSum.toFixed(2)}`;
+            document.getElementById('v-balance').innerText = `GH₵${vaultedSum.toFixed(2)}`;
+            document.getElementById('m-avail').innerText = `GH₵${vaultedSum.toFixed(2)}`;
+
+            // ORCHARD
+            const { data: broadcasts } = await _gv.from('ledger').select('*').eq('entry_type', 'gift_sent');
+            const availGifts = (broadcasts || []).filter(b => !myClaims.includes(b.id.toString()));
+            const orchardContainer = document.getElementById('orchard-list');
+            if (availGifts.length > 0) {
+                orchardContainer.innerHTML = availGifts.map(g => `<div class="bg-white/5 p-4 flex justify-between items-center rounded-2xl border border-white/5"><div><p class="text-sm font-black text-emerald-400 italic">GH₵${parseFloat(g.amount).toFixed(2)}</p><p class="text-[7px] font-black uppercase text-emerald-500/50">Grace Available</p></div><button onclick="claim('${g.id}', ${g.amount})" class="px-5 py-2 bg-emerald-600 text-white font-black text-[8px] uppercase rounded-lg">Capture</button></div>`).join('');
+            } else {
+                orchardContainer.innerHTML = `<div class="gardener-zone"><div class="garden-plot"><div class="gardener-emoji">🧑‍🌾</div><div class="tree-stage">🌱</div></div><p class="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-500/40 italic mt-8">${slogan}</p></div>`;
+            }
+
+            document.getElementById('ledger-content').innerHTML = myLedger.slice(0, 10).map(l => `<div class="p-4 flex justify-between items-center bg-white/5"><div><p class="text-[9px] font-black uppercase text-white/80">${l.entry_type}</p><p class="text-[7px] font-bold text-white/30 italic">${new Date(l.created_at).toLocaleDateString()}</p></div><p class="text-[10px] font-black ${parseFloat(l.amount) < 0 ? 'text-rose-400' : 'text-emerald-400'}">₵${Math.abs(l.amount).toFixed(2)}</p></div>`).join('');
         }
 
-        function openWithdraw() { document.getElementById('withdrawModal').style.display = 'flex'; }
-        function closeModals() { document.getElementById('withdrawModal').style.display = 'none'; }
+        function calcCharge() { const val = (parseFloat(document.getElementById('w-amount').value) || 0) * 0.02; document.getElementById('charge-info').innerText = `2% Service Charge Deductible: GH₵${val.toFixed(2)}`; }
+        async function claim(id, amt) { await _gv.from('ledger').insert([{ user_id: userObj.id, amount: amt, entry_type: 'gift_received', description: `Claim: ${id}` }]); sync(); }
+        async function vaultAll() { if (capturableSum > 0) { await _gv.from('ledger').insert([{ user_id: userObj.id, amount: capturableSum, entry_type: 'seed', description: 'Vault Transfer' }]); sync(); } }
+        async function requestWithdrawal() {
+            const amt = parseFloat(document.getElementById('w-amount').value);
+            if (!amt || amt > vaultedSum) return alert("Insufficient Balance");
+            await _gv.from('ledger').insert([{ user_id: userObj.id, amount: -amt, entry_type: 'withdrawal', description: `Momo Payout` }]);
+            toggleModal('withdrawModal', false); sync();
+        }
+        function openTab(id) { document.querySelectorAll('.tab-content, .tab-trigger').forEach(el => el.classList.remove('active')); document.getElementById(id).classList.add('active'); document.getElementById('btn-' + id.split('-')[1]).classList.add('active'); }
+        function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
+        async function logout() { await _gv.auth.signOut(); window.location.href = "index.html"; }
         init();
     </script>
 </body>
