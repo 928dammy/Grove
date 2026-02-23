@@ -24,6 +24,7 @@
         .btn-freeze { background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.2); color: #fbbf24; }
         .btn-expel { background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); color: #fb7185; }
         .btn-reset { background: rgba(244, 63, 94, 0.2); border: 1px solid #fb7185; color: #fb7185; font-size: 8px; font-weight: 900; padding: 4px 12px; border-radius: 8px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="bg-slate-950">
@@ -156,10 +157,12 @@
 
             ledger?.forEach(l => {
                 const val = parseFloat(l.amount) || 0;
-                const desc = l.description.toLowerCase();
-                const type = l.entry_type.toLowerCase();
+                const desc = l.description?.toLowerCase() || "";
+                const type = l.entry_type?.toLowerCase() || "";
+                
                 if(type === 'seed' && !desc.includes('vault transfer')) globalSeeded += val;
                 if(type === 'withdrawal') globalWithdrawn += Math.abs(val);
+                
                 if (l.user_id && nodeDetails[l.user_id]) {
                     if (type === 'seed' && !desc.includes('vault transfer')) nodeDetails[l.user_id].seeded += val;
                     if (desc.includes('vault transfer')) nodeDetails[l.user_id].vaulted += val;
@@ -182,15 +185,16 @@
             else { health.innerText = "HEALTHY BALANCE"; health.classList.remove('text-rose-500', 'animate-pulse'); }
 
             document.getElementById('nodeList').innerHTML = nodes?.map(n => {
-                const stats = nodeDetails[n.id];
+                const stats = nodeDetails[n.id] || {seeded: 0, vaulted: 0, withdrawn: 0};
                 const currentInVault = Math.max(0, stats.vaulted - stats.withdrawn);
                 return `<div class="auth-card p-4"><div class="flex justify-between items-start mb-4"><div><p class="text-[10px] font-black uppercase ${n.is_suspended ? 'text-rose-400' : 'text-emerald-400'}">${n.email.split('@')[0]}</p><p class="text-[7px] text-slate-500 uppercase tracking-widest mt-1">${n.email}</p></div><div class="text-right"><div class="w-1.5 h-1.5 rounded-full ${n.is_suspended ? 'bg-rose-500' : 'bg-emerald-500'} animate-pulse ml-auto mb-1"></div><p class="text-[8px] font-black text-white uppercase">RANGE: ${n.current_range_min || 0}-${n.current_range_max || 0}</p></div></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-3 rounded-xl border border-white/5"><div class="text-center"><p class="text-[6px] text-slate-500 uppercase font-bold">Seeded</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase font-bold">In Vault</p><p class="text-[9px] font-black text-emerald-400">₵${currentInVault.toFixed(2)}</p></div><div class="text-center"><p class="text-[6px] text-rose-500 uppercase font-bold">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="grid grid-cols-3 gap-2"><button onclick="broadcastToNode('${n.id}')" class="btn-action btn-msg">Message</button><button onclick="toggleSuspend('${n.id}', ${n.is_suspended})" class="btn-action btn-freeze">${n.is_suspended ? 'Release' : 'Suspend'}</button><button onclick="expelNode('${n.id}')" class="btn-action btn-expel">Expel</button></div></div>`;
             }).join('');
 
-            document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 15).map(l => {
-                const user = nodes?.find(p => p.id === l.user_id)?.email.split('@')[0] || 'SYS';
-                return `<div class="p-4 flex justify-between items-center text-[10px]"><div><p class="font-black uppercase text-slate-500 text-[8px]">${user}</p><p class="italic text-emerald-500 text-[9px]">${l.entry_type}</p><p class="text-[6px] text-slate-600 uppercase">${l.description || ''}</p></div><p class="font-black ${l.amount < 0 ? 'text-rose-500' : 'text-white'}">GH₵${Math.abs(l.amount).toFixed(2)}</p></div>`;
-            }).join('');
+            document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 20).map(l => {
+                const user = nodes?.find(p => p.id === l.user_id)?.email.split('@')[0] || 'ADMIN';
+                const isSpend = l.amount < 0;
+                return `<div class="p-4 flex justify-between items-center text-[10px]"><div><p class="font-black uppercase text-slate-500 text-[8px]">${user}</p><p class="italic text-emerald-500 text-[9px]">${l.entry_type.replace('_', ' ')}</p><p class="text-[6px] text-slate-400 uppercase font-bold">${l.description || ''}</p></div><p class="font-black ${isSpend ? 'text-rose-500' : 'text-white'}">${isSpend ? '' : '+'}GH₵${l.amount.toFixed(2)}</p></div>`;
+            }).join('') || '<p class="p-8 text-center text-[8px] opacity-30">NO TRANSACTIONS</p>';
         }
 
         async function broadcastWither() {
@@ -227,22 +231,24 @@
             if(!t || !c) return;
 
             // 1. Post to Ticker
-            await _gv.from('settled_needs').insert([{ description: t, cost_to_settle: parseFloat(c) }]);
+            const { error: mErr } = await _gv.from('settled_needs').insert([{ description: t.toUpperCase(), cost_to_settle: parseFloat(c) }]);
             
             // 2. Post to Ledger for history and pool deduction
-            if(adminUser) {
-                await _gv.from('ledger').insert([{ 
-                    user_id: adminUser.id, 
-                    amount: -parseFloat(c), 
-                    entry_type: 'mission_spend', 
-                    description: `Mission: ${t}` 
-                }]);
-            }
+            const { error: lErr } = await _gv.from('ledger').insert([{ 
+                user_id: adminUser?.id || null, 
+                amount: -parseFloat(c), 
+                entry_type: 'mission_spend', 
+                description: `BROADCAST: ${t}` 
+            }]);
             
-            sync(); 
-            alert("Mission Live & Logged.");
-            document.getElementById('mTitle').value = '';
-            document.getElementById('mCost').value = '';
+            if(!mErr && !lErr) {
+                sync(); 
+                alert("Mission Live & Logged.");
+                document.getElementById('mTitle').value = '';
+                document.getElementById('mCost').value = '';
+            } else {
+                alert("Broadcast Failed. Check console.");
+            }
         }
 
         async function broadcastGrace() {
