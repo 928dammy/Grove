@@ -19,6 +19,7 @@
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .input-box { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: white; border-radius: 1rem; padding: 1rem; width: 100%; outline: none; font-size: 16px; }
         .btn-action { padding: 8px; border-radius: 10px; font-size: 9px; font-weight: 900; text-transform: uppercase; transition: 0.2s; text-align: center; }
+        .btn-verify { background: #10b981; color: #020617; }
         .btn-msg { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); color: #60a5fa; }
         .btn-freeze { background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.2); color: #fbbf24; }
         .btn-expel { background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); color: #fb7185; }
@@ -65,10 +66,10 @@
 
     <main class="p-4 max-w-4xl mx-auto">
         <section id="nodes" class="tab-content active">
-            <div class="mb-6 auth-card p-6">
-                <h3 class="text-xs font-black uppercase text-blue-400 mb-4 italic">Register Gifter / Set Range</h3>
+            <div class="mb-6 auth-card p-6 border-blue-500/20">
+                <h3 class="text-xs font-black uppercase text-blue-400 mb-4 italic">Authorize Gifter / Set Range</h3>
                 <div class="space-y-3">
-                    <input type="email" id="targetEmail" placeholder="Node Email (e.g. user@grove.com)" class="input-box">
+                    <input type="email" id="targetEmail" placeholder="Node Email" class="input-box">
                     <div class="flex gap-2">
                         <input type="number" id="minRange" placeholder="Min Gift (₵)" class="input-box">
                         <input type="number" id="maxRange" placeholder="Max Gift (₵)" class="input-box">
@@ -76,8 +77,14 @@
                     <button onclick="updateRange()" class="w-full py-4 bg-blue-600 text-white font-black rounded-2xl text-[10px] uppercase">Authorize Gifter Node</button>
                 </div>
             </div>
-            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-3 px-2">Node Management</h3>
+            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-3 px-2 italic">Node Verification & Management</h3>
             <div id="nodeList" class="space-y-3"></div>
+        </section>
+
+        <section id="payouts" class="tab-content">
+            <h3 class="text-[10px] font-black text-rose-500 uppercase mb-3 px-2 italic tracking-widest">Pending Momo Transfers</h3>
+            <div id="payoutList" class="space-y-3"></div>
+            <div id="emptyPayouts" class="py-20 text-center opacity-20 text-[8px] font-black uppercase tracking-[0.5em]">No Pending Requests</div>
         </section>
 
         <section id="missions" class="tab-content">
@@ -89,7 +96,6 @@
                     <button onclick="postMission()" class="w-full py-4 bg-amber-500 text-black font-black rounded-2xl text-[10px] uppercase">Execute & Broadcast</button>
                 </div>
             </div>
-            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-3 px-2">Live & Past Missions</h3>
             <div id="missionLog" class="space-y-2"></div>
         </section>
 
@@ -110,7 +116,6 @@
         </section>
 
         <section id="ledger" class="tab-content">
-            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-3 px-2">Global Transaction Stream</h3>
             <div class="auth-card overflow-hidden">
                 <div id="ledgerTable" class="divide-y divide-white/5"></div>
             </div>
@@ -119,23 +124,23 @@
 
     <nav class="fixed bottom-0 left-0 right-0 h-20 bg-slate-950/90 border-t border-white/10 backdrop-blur-lg flex justify-around items-center z-50">
         <div class="nav-link active" onclick="openTab(event, 'nodes')"><span>👥</span><span class="text-[8px] font-black uppercase mt-1">Nodes</span></div>
+        <div class="nav-link" onclick="openTab(event, 'payouts')"><span>💸</span><span class="text-[8px] font-black uppercase mt-1">Payouts</span></div>
         <div class="nav-link" onclick="openTab(event, 'missions')"><span>🎯</span><span class="text-[8px] font-black uppercase mt-1">Missions</span></div>
         <div class="nav-link" onclick="openTab(event, 'harvest')"><span>🌿</span><span class="text-[8px] font-black uppercase mt-1">Harvest</span></div>
         <div class="nav-link" onclick="openTab(event, 'ledger')"><span>📜</span><span class="text-[8px] font-black uppercase mt-1">Ledger</span></div>
     </nav>
 
     <script>
-        const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
-        const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
+        const SB_URL = window.CONFIG?.SB_URL;
+        const SB_KEY = window.CONFIG?.SB_KEY;
         const _gv = supabase.createClient(SB_URL, SB_KEY);
         let adminUser = null;
 
         async function sync() {
-            const { data: { user } } = await _gv.auth.getUser();
-            adminUser = user;
+            const { data: { user } } = await _gv.auth.getUser(); adminUser = user;
             const { data: nodes } = await _gv.from('profiles').select('*');
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
-            const { data: missions } = await _gv.from('settled_needs').select('*').neq('status', 'ARCHIVED').order('created_at', { ascending: false });
+            const { data: missions } = await _gv.from('settled_needs').select('*').neq('status', 'ARCHIVED');
 
             let globalSeeded = 0, globalWithdrawn = 0, totalVaulted = 0;
             const nodeDetails = {};
@@ -146,7 +151,7 @@
                 const type = (l.entry_type || "").toLowerCase();
                 const desc = (l.description || "").toLowerCase();
                 if(type === 'seed' && !desc.includes('vault transfer')) globalSeeded += val;
-                if(type === 'withdrawal') globalWithdrawn += Math.abs(val);
+                if(type === 'withdrawal' && desc.includes('paid')) globalWithdrawn += Math.abs(val);
                 if (l.user_id && nodeDetails[l.user_id]) {
                     if (type === 'seed' && !desc.includes('vault transfer')) nodeDetails[l.user_id].seeded += val;
                     if (desc.includes('vault transfer')) nodeDetails[l.user_id].vaulted += val;
@@ -165,42 +170,74 @@
             document.getElementById('stat-withdrawn').innerText = `GH₵${globalWithdrawn.toFixed(0)}`;
             document.getElementById('stat-nodes').innerText = nodes?.length || 0;
 
-            // Render Node List
+            // NODE LIST WITH VARIABLE SEED
             document.getElementById('nodeList').innerHTML = nodes?.map(n => {
                 const stats = nodeDetails[n.id] || {seeded:0, vaulted:0, withdrawn:0};
-                return `<div class="auth-card p-4"><div class="flex justify-between items-start mb-4"><div><p class="text-[10px] font-black uppercase ${n.is_suspended ? 'text-rose-400' : 'text-emerald-400'}">${n.email.split('@')[0]}</p><p class="text-[7px] text-slate-500 uppercase mt-1">${n.email}</p></div></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-3 rounded-xl border border-white/5"><div class="text-center"><p class="text-[6px] text-slate-500 uppercase font-bold">Seeded</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase font-bold">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div class="text-center"><p class="text-[6px] text-rose-500 uppercase font-bold">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="grid grid-cols-3 gap-2"><button onclick="broadcastToNode('${n.id}')" class="btn-action btn-msg">Msg</button><button onclick="toggleSuspend('${n.id}', ${n.is_suspended})" class="btn-action btn-freeze">${n.is_suspended ? 'Rel' : 'Susp'}</button><button onclick="expelNode('${n.id}')" class="btn-action btn-expel">Expel</button></div></div>`;
+                const pledge = parseFloat(n.pledged_seed) || 0;
+                return `
+                <div class="auth-card p-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-[10px] font-black uppercase ${n.is_suspended ? 'text-rose-400' : 'text-emerald-400'}">${n.email.split('@')[0]}</p>
+                            <p class="text-[7px] text-slate-500 uppercase mt-1">${n.email}</p>
+                        </div>
+                        ${n.is_suspended ? `<button onclick="verifySeed('${n.id}', ${pledge})" class="btn-action btn-verify px-3">Verify ₵${pledge} ✅</button>` : ''}
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-3 rounded-xl border border-white/5">
+                        <div class="text-center"><p class="text-[6px] text-slate-500 uppercase font-bold">Seeded</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div>
+                        <div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase font-bold">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div>
+                        <div class="text-center"><p class="text-[6px] text-rose-500 uppercase font-bold">Gifter</p><p class="text-[9px] font-black">${n.is_gifter ? 'YES' : 'NO'}</p></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="broadcastToNode('${n.id}')" class="btn-action btn-msg">Msg</button>
+                        <button onclick="toggleSuspend('${n.id}', ${n.is_suspended})" class="btn-action btn-freeze">${n.is_suspended ? 'Rel' : 'Susp'}</button>
+                        <button onclick="expelNode('${n.id}')" class="btn-action btn-expel">Expel</button>
+                    </div>
+                </div>`;
             }).join('');
 
-            // Render Missions
-            document.getElementById('missionLog').innerHTML = missions?.map(m => {
-                const isLive = m.status === 'LIVE';
-                return `<div class="auth-card p-3 flex justify-between items-center ${isLive ? 'border-amber-500/20' : 'border-white/5'} mb-2"><div class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full ${isLive ? 'bg-amber-500 animate-pulse' : 'bg-slate-700'}"></div><div><p class="text-[9px] font-black uppercase ${isLive ? 'text-amber-500' : 'text-slate-500'} leading-tight">${m.description}</p><p class="text-[7px] text-slate-500 font-bold">₵${parseFloat(m.cost_to_settle).toFixed(2)}</p></div></div><div class="flex gap-2"><button onclick="toggleMissionStatus('${m.id}', '${m.status}')" class="p-2 bg-white/5 text-white/50 rounded-lg text-[7px] font-black uppercase">${isLive ? 'Finish' : 'Go Live'}</button><button onclick="archiveMission('${m.id}')" class="p-2 bg-rose-500/10 text-rose-400 rounded-lg text-[7px] font-black uppercase italic">Clear</button></div></div>`;
+            // PAYOUT QUEUE (2% Deductible Display)
+            const pending = ledger?.filter(l => l.entry_type === 'withdrawal' && l.description.includes('PENDING'));
+            document.getElementById('emptyPayouts').style.display = pending?.length ? 'none' : 'block';
+            document.getElementById('payoutList').innerHTML = pending?.map(p => {
+                const rawAmt = Math.abs(parseFloat(p.amount));
+                const fee = rawAmt * 0.02;
+                const netAmt = rawAmt - fee;
+                const user = nodes?.find(n => n.id === p.user_id)?.email || "Unknown";
+                return `
+                <div class="auth-card p-4 border-rose-500/20">
+                    <div class="flex justify-between items-center mb-3">
+                        <div><p class="text-[8px] font-black text-slate-500 uppercase">${user}</p><p class="text-[10px] font-black text-white italic">${p.description.split(': ')[1]}</p></div>
+                        <div class="text-right"><p class="text-[7px] font-black text-rose-500 uppercase">Fee: ₵${fee.toFixed(2)}</p><p class="text-sm font-black text-emerald-400">₵${netAmt.toFixed(2)}</p></div>
+                    </div>
+                    <button onclick="confirmPayout('${p.id}')" class="w-full py-2 bg-emerald-500 text-slate-950 font-black text-[9px] uppercase rounded-lg">Confirm Momo Sent</button>
+                </div>`;
             }).join('');
 
-            // Render Ledger
-            document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 15).map(l => {
-                const userName = nodes?.find(p => p.id === l.user_id)?.email.split('@')[0] || "👑 ADMIN";
-                return `<div class="p-4 flex justify-between items-center text-[10px] border-b border-white/5"><div><p class="font-black uppercase ${!l.user_id ? 'text-emerald-500' : 'text-slate-500'} text-[8px]">${userName}</p><p class="italic text-white/40 text-[9px]">${l.entry_type}</p><p class="text-[7px] text-slate-500 uppercase">${l.description || ''}</p></div><p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p></div>`;
+            // MISSIONS, HARVEST, LEDGER (Keep same as your blueprint)
+            document.getElementById('missionLog').innerHTML = missions?.map(m => `
+                <div class="auth-card p-3 flex justify-between items-center mb-2">
+                    <div><p class="text-[9px] font-black uppercase text-amber-500">${m.description}</p><p class="text-[7px] text-slate-500 font-bold">₵${m.cost_to_settle}</p></div>
+                    <button onclick="archiveMission('${m.id}')" class="p-2 bg-rose-500/10 text-rose-400 rounded-lg text-[7px] font-black uppercase">Clear</button>
+                </div>`).join('');
+
+            document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 10).map(l => {
+                const user = nodes?.find(p => p.id === l.user_id)?.email.split('@')[0] || "ADMIN";
+                return `<div class="p-4 flex justify-between items-center text-[10px] border-b border-white/5"><div><p class="font-black text-[8px] uppercase">${user}</p><p class="text-[7px] text-slate-500">${l.entry_type}</p></div><p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p></div>`;
             }).join('');
         }
 
-        async function postMission() {
-            const t = document.getElementById('mTitle').value, c = document.getElementById('mCost').value;
-            if(!t || !c) return;
-            await _gv.from('settled_needs').insert([{ description: t.toUpperCase(), cost_to_settle: parseFloat(c), status: 'LIVE' }]);
-            await _gv.from('ledger').insert([{ user_id: adminUser?.id || null, amount: -parseFloat(c), entry_type: 'mission_spend', description: `MISSION: ${t}` }]);
-            document.getElementById('mTitle').value = ''; document.getElementById('mCost').value = ''; sync();
+        async function verifySeed(id, amount) {
+            if(confirm(`Confirm receipt of GH₵${amount}?`)) {
+                await _gv.from('ledger').insert([{ user_id: id, amount: amount, entry_type: 'seed', description: `Seed Verified: GH₵${amount}` }]);
+                await _gv.from('profiles').update({ is_suspended: false }).eq('id', id);
+                sync();
+            }
         }
 
-        async function toggleMissionStatus(id, current) {
-            const next = current === 'LIVE' ? 'COMPLETED' : 'LIVE';
-            await _gv.from('settled_needs').update({ status: next }).eq('id', id);
-            sync();
-        }
-
-        async function archiveMission(id) {
-            if(confirm("Permanently archive this mission?")) {
-                await _gv.from('settled_needs').update({ status: 'ARCHIVED' }).eq('id', id);
+        async function confirmPayout(id) {
+            if(confirm("Mark this Momo payout as SENT?")) {
+                await _gv.from('ledger').update({ description: 'PAID: Momo Withdrawal' }).eq('id', id);
                 sync();
             }
         }
@@ -211,6 +248,14 @@
             sync(); alert("Gifter Node Authorized."); 
         }
 
+        async function postMission() {
+            const t = document.getElementById('mTitle').value, c = document.getElementById('mCost').value;
+            if(!t || !c) return;
+            await _gv.from('settled_needs').insert([{ description: t.toUpperCase(), cost_to_settle: parseFloat(c), status: 'LIVE' }]);
+            await _gv.from('ledger').insert([{ user_id: adminUser?.id || null, amount: -parseFloat(c), entry_type: 'mission_spend', description: `MISSION: ${t}` }]);
+            sync();
+        }
+
         async function broadcastGrace() { const a = document.getElementById('distAmount').value; if(a) await _gv.from('ledger').insert([{ amount: parseFloat(a), entry_type: 'gift_sent', description: 'Stable Grace' }]); sync(); }
         async function broadcastWither() { const a = document.getElementById('wAmount').value, m = document.getElementById('wMins').value; if(a && m) { const ex = new Date(Date.now() + m * 60000).toISOString(); await _gv.from('ledger').insert([{ amount: parseFloat(a), entry_type: 'gift_sent', description: `Wither Grace | ${ex}` }]); sync(); } }
         async function toggleSuspend(id, s) { await _gv.from('profiles').update({ is_suspended: !s }).eq('id', id); sync(); }
@@ -219,7 +264,7 @@
         async function systemReset() { if(confirm("WIPE SYSTEM?")) { await _gv.rpc('reset_system'); sync(); } }
         function openTab(e, n) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active')); document.getElementById(n).classList.add('active'); e.currentTarget.classList.add('active'); }
         async function init() { sync(); _gv.channel('any').on('postgres_changes', {event:'*', schema:'public'}, () => sync()).subscribe(); }
-        init(); setInterval(sync, 15000);
+        init();
     </script>
 </body>
 </html>
