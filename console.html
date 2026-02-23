@@ -132,8 +132,14 @@
             adminUser = user;
             const { data: nodes } = await _gv.from('profiles').select('*');
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
-            const { data: missions } = await _gv.from('settled_needs').select('*').order('created_at', { ascending: false });
+            
+            // Fetch all missions except those permanently archived
+            const { data: missions } = await _gv.from('settled_needs')
+                .select('*')
+                .neq('status', 'ARCHIVED')
+                .order('created_at', { ascending: false });
 
+            // Stats Logic
             let globalSeeded = 0, globalWithdrawn = 0, totalVaulted = 0;
             const nodeDetails = {};
             nodes?.forEach(n => { nodeDetails[n.id] = { seeded: 0, vaulted: 0, withdrawn: 0, email: n.email }; });
@@ -152,7 +158,10 @@
             });
 
             Object.values(nodeDetails).forEach(u => { totalVaulted += Math.max(0, u.vaulted - u.withdrawn); });
-            const totalBurn = missions?.reduce((sum, m) => sum + (parseFloat(m.cost_to_settle) || 0), 0) || 0;
+            
+            // Total cost includes everything ever spent on missions (even archived ones)
+            const { data: allMissions } = await _gv.from('settled_needs').select('cost_to_settle');
+            const totalBurn = allMissions?.reduce((sum, m) => sum + (parseFloat(m.cost_to_settle) || 0), 0) || 0;
             const grovePool = globalSeeded - totalBurn - globalWithdrawn;
 
             document.getElementById('stat-pool').innerText = `GH₵${grovePool.toFixed(2)}`;
@@ -161,48 +170,65 @@
             document.getElementById('stat-withdrawn').innerText = `GH₵${globalWithdrawn.toFixed(0)}`;
             document.getElementById('stat-nodes').innerText = nodes?.length || 0;
 
-            const health = document.getElementById('health-indicator');
-            if (grovePool < totalVaulted) { health.innerText = "DEFICIT WARNING"; health.classList.add('text-rose-500', 'animate-pulse'); }
-            else { health.innerText = "HEALTHY BALANCE"; health.classList.remove('text-rose-500', 'animate-pulse'); }
-
+            // Render Node List
             document.getElementById('nodeList').innerHTML = nodes?.map(n => {
                 const stats = nodeDetails[n.id] || {seeded:0, vaulted:0, withdrawn:0};
-                return `<div class="auth-card p-4"><div class="flex justify-between items-start mb-4"><div><p class="text-[10px] font-black uppercase ${n.is_suspended ? 'text-rose-400' : 'text-emerald-400'}">${n.email.split('@')[0]}</p><p class="text-[7px] text-slate-500 uppercase mt-1">${n.email}</p></div><div class="text-right"><p class="text-[8px] font-black text-white uppercase">RANGE: ${n.current_range_min || 0}-${n.current_range_max || 0}</p></div></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-3 rounded-xl border border-white/5"><div class="text-center"><p class="text-[6px] text-slate-500 uppercase font-bold">Seeded</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase font-bold">In Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div class="text-center"><p class="text-[6px] text-rose-500 uppercase font-bold">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="grid grid-cols-3 gap-2"><button onclick="broadcastToNode('${n.id}')" class="btn-action btn-msg">Msg</button><button onclick="toggleSuspend('${n.id}', ${n.is_suspended})" class="btn-action btn-freeze">${n.is_suspended ? 'Rel' : 'Susp'}</button><button onclick="expelNode('${n.id}')" class="btn-action btn-expel">Expel</button></div></div>`;
+                return `<div class="auth-card p-4"><div class="flex justify-between items-start mb-4"><div><p class="text-[10px] font-black uppercase ${n.is_suspended ? 'text-rose-400' : 'text-emerald-400'}">${n.email.split('@')[0]}</p><p class="text-[7px] text-slate-500 uppercase mt-1">${n.email}</p></div></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-3 rounded-xl border border-white/5"><div class="text-center"><p class="text-[6px] text-slate-500 uppercase font-bold">Seeded</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase font-bold">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div class="text-center"><p class="text-[6px] text-rose-500 uppercase font-bold">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="grid grid-cols-3 gap-2"><button onclick="broadcastToNode('${n.id}')" class="btn-action btn-msg">Msg</button><button onclick="toggleSuspend('${n.id}', ${n.is_suspended})" class="btn-action btn-freeze">${n.is_suspended ? 'Rel' : 'Susp'}</button><button onclick="expelNode('${n.id}')" class="btn-action btn-expel">Expel</button></div></div>`;
             }).join('');
 
-            document.getElementById('missionLog').innerHTML = missions?.map(m => `
-                <div class="auth-card p-3 flex justify-between items-center border-amber-500/10 mb-2">
-                    <div>
-                        <p class="text-[9px] font-black uppercase text-amber-500 leading-tight">${m.description}</p>
-                        <p class="text-[7px] text-slate-500 font-bold">₵${parseFloat(m.cost_to_settle).toFixed(2)} ON TICKER</p>
+            // Render Mission Log
+            document.getElementById('missionLog').innerHTML = missions?.map(m => {
+                const isLive = m.status === 'LIVE' || !m.status;
+                return `
+                <div class="auth-card p-3 flex justify-between items-center ${isLive ? 'border-amber-500/20' : 'border-white/5'} mb-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-1.5 h-1.5 rounded-full ${isLive ? 'bg-amber-500 animate-pulse' : 'bg-slate-700'}"></div>
+                        <div>
+                            <p class="text-[9px] font-black uppercase ${isLive ? 'text-amber-500' : 'text-slate-500'} leading-tight">${m.description}</p>
+                            <p class="text-[7px] text-slate-500 font-bold">₵${parseFloat(m.cost_to_settle).toFixed(2)}</p>
+                        </div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="editMission('${m.id}', '${m.description}')" class="p-2 bg-blue-500/10 text-blue-400 rounded-lg text-[7px] font-black">EDIT</button>
-                        <button onclick="deleteMission('${m.id}')" class="p-2 bg-rose-500/10 text-rose-400 rounded-lg text-[7px] font-black">CLEAR</button>
+                        <button onclick="toggleMissionStatus('${m.id}', '${m.status || 'LIVE'}')" class="p-2 bg-white/5 text-white/50 rounded-lg text-[7px] font-black uppercase">${isLive ? 'Finish' : 'Go Live'}</button>
+                        <button onclick="archiveMission('${m.id}')" class="p-2 bg-rose-500/10 text-rose-400 rounded-lg text-[7px] font-black uppercase italic">Clear</button>
                     </div>
-                </div>`).join('') || '<p class="text-center p-4 opacity-20 text-[8px]">TICKER EMPTY</p>';
+                </div>`;
+            }).join('');
 
+            // Render Ledger
             document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 15).map(l => {
                 const userName = nodes?.find(p => p.id === l.user_id)?.email.split('@')[0] || "👑 ADMIN";
-                return `<div class="p-4 flex justify-between items-center text-[10px] border-b border-white/5"><div><p class="font-black uppercase ${!l.user_id ? 'text-emerald-500' : 'text-slate-500'} text-[8px]">${userName}</p><p class="italic text-white/40 text-[9px]">${l.entry_type}</p><p class="text-[7px] text-slate-500 uppercase">${l.description || ''}</p></div><p class="font-black ${l.amount < 0 ? 'text-rose-500' : 'text-white'}">₵${Math.abs(l.amount).toFixed(2)}</p></div>`;
+                return `<div class="p-4 flex justify-between items-center text-[10px] border-b border-white/5"><div><p class="font-black uppercase ${!l.user_id ? 'text-emerald-500' : 'text-slate-500'} text-[8px]">${userName}</p><p class="italic text-white/40 text-[9px]">${l.entry_type}</p><p class="text-[7px] text-slate-500 uppercase">${l.description || ''}</p></div><p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p></div>`;
             }).join('');
         }
 
         async function postMission() {
             const t = document.getElementById('mTitle').value, c = document.getElementById('mCost').value;
             if(!t || !c) return;
-            await _gv.from('settled_needs').insert([{ description: t.toUpperCase(), cost_to_settle: parseFloat(c) }]);
+            await _gv.from('settled_needs').insert([{ description: t.toUpperCase(), cost_to_settle: parseFloat(c), status: 'LIVE' }]);
             await _gv.from('ledger').insert([{ user_id: adminUser?.id || null, amount: -parseFloat(c), entry_type: 'mission_spend', description: `MISSION: ${t}` }]);
             document.getElementById('mTitle').value = ''; document.getElementById('mCost').value = ''; sync();
         }
-        async function deleteMission(id) { if(confirm("Clear from ticker?")) { await _gv.from('settled_needs').delete().eq('id', id); sync(); } }
-        async function editMission(id, current) { const n = prompt("Edit:", current); if(n) { await _gv.from('settled_needs').update({ description: n.toUpperCase() }).eq('id', id); sync(); } }
+
+        async function toggleMissionStatus(id, current) {
+            const next = current === 'LIVE' ? 'COMPLETED' : 'LIVE';
+            await _gv.from('settled_needs').update({ status: next }).eq('id', id);
+            sync();
+        }
+
+        async function archiveMission(id) {
+            if(confirm("Archive this mission? It remains in history but leaves the ticker.")) {
+                await _gv.from('settled_needs').update({ status: 'ARCHIVED' }).eq('id', id);
+                sync();
+            }
+        }
+
         async function updateRange() { const e = document.getElementById('targetEmail').value, min = document.getElementById('minRange').value, max = document.getElementById('maxRange').value; await _gv.from('profiles').update({ current_range_min: parseFloat(min), current_range_max: parseFloat(max) }).eq('email', e); sync(); alert("Updated."); }
         async function broadcastGrace() { const a = document.getElementById('distAmount').value; if(a) await _gv.from('ledger').insert([{ amount: parseFloat(a), entry_type: 'gift_sent', description: 'Stable Grace' }]); sync(); }
         async function broadcastWither() { const a = document.getElementById('wAmount').value, m = document.getElementById('wMins').value; if(a && m) { const ex = new Date(Date.now() + m * 60000).toISOString(); await _gv.from('ledger').insert([{ amount: parseFloat(a), entry_type: 'gift_sent', description: `Wither Grace | ${ex}` }]); sync(); } }
         async function toggleSuspend(id, s) { await _gv.from('profiles').update({ is_suspended: !s }).eq('id', id); sync(); }
         async function expelNode(id) { if(confirm("Expel?")) { await _gv.from('profiles').delete().eq('id', id); sync(); } }
-        async function broadcastToNode(id) { const m = prompt("Directive:"); if(m) { await _gv.from('messages').insert([{ receiver_id: id, sender_name: "SYSTEM", content: m }]); alert("Sent."); } }
+        async function broadcastToNode(id) { const m = prompt("Enter Directive:"); if(m) { await _gv.from('messages').insert([{ receiver_id: id, sender_name: "SYSTEM", content: m.toUpperCase() }]); alert("Transmitted."); } }
         async function systemReset() { if(confirm("WIPE SYSTEM?")) { await _gv.rpc('reset_system'); sync(); } }
         function openTab(e, n) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active')); document.getElementById(n).classList.add('active'); e.currentTarget.classList.add('active'); }
         async function init() { sync(); _gv.channel('any').on('postgres_changes', {event:'*', schema:'public'}, () => sync()).subscribe(); }
