@@ -12,6 +12,7 @@
         :root { --emerald: #10b981; --grove-deep: #061a14; --grove-leaf: #064e3b; --gold: #fbbf24; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; min-height: 100vh; padding: 1rem; margin: 0; overflow-x: hidden; color: #1e293b; }
         
+        /* HEADER STYLES */
         .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
         .seed-scatter { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; border-radius: 2rem; }
         .seed { position: absolute; background: var(--emerald); border-radius: 50%; opacity: 0; animation: scatterGrow 4s infinite ease-out; }
@@ -21,23 +22,27 @@
             100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
         }
 
+        /* RESTORED FULL NODE MENU */
         .node-menu { position: fixed; top: 75px; right: 2rem; width: 180px; background: white; border-radius: 1.5rem; border: 1px solid #f1f5f9; box-shadow: 0 15px 35px rgba(0,0,0,0.15); display: none; z-index: 100; overflow: hidden; }
         .node-menu.active { display: block; animation: menuFade 0.2s ease-out; }
         @keyframes menuFade { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .menu-item { width: 100%; padding: 14px 20px; text-align: left; font-size: 9px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #f8fafc; color: #64748b; cursor: pointer; }
         .menu-item:active { background: #f8fafc; color: var(--emerald); }
 
+        /* SOUL CORE STYLES */
         .soul-container { position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 10; }
         .soul-core { width: 6px; height: 6px; background: var(--emerald); border-radius: 50%; box-shadow: 0 0 10px var(--emerald); animation: breathe 3s infinite; }
         .soul-aura { position: absolute; inset: 0; border: 1.5px solid rgba(16, 185, 129, 0.2); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; animation: morph 8s infinite linear; }
         @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.3); opacity: 1; } }
         @keyframes morph { 0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* TERMINAL STYLES */
         .terminal-parent { background: var(--grove-deep); border-radius: 2rem; color: #ecfdf5; min-height: 540px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; }
         .broadcast-ticker { position: relative; height: 40px; overflow: hidden; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(16, 185, 129, 0.05); }
         .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
         @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
 
+        /* GARDENER ANIMATIONS */
         .gardener-zone { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem 0; }
         .garden-plot { position: relative; width: 200px; height: 80px; }
         .gardener-emoji { position: absolute; font-size: 40px; bottom: 0; animation: walkAndSowEmoji 8s infinite ease-in-out; z-index: 10; }
@@ -60,11 +65,13 @@
             100% { opacity: 0; }
         }
 
+        /* VAULT RAIN */
         .vault-bg { position: relative; background: linear-gradient(to bottom, #061a14, #064e3b); border-radius: 2.5rem; overflow: hidden; min-height: 300px; display: flex; align-items: center; justify-content: center; }
         .cedis-rain { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
         .cedi-symbol { position: absolute; color: rgba(16, 185, 129, 0.15); font-weight: 900; font-size: 24px; animation: fall linear infinite; }
         @keyframes fall { from { transform: translateY(-50px) rotate(0deg); opacity: 1; } to { transform: translateY(350px) rotate(360deg); opacity: 0; } }
 
+        /* NAVIGATION TABS */
         .nav-pill { background: rgba(0, 0, 0, 0.3); padding: 4px; border-radius: 12px; display: flex; width: 100%; gap: 4px; }
         .tab-trigger { flex: 1; color: rgba(255,255,255,0.3); font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 10px 0; text-align: center; border-radius: 8px; }
         .tab-trigger.active { color: #fff; background: var(--grove-leaf); }
@@ -75,10 +82,10 @@
 <body class="max-w-md mx-auto" onclick="closeMenu()">
 
     <div id="nodeMenu" class="node-menu">
-        <button onclick="alert('Email Request')" class="menu-item">Change Email</button>
-        <button onclick="alert('Phone Request')" class="menu-item">Add Phone</button>
-        <button onclick="alert('Support Request')" class="menu-item">Report Issue</button>
-        <button onclick="confirm('Delete Account?')" class="menu-item text-rose-500">Delete Account</button>
+        <button onclick="requestOp('Email Update Requested')" class="menu-item">Change Email</button>
+        <button onclick="requestOp('Phone Addition Requested')" class="menu-item">Add Phone</button>
+        <button onclick="requestOp('Support Issue Reported')" class="menu-item">Report Issue</button>
+        <button onclick="confirmOp('Delete Account?')" class="menu-item text-rose-500">Delete Account</button>
         <button onclick="logout()" class="menu-item text-red-500 font-black">Exit</button>
     </div>
 
@@ -157,9 +164,13 @@
         const _gv = supabase.createClient(SB_URL, SB_KEY);
         let userObj = null, capturableSum = 0, vaultedSum = 0;
 
+        // UI HELPERS
         function toggleMenu(e) { e.stopPropagation(); document.getElementById('nodeMenu').classList.toggle('active'); }
         function closeMenu() { document.getElementById('nodeMenu').classList.remove('active'); }
+        function requestOp(msg) { alert(msg); closeMenu(); }
+        function confirmOp(msg) { if(confirm(msg)) alert("Request Sent"); closeMenu(); }
 
+        // PARTICLE SYSTEM
         function createParticles() {
             const seedBox = document.getElementById('seed-box'), cediBox = document.getElementById('cedis-box');
             seedBox.innerHTML = ''; cediBox.innerHTML = '';
@@ -188,9 +199,13 @@
 
         async function sync() {
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
-            const { data: missions } = await _gv.from('settled_needs').select('description').order('created_at', { ascending: false });
             
-            // FETCH DIRECTIVES FROM ADMIN
+            // TICKER LOGIC (REPRODUCTION OF ADMIN STATUS CHECK)
+            const { data: missions } = await _gv.from('settled_needs')
+                .select('description')
+                .eq('status', 'LIVE')
+                .order('created_at', { ascending: false });
+            
             const { data: messages } = await _gv.from('messages').select('*').eq('receiver_id', userObj.id).order('created_at', { ascending: false });
 
             // UPDATE TICKER
@@ -203,20 +218,20 @@
                 tickerEl.innerText = `${slogan} • HARVEST IN PROGRESS • SYNCING NODES...`;
             }
 
-            // UPDATE COMM TAB
+            // UPDATE COMM
             const commList = document.getElementById('comm-list');
             if (messages && messages.length > 0) {
                 commList.innerHTML = messages.map(msg => `
-                    <div class="bg-white/5 p-4 rounded-2xl border-l-2 border-emerald-500 text-left">
-                        <p class="text-[7px] font-black text-emerald-500 uppercase mb-1">${msg.sender_name || 'SYSTEM'}</p>
+                    <div class="bg-white/5 p-4 rounded-2xl border-l-2 border-emerald-500 mb-2 text-left">
+                        <p class="text-[7px] font-black text-emerald-500 uppercase mb-1">SYSTEM</p>
                         <p class="text-[10px] font-bold text-white leading-tight uppercase tracking-tight">${msg.content}</p>
                         <p class="text-[6px] text-white/20 mt-2 font-black uppercase">${new Date(msg.created_at).toLocaleTimeString()}</p>
-                    </div>
-                `).join('');
+                    </div>`).join('');
             } else {
                 commList.innerHTML = `<div class="py-10 text-center text-[8px] font-black opacity-30 uppercase tracking-[0.4em]">No Directives</div>`;
             }
 
+            // BALANCE AND LEDGER LOGIC
             const myLedger = (ledger || []).filter(l => l.user_id === userObj.id);
             const myClaims = myLedger.filter(l => l.entry_type === 'gift_received').map(c => c.description.split(': ')[1]?.trim());
             
@@ -229,18 +244,28 @@
                 if (type === 'withdrawal') totalWith += Math.abs(val);
             });
             
-            capturableSum = Math.max(0, totalRec - totalVault); vaultedSum = Math.max(0, totalVault - totalWith);
+            capturableSum = Math.max(0, totalRec - totalVault); 
+            vaultedSum = Math.max(0, totalVault - totalWith);
+
             document.getElementById('s-seed').innerText = `GH₵${seedAmt.toFixed(2)}`;
             document.getElementById('s-reclaim').innerText = `GH₵${capturableSum.toFixed(2)}`;
             document.getElementById('v-balance').innerText = `GH₵${vaultedSum.toFixed(2)}`;
             document.getElementById('m-avail').innerText = `GH₵${vaultedSum.toFixed(2)}`;
 
+            // ORCHARD SYSTEM
             const { data: broadcasts } = await _gv.from('ledger').select('*').eq('entry_type', 'gift_sent');
             const availableGifts = (broadcasts || []).filter(b => !myClaims.includes(b.id.toString()));
             
             const orchardContainer = document.getElementById('orchard-list');
             if (availableGifts.length > 0) {
-                orchardContainer.innerHTML = availableGifts.map(g => `<div class="bg-white/5 p-4 flex justify-between items-center rounded-2xl border border-white/5"><div><p class="text-sm font-black text-emerald-400 italic">GH₵${parseFloat(g.amount).toFixed(2)}</p><p class="text-[7px] font-black uppercase text-emerald-500/50">Grace Available</p></div><button onclick="claim('${g.id}', ${g.amount})" class="px-5 py-2 bg-emerald-600 text-white font-black text-[8px] uppercase rounded-lg">Capture</button></div>`).join('');
+                orchardContainer.innerHTML = availableGifts.map(g => `
+                    <div class="bg-white/5 p-4 flex justify-between items-center rounded-2xl border border-white/5">
+                        <div>
+                            <p class="text-sm font-black text-emerald-400 italic">GH₵${parseFloat(g.amount).toFixed(2)}</p>
+                            <p class="text-[7px] font-black uppercase text-emerald-500/50">Grace Available</p>
+                        </div>
+                        <button onclick="claim('${g.id}', ${g.amount})" class="px-5 py-2 bg-emerald-600 text-white font-black text-[8px] uppercase rounded-lg">Capture</button>
+                    </div>`).join('');
             } else {
                 orchardContainer.innerHTML = `
                 <div class="gardener-zone">
@@ -271,6 +296,7 @@
                 </div>`).join('');
         }
 
+        // TRANSACTIONAL LOGIC
         function calcCharge() { const val = (parseFloat(document.getElementById('w-amount').value) || 0) * 0.02; document.getElementById('charge-info').innerText = `2% Service Charge Deductible: GH₵${val.toFixed(2)}`; }
         async function claim(id, amt) { await _gv.from('ledger').insert([{ user_id: userObj.id, amount: amt, entry_type: 'gift_received', description: `Claim: ${id}` }]); sync(); }
         async function vaultAll() { if (capturableSum > 0) { await _gv.from('ledger').insert([{ user_id: userObj.id, amount: capturableSum, entry_type: 'seed', description: 'Vault Transfer' }]); sync(); } }
