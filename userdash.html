@@ -13,23 +13,31 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; min-height: 100vh; padding: 1rem; margin: 0; overflow-x: hidden; color: #1e293b; transition: filter 0.5s ease; }
         
         /* GATEKEEPER / SUSPENSION / WITHERED STATE */
-        body.withered { filter: grayscale(1) brightness(0.7); background: #020617; overflow: hidden; }
+        body.withered { filter: grayscale(1) brightness(0.7); background: #020617; overflow: hidden !important; }
         
         /* THE HARD LOCKOUT MODAL */
         #suspension-overlay { 
             display: none; 
             position: fixed; 
             inset: 0; 
-            z-index: 9999; /* Higher than everything else */
-            background: rgba(2, 6, 23, 0.85); 
-            backdrop-filter: blur(8px);
+            z-index: 9999; 
+            background: rgba(2, 6, 23, 0.95); 
+            backdrop-filter: blur(12px);
             align-items: center; 
             justify-content: center; 
             flex-direction: column;
             padding: 2rem;
             text-align: center;
+            pointer-events: auto !important; /* Forces this layer to catch all clicks */
         }
         body.withered #suspension-overlay { display: flex; }
+
+        /* Disable interaction for everything else when withered */
+        body.withered .seed-header, 
+        body.withered .terminal-parent, 
+        body.withered #nodeMenu { 
+            pointer-events: none !important; 
+        }
 
         /* HEADER STYLES & ANIMATIONS */
         .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; box-shadow: 0 4px 15px rgba(0,0,0,0.02); z-index: 50; }
@@ -93,14 +101,13 @@
                 </div>
                 <p id="overlay-status" class="text-[10px] font-black text-rose-500 tracking-[0.5em] uppercase italic mb-2">Awaiting Verification</p>
                 <p class="text-white/40 text-[9px] font-bold uppercase tracking-widest leading-loose">
-                    Initialization Successful. Terminal access restricted until admin verification.
+                    Node initialized. Access restricted until seed verification.
                 </p>
             </div>
 
-            <button onclick="logout()" class="w-full py-5 bg-rose-600 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-rose-900/40">
+            <button onclick="logout()" class="w-full py-5 bg-rose-600 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl shadow-2xl">
                 Disconnect Node
             </button>
-            <p class="mt-8 text-[7px] font-black text-white/10 uppercase tracking-[0.5em]">System: Standby</p>
         </div>
     </div>
 
@@ -202,6 +209,7 @@
 
         function createParticles() {
             const seedBox = document.getElementById('seed-box'), cediBox = document.getElementById('cedis-box');
+            if(!seedBox || !cediBox) return;
             seedBox.innerHTML = ''; cediBox.innerHTML = '';
             for(let i=0; i<15; i++) {
                 const s = document.createElement('div'); s.className = 'seed';
@@ -221,34 +229,36 @@
             const { data: { user } } = await _gv.auth.getUser();
             if(!user) return window.location.href = "index.html";
             userObj = user;
-            createParticles(); sync();
+            createParticles(); 
+            await sync();
             _gv.channel('any').on('postgres_changes', {event:'*', schema:'public'}, () => sync()).subscribe();
         }
 
         async function sync() {
-            // HARD LOCKOUT SECURITY CHECK
-            const { data: profile } = await _gv.from('profiles').select('is_suspended, is_verified').eq('id', userObj.id).single();
-            const isUnverified = profile?.is_verified === false;
+            // THE FIX: FETCH PROFILE AND HANDLE NULL/PENDING STATES
+            const { data: profile } = await _gv.from('profiles').select('is_suspended, is_verified').eq('id', userObj.id).maybeSingle();
+            
+            // If profile doesn't exist yet or is explicitly not true, it's pending.
+            const isUnverified = !profile || profile.is_verified !== true;
             const isSuspended = profile?.is_suspended === true;
 
             if (isUnverified || isSuspended) {
                 document.body.classList.add('withered');
-                document.getElementById('overlay-status').innerText = isUnverified ? "Awaiting Verification" : "Node Suspended";
-                document.getElementById('user-display').innerText = isUnverified ? "PENDING" : "SUSPENDED";
-                
-                // DATA SEVERING: STOP HERE
-                return; 
+                document.getElementById('overlay-status').innerText = isSuspended ? "Node Suspended" : "Awaiting Verification";
+                document.getElementById('user-display').innerText = isSuspended ? "SUSPENDED" : "PENDING";
+                return; // KILL SYNC HERE - Don't fetch balances for locked users
             } else {
                 document.body.classList.remove('withered');
                 document.getElementById('user-display').innerText = userObj.email.split('@')[0].toUpperCase();
             }
 
+            // Normal Sync Logic
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
             const { data: missions } = await _gv.from('settled_needs').select('description').eq('status', 'LIVE').order('created_at', { ascending: false });
             const { data: messages } = await _gv.from('messages').select('*').eq('receiver_id', userObj.id).order('created_at', { ascending: false });
 
             const slogan = "GIVERS NEVER LACK";
-            document.getElementById('ticker-output').innerText = missions?.length > 0 ? `${missions.map(m => m.description).join(' • ')} • ${slogan} • HARVEST IN PROGRESS...` : `${slogan} • HARVEST IN PROGRESS • SYNCING NODES...`;
+            document.getElementById('ticker-output').innerText = missions?.length > 0 ? `${missions.map(m => m.description).join(' • ')} • ${slogan}` : `${slogan} • SYNCING NODES...`;
 
             document.getElementById('comm-list').innerHTML = messages?.length ? messages.map(msg => `<div class="bg-white/5 p-4 rounded-2xl border-l-2 border-emerald-500 mb-2"><p class="text-[7px] font-black text-emerald-500 uppercase mb-1">SYSTEM</p><p class="text-[10px] font-bold text-white uppercase">${msg.content}</p></div>`).join('') : `<div class="py-10 text-center text-[8px] font-black opacity-30 uppercase tracking-[0.4em]">No Message</div>`;
 
@@ -260,7 +270,6 @@
                 const v = parseFloat(l.amount) || 0;
                 const type = (l.entry_type || "").toLowerCase();
                 const desc = (l.description || "").toLowerCase();
-                
                 if ((type === 'seed' || desc.includes('seed')) && !desc.includes('vault transfer')) sa += v;
                 if (type === 'gift_received') tr += v;
                 if (desc.includes('vault transfer')) tv += v;
@@ -310,6 +319,7 @@
         function openTab(id) { document.querySelectorAll('.tab-content, .tab-trigger').forEach(el => el.classList.remove('active')); document.getElementById(id).classList.add('active'); document.getElementById('btn-' + id.split('-')[1]).classList.add('active'); }
         function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
         async function logout() { await _gv.auth.signOut(); window.location.href = "index.html"; }
+        
         init();
         setInterval(sync, 15000);
     </script>
