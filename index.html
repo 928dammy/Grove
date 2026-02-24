@@ -148,27 +148,23 @@
             else window.location.href = "userdash.html";
         }
 
-        async function handleSignup() {
+                async function handleSignup() {
             const email = document.getElementById('reg-email').value;
             const password = document.getElementById('reg-pass').value;
             const gift = parseFloat(document.getElementById('gift-slider').value);
             const ref = document.getElementById('unique-ref').innerText;
 
-            if(!email || !password || ref === "----") return alert("Credentials and Email required for Reference.");
-
-            const overlay = document.createElement('div');
-            overlay.id = "seed-overlay";
-            overlay.innerHTML = `<div class="w-12 h-12 border-4 border-t-amber-400 border-white/10 rounded-full animate-spin"></div>`;
-            document.body.appendChild(overlay);
+            if(!email || !password || ref === "----") return alert("Credentials and Email required.");
 
             try {
+                // Step 1: Create Auth User
                 const { data, error: authErr } = await _gv.auth.signUp({ email, password });
                 if (authErr) throw authErr;
+                
                 if (data?.user) {
                     const userId = data.user.id;
                     
-                    // Note: We set is_verified to false. Admin must approve via Console.
-                    // payment_ref is stored so you can match it to your MoMo statement.
+                    // Step 2: Create Profile (Using exact names from our SQL)
                     const { error: profErr } = await _gv.from('profiles').upsert({ 
                         id: userId, 
                         email: email, 
@@ -177,24 +173,28 @@
                         is_verified: false,
                         payment_ref: ref
                     });
-                    if (profErr) throw profErr;
+                    if (profErr) {
+                        console.error("Profile Save Error:", profErr);
+                        throw new Error("Profile error: " + profErr.message);
+                    }
 
+                    // Step 3: Record Seed in Ledger
                     const { error: ledgerErr } = await _gv.from('ledger').insert([{ 
                         user_id: userId, 
                         amount: gift, 
                         entry_type: 'seed', 
-                        description: `Pending Activation (Ref: ${ref})` 
+                        description: `Initial Seed (Ref: ${ref})` 
                     }]);
                     if (ledgerErr) throw ledgerErr;
 
-                    overlay.innerHTML = `<h2 class="text-amber-400 font-black italic uppercase text-center px-6">Seed Received.<br><span class="text-[9px] text-white tracking-widest mt-2 block">Pending Verification of Ref: ${ref}</span></h2>`;
-                    setTimeout(() => { window.location.href = "userdash.html"; }, 3500);
+                    alert("Node Initialized! Awaiting Admin Verification.");
+                    window.location.href = "userdash.html";
                 }
             } catch (err) {
-                overlay.remove();
-                alert("Activation Error: " + err.message);
+                alert("Database Error: " + err.message);
             }
         }
+
 
         async function handleRecovery() {
             const email = document.getElementById('login-email').value;
