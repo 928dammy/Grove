@@ -28,7 +28,7 @@
             flex-direction: column;
             padding: 2rem;
             text-align: center;
-            pointer-events: auto !important; /* Forces this layer to catch all clicks */
+            pointer-events: auto !important;
         }
         body.withered #suspension-overlay { display: flex; }
 
@@ -235,10 +235,10 @@
         }
 
         async function sync() {
-            // THE FIX: FETCH PROFILE AND HANDLE NULL/PENDING STATES
+            // THE HARD LOCKOUT GATEKEEPER
             const { data: profile } = await _gv.from('profiles').select('is_suspended, is_verified').eq('id', userObj.id).maybeSingle();
             
-            // If profile doesn't exist yet or is explicitly not true, it's pending.
+            // Hard Lock Condition: If profile is missing or is_verified is NOT true
             const isUnverified = !profile || profile.is_verified !== true;
             const isSuspended = profile?.is_suspended === true;
 
@@ -246,13 +246,16 @@
                 document.body.classList.add('withered');
                 document.getElementById('overlay-status').innerText = isSuspended ? "Node Suspended" : "Awaiting Verification";
                 document.getElementById('user-display').innerText = isSuspended ? "SUSPENDED" : "PENDING";
-                return; // KILL SYNC HERE - Don't fetch balances for locked users
+                
+                // DEAD END: Stop all logic here so Orchard/Vault/Ledger are empty
+                return; 
             } else {
+                // ACCESS GRANTED: Remove barrier and continue
                 document.body.classList.remove('withered');
                 document.getElementById('user-display').innerText = userObj.email.split('@')[0].toUpperCase();
             }
 
-            // Normal Sync Logic
+            // Normal Sync Logic (Only runs if verified)
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
             const { data: missions } = await _gv.from('settled_needs').select('description').eq('status', 'LIVE').order('created_at', { ascending: false });
             const { data: messages } = await _gv.from('messages').select('*').eq('receiver_id', userObj.id).order('created_at', { ascending: false });
