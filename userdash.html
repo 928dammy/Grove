@@ -15,27 +15,21 @@
         /* GATEKEEPER / SUSPENSION / WITHERED STATE */
         body.withered { filter: grayscale(1) brightness(0.7); background: #020617; overflow: hidden; }
         
-        /* HARD LOCKOUT: DISABLE ALL CLICKS ON DASHBOARD */
-        body.withered .terminal-parent, 
-        body.withered .seed-header .flex-1,
-        body.withered .seed-header .seed-scatter { 
-            pointer-events: none !important; 
-            user-select: none;
-            opacity: 0.5;
+        /* THE HARD LOCKOUT MODAL */
+        #suspension-overlay { 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            z-index: 9999; /* Higher than everything else */
+            background: rgba(2, 6, 23, 0.85); 
+            backdrop-filter: blur(8px);
+            align-items: center; 
+            justify-content: center; 
+            flex-direction: column;
+            padding: 2rem;
+            text-align: center;
         }
-
-        #suspension-overlay { display: none; }
-        body.withered #suspension-overlay { 
-            display: flex; position: fixed; inset: 0; z-index: 45; 
-            background: rgba(0,0,0,0.4); backdrop-filter: blur(2px);
-            align-items: center; justify-content: center; pointer-events: none;
-        }
-
-        /* EXCEPTIONS: ALLOW THE MENU AND EXIT TO WORK */
-        body.withered .node-menu { pointer-events: auto !important; }
-        body.withered header button { pointer-events: auto !important; }
-        body.withered .node-menu .menu-item:not(:last-child) { opacity: 0.2; pointer-events: none; }
-        body.withered .node-menu .menu-item:last-child { opacity: 1; pointer-events: auto; }
+        body.withered #suspension-overlay { display: flex; }
 
         /* HEADER STYLES & ANIMATIONS */
         .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; box-shadow: 0 4px 15px rgba(0,0,0,0.02); z-index: 50; }
@@ -89,9 +83,24 @@
 <body class="max-w-md mx-auto" onclick="closeMenu()">
 
     <div id="suspension-overlay">
-        <div class="text-center p-8 bg-black/60 rounded-3xl backdrop-blur-md border border-white/10">
-            <p id="overlay-status" class="text-[10px] font-black text-rose-500 tracking-[0.5em] uppercase italic">Node Suspended</p>
-            <p class="text-[7px] text-white/40 uppercase mt-2 font-bold tracking-widest">Givers Never Lack • Action Required</p>
+        <div class="w-full max-w-xs">
+            <h2 class="text-emerald-500 font-black italic text-4xl tracking-tighter mb-2">GROVE</h2>
+            <p class="text-white/30 text-[8px] font-black uppercase tracking-[0.4em] mb-12">"Givers Never Lack"</p>
+            
+            <div class="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] mb-10">
+                <div class="w-10 h-10 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>
+                </div>
+                <p id="overlay-status" class="text-[10px] font-black text-rose-500 tracking-[0.5em] uppercase italic mb-2">Awaiting Verification</p>
+                <p class="text-white/40 text-[9px] font-bold uppercase tracking-widest leading-loose">
+                    Initialization Successful. Terminal access restricted until admin verification.
+                </p>
+            </div>
+
+            <button onclick="logout()" class="w-full py-5 bg-rose-600 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-rose-900/40">
+                Disconnect Node
+            </button>
+            <p class="mt-8 text-[7px] font-black text-white/10 uppercase tracking-[0.5em]">System: Standby</p>
         </div>
     </div>
 
@@ -227,7 +236,7 @@
                 document.getElementById('overlay-status').innerText = isUnverified ? "Awaiting Verification" : "Node Suspended";
                 document.getElementById('user-display').innerText = isUnverified ? "PENDING" : "SUSPENDED";
                 
-                // DATA SEVERING: DO NOT LOAD LEDGER OR ORCHARD FOR UNVERIFIED USERS
+                // DATA SEVERING: STOP HERE
                 return; 
             } else {
                 document.body.classList.remove('withered');
