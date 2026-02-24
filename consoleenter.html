@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GROVE | Management Terminal</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --emerald: #10b981; --grove-deep: #020617; }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--grove-deep); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            margin: 0;
+            color: white;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 320px;
+            padding: 2.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 3rem;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .input-field {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            border-color: var(--emerald);
+            background: rgba(16, 185, 129, 0.05);
+            outline: none;
+        }
+        .glitch-text {
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            letter-spacing: -0.05em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="text-center mb-10">
+            <div class="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
+                <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            </div>
+            <h1 class="text-xl font-black italic glitch-text">MANAGER TERMINAL</h1>
+            <p class="text-[8px] font-bold text-emerald-500/60 uppercase tracking-[0.3em] mt-2">Authorized Access Only</p>
+        </div>
+
+        <form id="admin-form" class="space-y-4">
+            <div>
+                <p class="text-[7px] font-black text-slate-500 uppercase mb-2 ml-4">Credential Identity</p>
+                <input type="email" id="email" required placeholder="manager@grove.com" 
+                    class="input-field w-full px-5 py-4 rounded-2xl text-xs font-semibold">
+            </div>
+            
+            <div class="mb-8">
+                <p class="text-[7px] font-black text-slate-500 uppercase mb-2 ml-4">Security Key</p>
+                <input type="password" id="password" required placeholder="••••••••" 
+                    class="input-field w-full px-5 py-4 rounded-2xl text-xs font-semibold">
+            </div>
+
+            <button type="submit" id="login-btn" 
+                class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl text-[9px] uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20">
+                Establish Connection
+            </button>
+        </form>
+
+        <div id="error-msg" class="mt-6 text-[8px] font-bold text-rose-500 uppercase text-center hidden">
+            Identity Verification Failed
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = window.CONFIG?.SB_URL;
+        const SB_KEY = window.CONFIG?.SB_KEY;
+        const _gv = supabase.createClient(SB_URL, SB_KEY);
+
+        document.getElementById('admin-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('login-btn');
+            const err = document.getElementById('error-msg');
+            
+            btn.innerText = "VERIFYING...";
+            btn.disabled = true;
+            err.classList.add('hidden');
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // 1. Sign in with Supabase Auth
+            const { data, error } = await _gv.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                handleFail(btn, err);
+                return;
+            }
+
+            // 2. Check if this user exists in the grove_admins table
+            // This prevents regular users from using this login page
+            const { data: adminRecord, error: adminError } = await _gv
+                .from('grove_admins')
+                .select('id')
+                .eq('id', data.user.id)
+                .maybeSingle();
+
+            if (adminError || !adminRecord) {
+                await _gv.auth.signOut(); // Kick them out immediately
+                handleFail(btn, err);
+                return;
+            }
+
+            // 3. SUCCESS - Access Granted
+            window.location.href = "admin-console.html";
+        });
+
+        function handleFail(btn, err) {
+            btn.innerText = "ESTABLISH CONNECTION";
+            btn.disabled = false;
+            err.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
