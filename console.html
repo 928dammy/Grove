@@ -165,6 +165,16 @@
             document.getElementById('btnFilterSeed').classList.toggle('active');
             sync(); 
         }
+        async function checkAdmin() {
+    const { data: { user } } = await _gv.auth.getUser();
+    // Replace with your actual admin email
+    if (!user || user.email !== 'your-admin-email@gmail.com') {
+        window.location.href = 'index.html'; 
+        return;
+    }
+}
+checkAdmin();
+
 
         async function sync() {
             const { data: { user } } = await _gv.auth.getUser();
