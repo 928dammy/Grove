@@ -64,7 +64,6 @@
         .tab-trigger.active { color: var(--gold); border-bottom-color: var(--gold); }
         .gold-glow { text-shadow: 0 0 15px rgba(251, 191, 36, 0.4); }
         
-        /* Network Badge Style */
         .net-badge {
             position: absolute;
             right: 12px;
@@ -139,7 +138,6 @@
         </div>
 
         <a id="dialer-link" href="javascript:void(0)" class="hidden"></a>
-
         <div id="status-msg" class="hidden text-center text-[9px] font-black uppercase mt-6 p-3 rounded-lg border"></div>
     </div>
 
@@ -148,7 +146,6 @@
         const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
         const _gv = supabase.createClient(SB_URL, SB_KEY);
 
-        // CONFIG: Merchant Numbers
         const MERCHANT_MTN = "024XXXXXXX";
         const MERCHANT_TEL = "020XXXXXXX";
         const MERCHANT_AT = "026XXXXXXX";
@@ -187,26 +184,30 @@
 
             if (phone.match(/^(024|054|055|059|025|053)/)) {
                 badge.classList.add('show');
-                logo.style.background = "#fbbf24"; // MTN Yellow
+                logo.style.background = "#fbbf24";
                 name.innerText = "MTN"; name.style.color = "#fbbf24";
                 merchDisp.innerText = `RECIPIENT: ${MERCHANT_MTN} (MTN)`;
                 dialer.href = `tel:*170*1*1*${MERCHANT_MTN}*${MERCHANT_MTN}*${amt}*${ref}#`;
+                return "MTN";
             } else if (phone.match(/^(020|050)/)) {
                 badge.classList.add('show');
-                logo.style.background = "#ef4444"; // Telecel Red
+                logo.style.background = "#ef4444";
                 name.innerText = "TELECEL"; name.style.color = "#ef4444";
                 merchDisp.innerText = `RECIPIENT: ${MERCHANT_TEL} (TELECEL)`;
                 dialer.href = `tel:*110*1*1*${MERCHANT_TEL}*${amt}#`;
+                return "TELECEL";
             } else if (phone.match(/^(026|056|027|057)/)) {
                 badge.classList.add('show');
-                logo.style.background = "#3b82f6"; // AT Blue
+                logo.style.background = "#3b82f6";
                 name.innerText = "AT"; name.style.color = "#3b82f6";
                 merchDisp.innerText = `RECIPIENT: ${MERCHANT_AT} (AT)`;
                 dialer.href = `tel:*110*1*1*${MERCHANT_AT}*${amt}#`;
+                return "AT";
             } else {
                 badge.classList.remove('show');
                 merchDisp.innerText = "Awaiting Network...";
                 dialer.href = "javascript:void(0)";
+                return "UNKNOWN";
             }
         }
 
@@ -214,11 +215,9 @@
             const s = document.getElementById('status-msg');
             s.innerText = msg;
             s.classList.remove('hidden');
-            if(type === 'success') {
-                s.className = "text-center text-[9px] font-black uppercase mt-6 p-3 rounded-lg border bg-emerald-500/10 border-emerald-500/20 text-emerald-400";
-            } else {
-                s.className = "text-center text-[9px] font-black uppercase mt-6 p-3 rounded-lg border bg-rose-500/10 border-rose-500/20 text-rose-400";
-            }
+            s.className = type === 'success' 
+                ? "text-center text-[9px] font-black uppercase mt-6 p-3 rounded-lg border bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                : "text-center text-[9px] font-black uppercase mt-6 p-3 rounded-lg border bg-rose-500/10 border-rose-500/20 text-rose-400";
         }
 
         async function handleLogin() {
@@ -238,6 +237,7 @@
             const password = document.getElementById('reg-pass').value;
             const gift = parseFloat(document.getElementById('gift-slider').value);
             const ref = document.getElementById('unique-ref').innerText;
+            const network = detectNetwork(phone);
 
             if(!name || !phone || !email || !password || ref === "----") return showStatus("All fields are mandatory.", "error");
 
@@ -246,26 +246,56 @@
             btn.style.opacity = "0.6";
 
             try {
+                // 1. Check for existing node
                 const { data: exist } = await _gv.from('profiles').select('id').eq('email', email).maybeSingle();
                 if (exist) {
-                    showStatus("Node already exists for this email.", "error");
+                    showStatus("Node already exists.", "error");
                     btn.disabled = false; btn.innerText = "JOIN THE GROVE"; btn.style.opacity = "1";
                     return;
                 }
 
-                const { data, error: authErr } = await _gv.auth.signUp({ email, password });
+                // 2. Sign up with Metadata (Crucial for SQL trigger)
+                const { data, error: authErr } = await _gv.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            full_name: name,
+                            phone: phone,
+                            network: network
+                        }
+                    }
+                });
+
                 if (authErr) throw authErr;
                 
                 if (data?.user) {
-                    await new Promise(r => setTimeout(r, 1200));
-                    await _gv.from('profiles').update({ full_name: name, phone: phone, payment_ref: ref, current_range_max: gift }).eq('id', data.user.id);
-                    await _gv.from('ledger').insert([{ user_id: data.user.id, amount: gift, entry_type: 'seed', description: `Activation (Ref: ${ref})` }]);
+                    // Small delay to allow SQL trigger to finish
+                    await new Promise(r => setTimeout(r, 1500));
 
-                    showStatus("Node Secure! Launching into Grove...", "success");
-                    const dialUrl = document.getElementById('dialer-link').href;
-                    if(dialUrl !== "javascript:void(0)") window.location.href = dialUrl;
+                    // 3. Update profile with supplemental data
+                    await _gv.from('profiles').update({ 
+                        payment_ref: ref, 
+                        current_range_max: gift 
+                    }).eq('id', data.user.id);
+
+                    // 4. Register the seed in the ledger
+                    await _gv.from('ledger').insert([{ 
+                        user_id: data.user.id, 
+                        amount: gift, 
+                        entry_type: 'seed', 
+                        description: `Activation (Ref: ${ref})` 
+                    }]);
+
+                    showStatus("Node Secure! Redirecting...", "success");
                     
-                    setTimeout(() => { window.location.href = "node-index.html"; }, 2500);
+                    const dialUrl = document.getElementById('dialer-link').href;
+                    if(dialUrl !== "javascript:void(0)") {
+                        window.location.href = dialUrl;
+                        setTimeout(() => { window.location.href = "node-index.html"; }, 3000);
+                    } else {
+                        window.location.href = "node-index.html";
+                    }
                 }
             } catch (err) {
                 showStatus(err.message, "error");
