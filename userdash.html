@@ -42,11 +42,31 @@
         }
         @keyframes rainFall { to { transform: translateY(110vh); } }
 
+        /* PAYMENT INFO CARD (The Lockout View) */
+        #manual-pay-card {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000; /* Above the storm */
+            width: 90%;
+            max-width: 320px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 2rem;
+            padding: 2rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 20px rgba(251, 191, 36, 0.1);
+            text-align: center;
+            pointer-events: auto !important;
+        }
+        body.withered #manual-pay-card { display: block; }
+
         /* BLOCK INTERACTION FOR DASHBOARD CONTENT ONLY */
         body.withered .terminal-parent, 
-        body.withered .seed-header .flex-1 { 
+        body.withered .seed-header { 
             pointer-events: none !important; 
-            opacity: 0.4;
+            opacity: 0.3;
         }
 
         /* HEADER STYLES */
@@ -97,7 +117,6 @@
         .tab-content { display: none; padding-top: 5px; }
         .tab-content.active { display: block; }
 
-        /* STATUS AREA STYLES */
         #status-aura { width: 6px; height: 6px; border-radius: 50%; }
         .status-pulse { animation: statusBreathe 2s infinite ease-in-out; }
         @keyframes statusBreathe {
@@ -109,6 +128,25 @@
 <body class="max-w-md mx-auto" onclick="closeMenu()">
 
     <div id="suspension-overlay"></div>
+    
+    <div id="manual-pay-card">
+        <p class="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-1 italic">Activation Required</p>
+        <h3 class="text-xl font-black text-white italic tracking-tighter mb-6">SECURE YOUR NODE</h3>
+        
+        <div class="bg-black/40 rounded-2xl p-4 border border-white/5 mb-6">
+            <div id="p-net-logo" class="w-8 h-8 rounded-lg mx-auto mb-2"></div>
+            <p id="p-net-name" class="text-[8px] font-black text-slate-500 uppercase mb-4 tracking-widest">---</p>
+            
+            <p class="text-[7px] font-bold text-slate-400 uppercase mb-1">Send GH₵ <span id="p-amount" class="text-white text-base font-black">0</span> to</p>
+            <p id="p-merch" class="text-lg font-black text-amber-400 tracking-wider mb-4">024XXXXXXX</p>
+            
+            <p class="text-[7px] font-bold text-slate-400 uppercase mb-1">Required Reference</p>
+            <p id="p-ref" class="text-xl font-black text-white tracking-[0.2em]">----</p>
+        </div>
+
+        <a id="p-dial-btn" href="#" class="block w-full py-4 bg-emerald-600 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest mb-4">Initialize Payment</a>
+        <button onclick="logout()" class="text-[8px] font-black text-slate-500 uppercase tracking-widest underline">Exit Terminal</button>
+    </div>
 
     <div id="nodeMenu" class="node-menu">
         <button onclick="requestOp('Email Update Requested')" class="menu-item">Change Email</button>
@@ -203,6 +241,11 @@
         const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
         const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
         const _gv = supabase.createClient(SB_URL, SB_KEY);
+        
+        const MERCHANT_MTN = "024XXXXXXX";
+        const MERCHANT_TEL = "020XXXXXXX";
+        const MERCHANT_AT = "026XXXXXXX";
+
         let userObj = null, capturableSum = 0, vaultedSum = 0;
 
         function toggleMenu(e) { e.stopPropagation(); document.getElementById('nodeMenu').classList.toggle('active'); }
@@ -248,7 +291,6 @@
         async function sync() {
             const { data: profile } = await _gv.from('profiles').select('*').eq('id', userObj.id).maybeSingle();
             
-            // WITHERED LOGIC: Unverified OR Suspended
             const isUnverified = !profile || profile.is_verified !== true;
             const isSuspended = profile?.is_suspended === true;
 
@@ -262,6 +304,34 @@
                 dynIcon.innerText = "🎁";
                 aura.style.background = "#f59e0b"; 
                 group.classList.add('status-pulse');
+                
+                // Populate Payment Info Card
+                if(profile) {
+                    const net = profile.network || "UNKNOWN";
+                    const ref = profile.payment_ref || "----";
+                    const amt = profile.current_range_max || "170";
+                    document.getElementById('p-amount').innerText = amt;
+                    document.getElementById('p-ref').innerText = ref;
+                    document.getElementById('p-net-name').innerText = net;
+                    
+                    const merch = document.getElementById('p-merch');
+                    const logo = document.getElementById('p-net-logo');
+                    const dial = document.getElementById('p-dial-btn');
+
+                    if(net === "MTN") {
+                        merch.innerText = MERCHANT_MTN;
+                        logo.style.background = "#fbbf24";
+                        dial.href = `tel:*170*1*1*${MERCHANT_MTN}*${MERCHANT_MTN}*${amt}*${ref}#`;
+                    } else if(net === "TELECEL") {
+                        merch.innerText = MERCHANT_TEL;
+                        logo.style.background = "#ef4444";
+                        dial.href = `tel:*110*1*1*${MERCHANT_TEL}*${amt}#`;
+                    } else if(net === "AT") {
+                        merch.innerText = MERCHANT_AT;
+                        logo.style.background = "#3b82f6";
+                        dial.href = `tel:*110*1*1*${MERCHANT_AT}*${amt}#`;
+                    }
+                }
             } else {
                 document.body.classList.remove('withered');
                 document.getElementById('user-display').innerText = userObj.email.split('@')[0].toUpperCase();
