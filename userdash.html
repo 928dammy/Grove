@@ -96,6 +96,14 @@
         .tab-trigger.active { color: #fff; background: var(--grove-leaf); }
         .tab-content { display: none; padding-top: 5px; }
         .tab-content.active { display: block; }
+
+        /* STATUS AREA STYLES */
+        #status-aura { width: 6px; height: 6px; border-radius: 50%; }
+        .status-pulse { animation: statusBreathe 2s infinite ease-in-out; }
+        @keyframes statusBreathe {
+            0%, 100% { opacity: 0.5; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
     </style>
 </head>
 <body class="max-w-md mx-auto" onclick="closeMenu()">
@@ -120,15 +128,19 @@
                     <p id="user-display" class="text-[7px] font-black text-emerald-600 uppercase italic">NODE ACTIVE</p>
                 </div>
             </div>
-            <button onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 uppercase border border-slate-100 px-4 py-1.5 rounded-lg bg-white relative z-[600]">ENGINE ROOM</button>
+            <button onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 uppercase border border-slate-100 px-4 py-1.5 rounded-lg bg-white relative z-[600] flex items-center gap-1">
+                <span>ENGINE ROOM</span> ⚙️
+            </button>
         </div>
         
         <div class="relative z-10 flex gap-3">
             <div class="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <div class="flex justify-between items-start mb-1">
-                    <p class="text-[8px] font-black text-slate-400 uppercase">Seed Base</p>
-                    <div id="status-icon" class="flex items-center gap-1">
-                        </div>
+                <div class="flex justify-between items-center mb-1">
+                    <div id="status-group" class="flex items-center gap-1.5">
+                        <p class="text-[8px] font-black text-slate-400 uppercase">Seed Base</p>
+                        <span id="dynamic-icon" class="text-[10px]"></span>
+                    </div>
+                    <div id="status-aura"></div>
                 </div>
                 <div class="text-sm font-black text-slate-900 tracking-tighter" id="s-seed">GH₵0.00</div>
             </div>
@@ -238,15 +250,22 @@
             const isUnverified = !profile || profile.is_verified !== true;
             const isSuspended = profile?.is_suspended === true;
 
-            const iconContainer = document.getElementById('status-icon');
+            const dynIcon = document.getElementById('dynamic-icon');
+            const aura = document.getElementById('status-aura');
+            const group = document.getElementById('status-group');
+
             if (isUnverified || isSuspended) {
                 document.body.classList.add('withered');
                 document.getElementById('user-display').innerText = isSuspended ? "SUSPENDED" : "PENDING";
-                iconContainer.innerHTML = `<span class="text-[6px] font-black text-amber-500 uppercase tracking-tighter">Withered</span><div class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>`;
+                dynIcon.innerText = "🎁";
+                aura.style.background = "#f59e0b"; 
+                group.classList.add('status-pulse');
             } else {
                 document.body.classList.remove('withered');
                 document.getElementById('user-display').innerText = userObj.email.split('@')[0].toUpperCase();
-                iconContainer.innerHTML = `<span class="text-[6px] font-black text-emerald-500 uppercase tracking-tighter">Vital</span><div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>`;
+                dynIcon.innerText = "🌞";
+                aura.style.background = "#10b981"; 
+                group.classList.remove('status-pulse');
             }
 
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
