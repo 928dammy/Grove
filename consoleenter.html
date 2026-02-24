@@ -103,12 +103,12 @@
             const { data, error } = await _gv.auth.signInWithPassword({ email, password });
 
             if (error) {
+                console.error("Auth Error:", error.message);
                 handleFail(btn, err);
                 return;
             }
 
             // 2. Check if this user exists in the grove_admins table
-            // This prevents regular users from using this login page
             const { data: adminRecord, error: adminError } = await _gv
                 .from('grove_admins')
                 .select('id')
@@ -116,12 +116,13 @@
                 .maybeSingle();
 
             if (adminError || !adminRecord) {
-                await _gv.auth.signOut(); // Kick them out immediately
+                console.error("Not an admin in DB table");
+                await _gv.auth.signOut(); 
                 handleFail(btn, err);
                 return;
             }
 
-            // 3. SUCCESS - Access Granted
+            // 3. SUCCESS - Redirect to the real file name
             window.location.href = "console.html";
         });
 
