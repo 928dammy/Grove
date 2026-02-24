@@ -149,52 +149,50 @@
         }
 
                 async function handleSignup() {
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-pass').value;
-            const gift = parseFloat(document.getElementById('gift-slider').value);
-            const ref = document.getElementById('unique-ref').innerText;
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-pass').value;
+    const gift = parseFloat(document.getElementById('gift-slider').value);
+    const ref = document.getElementById('unique-ref').innerText;
 
-            if(!email || !password || ref === "----") return alert("Credentials and Email required.");
+    if(!email || !password || ref === "----") return alert("Please fill all fields.");
 
-            try {
-                // Step 1: Create Auth User
-                const { data, error: authErr } = await _gv.auth.signUp({ email, password });
-                if (authErr) throw authErr;
-                
-                if (data?.user) {
-                    const userId = data.user.id;
-                    
-                    // Step 2: Create Profile (Using exact names from our SQL)
-                    const { error: profErr } = await _gv.from('profiles').upsert({ 
-                        id: userId, 
-                        email: email, 
-                        full_name: email.split('@')[0], 
-                        current_range_max: gift,
-                        is_verified: false,
-                        payment_ref: ref
-                    });
-                    if (profErr) {
-                        console.error("Profile Save Error:", profErr);
-                        throw new Error("Profile error: " + profErr.message);
-                    }
+    try {
+        // Step 1: Sign up the user in Auth
+        const { data, error: authErr } = await _gv.auth.signUp({ email, password });
+        if (authErr) throw authErr;
+        
+        if (data?.user) {
+            const userId = data.user.id;
+            
+            // Give the trigger a moment to create the profile row
+            await new Promise(r => setTimeout(r, 1200));
 
-                    // Step 3: Record Seed in Ledger
-                    const { error: ledgerErr } = await _gv.from('ledger').insert([{ 
-                        user_id: userId, 
-                        amount: gift, 
-                        entry_type: 'seed', 
-                        description: `Initial Seed (Ref: ${ref})` 
-                    }]);
-                    if (ledgerErr) throw ledgerErr;
+            // Step 2: Update the automatically created profile with the Gift and Ref
+            const { error: profErr } = await _gv.from('profiles').update({ 
+                payment_ref: ref,
+                current_range_max: gift
+            }).eq('id', userId);
+            
+            if (profErr) throw new Error("Profile Update Failed: " + profErr.message);
 
-                    alert("Node Initialized! Awaiting Admin Verification.");
-                    window.location.href = "userdash.html";
-                }
-            } catch (err) {
-                alert("Database Error: " + err.message);
-            }
+            // Step 3: Insert the Seed record into the Ledger
+            const { error: ledgerErr } = await _gv.from('ledger').insert([{ 
+                user_id: userId, 
+                amount: gift, 
+                entry_type: 'seed', 
+                description: `Pending Activation (Ref: ${ref})` 
+            }]);
+            
+            if (ledgerErr) throw new Error("Ledger Entry Failed: " + ledgerErr.message);
+
+            alert("Seed Planted! Awaiting Admin Verification.");
+            window.location.href = "userdash.html";
         }
-
+    } catch (err) {
+        alert("Database Error: " + err.message);
+        console.error(err);
+    }
+}
 
         async function handleRecovery() {
             const email = document.getElementById('login-email').value;
