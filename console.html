@@ -129,45 +129,29 @@
         <div class="nav-link" onclick="openTab(event, 'ledger')"><span>📜</span><span class="text-[8px] font-black uppercase mt-1">Ledger</span></div>
     </nav>
 
-        <script>
+    <script>
         const SB_URL = window.CONFIG?.SB_URL;
         const SB_KEY = window.CONFIG?.SB_KEY;
-        // Check if Supabase is actually loaded
-        if (typeof supabase === 'undefined') {
-            alert("Supabase script failed to load. Check your internet connection.");
-        }
         const _gv = supabase.createClient(SB_URL, SB_KEY);
         let adminUser = null;
 
         async function sync() {
-            console.log("Syncing Grove Data...");
             try {
-                // BYPASS AUTH CHECK: Try to get user, but don't stop if it fails
                 const { data: authData } = await _gv.auth.getUser().catch(e => ({data: {user: null}}));
                 adminUser = authData?.user;
 
-                // 1. Fetching EVERYTHING - No Omissions
+                // Strict fetching from our new schema
                 const { data: nodes, error: nErr } = await _gv.from('profiles').select('*');
                 const { data: ledger, error: lErr } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
-                
-                // Use a fallback for missions if table doesn't exist yet
-                const { data: missions, error: mErr } = await _gv.from('settled_needs').select('*').neq('status', 'ARCHIVED').order('created_at', { ascending: false }).catch(() => ({data: []}));
+                const { data: missions } = await _gv.from('settled_needs').select('*').neq('status', 'ARCHIVED').order('created_at', { ascending: false });
 
-                if (nErr) {
-                    console.error("Database Error (Profiles):", nErr.message);
-                    document.getElementById('nodeList').innerHTML = `<p class="text-rose-500 text-[10px] p-10 text-center uppercase font-black">Database Connection Error: ${nErr.message}</p>`;
-                    return;
-                }
+                if (nErr) throw nErr;
 
                 let globalSeeded = 0, globalWithdrawn = 0, totalVaulted = 0;
                 const nodeDetails = {};
                 
                 nodes?.forEach(n => { 
-                    nodeDetails[n.id] = { 
-                        seeded: 0, vaulted: 0, withdrawn: 0, 
-                        email: n.email || 'Node', is_verified: n.is_verified, 
-                        is_suspended: n.is_suspended, payment_ref: n.payment_ref || 'NO REF' 
-                    }; 
+                    nodeDetails[n.id] = { seeded: 0, vaulted: 0, withdrawn: 0 }; 
                 });
 
                 ledger?.forEach(l => {
@@ -192,14 +176,14 @@
                 const totalBurn = missions?.reduce((sum, m) => sum + (parseFloat(m.cost_to_settle) || 0), 0) || 0;
                 const grovePool = globalSeeded - totalBurn - globalWithdrawn;
 
-                // Stats Updates
+                // Update Header Stats
                 document.getElementById('stat-pool').innerText = `GH₵${grovePool.toFixed(2)}`;
                 document.getElementById('stat-vaulted').innerText = `GH₵${totalVaulted.toFixed(2)}`;
                 document.getElementById('stat-seeded').innerText = `GH₵${globalSeeded.toFixed(0)}`;
                 document.getElementById('stat-withdrawn').innerText = `GH₵${globalWithdrawn.toFixed(0)}`;
                 document.getElementById('stat-nodes').innerText = nodes?.length || 0;
 
-                // Payouts Render
+                // Render Payouts Tab
                 const withdrawals = ledger?.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID'));
                 document.getElementById('payoutList').innerHTML = withdrawals?.length ? withdrawals.map(w => `
                     <div class="auth-card p-5 border border-emerald-500/20 mb-3">
@@ -209,18 +193,18 @@
                         </div>
                     </div>`).join('') : `<div class="py-20 text-center opacity-20"><p class="text-[8px] font-black uppercase">No Payouts Pending</p></div>`;
 
-                // Nodes Render
+                // Render Nodes Tab
                 if (nodes && nodes.length > 0) {
                     document.getElementById('nodeList').innerHTML = nodes.map(n => {
-                        const stats = nodeDetails[n.id];
+                        const stats = nodeDetails[n.id] || {seeded:0, vaulted:0, withdrawn:0};
                         return `<div class="auth-card p-4 border ${n.is_verified ? 'border-white/5' : 'border-amber-500/20'}">
                             <div class="flex justify-between items-start mb-4">
-                                <div><p class="text-[10px] font-black uppercase ${n.is_suspended ? 'text-rose-400' : 'text-white'}">${n.email?.split('@')[0]}</p><p class="text-[7px] text-slate-500 uppercase mt-1">REF: ${n.payment_ref || 'PENDING'}</p></div>
+                                <div><p class="text-[10px] font-black uppercase ${n.is_suspended ? 'text-rose-400' : 'text-white'}">${n.email?.split('@')[0] || 'NODE'}</p><p class="text-[7px] text-slate-500 uppercase mt-1">REF: ${n.payment_ref || 'PENDING'}</p></div>
                                 <span class="text-[6px] font-black px-2 py-0.5 rounded bg-white/5 ${n.is_verified ? 'text-emerald-400' : 'text-amber-500'} uppercase border border-white/5">${n.is_verified ? 'Verified Node' : 'Awaiting Activation'}</span>
                             </div>
                             <div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-3 rounded-xl border border-white/5">
                                 <div class="text-center"><p class="text-[6px] text-slate-500 uppercase font-bold">Seeded</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div>
-                                <div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase font-bold">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted - stats.withdrawn).toFixed(2)}</p></div>
+                                <div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase font-bold">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${(stats.vaulted - stats.withdrawn).toFixed(2)}</p></div>
                                 <div class="text-center"><p class="text-[6px] text-rose-500 uppercase font-bold">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div>
                             </div>
                             <div class="grid grid-cols-4 gap-2">
@@ -235,46 +219,99 @@
                     document.getElementById('nodeList').innerHTML = `<p class="p-10 text-center text-[10px] font-black uppercase opacity-20">No Users in Database</p>`;
                 }
 
-                // Missions & Ledger Render (Keep original logic)
+                // Render Missions
                 document.getElementById('missionLog').innerHTML = missions?.map(m => `
                     <div class="auth-card p-3 flex justify-between items-center border-white/5 mb-2">
                         <div><p class="text-[9px] font-black uppercase text-amber-500">${m.description}</p><p class="text-[7px] text-slate-500 font-bold">₵${parseFloat(m.cost_to_settle).toFixed(2)}</p></div>
                         <button onclick="archiveMission('${m.id}')" class="p-2 bg-rose-500/10 text-rose-400 rounded-lg text-[7px] font-black uppercase italic">Clear</button>
                     </div>`).join('') || '';
 
-                document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 15).map(l => `
+                // Render Ledger
+                document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 15).map(l => {
+                    const node = nodes?.find(p => p.id === l.user_id);
+                    return `
                     <div class="p-4 flex justify-between items-center text-[10px] border-b border-white/5">
-                        <div><p class="font-black uppercase text-[8px]">${nodes?.find(p => p.id === l.user_id)?.email?.split('@')[0] || "ADMIN"}</p><p class="italic text-white/40 text-[9px]">${l.entry_type}</p></div>
+                        <div><p class="font-black uppercase text-[8px]">${node ? node.email.split('@')[0] : "SYSTEM"}</p><p class="italic text-white/40 text-[9px]">${l.entry_type}</p></div>
                         <p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p>
-                    </div>`).join('') || '';
+                    </div>`;
+                }).join('') || '';
 
-            } catch (err) { 
-                console.error("Critical Sync Error:", err); 
-            }
+            } catch (err) { console.error("Sync Error:", err); }
         }
 
-        // Functions (Keep original logic)
-        async function approvePayout(id, currentDesc) { if(confirm("Confirm payout?")) { await _gv.from('ledger').update({ description: 'PAID: ' + currentDesc }).eq('id', id); sync(); } }
-        async function toggleVerify(id, v) { await _gv.from('profiles').update({ is_verified: !v }).eq('id', id); sync(); }
+        async function approvePayout(id, currentDesc) { 
+            if(confirm("Confirm payout?")) { 
+                await _gv.from('ledger').update({ description: 'PAID: ' + currentDesc }).eq('id', id); 
+                sync(); 
+            } 
+        }
+
+        async function toggleVerify(id, v) { 
+            await _gv.from('profiles').update({ is_verified: !v }).eq('id', id); 
+            sync(); 
+        }
+
         async function postMission() {
             const t = document.getElementById('mTitle').value, c = document.getElementById('mCost').value;
             if(!t || !c) return;
             await _gv.from('settled_needs').insert([{ description: t.toUpperCase(), cost_to_settle: parseFloat(c), status: 'LIVE' }]);
-            if(adminUser) await _gv.from('ledger').insert([{ user_id: adminUser.id, amount: -parseFloat(c), entry_type: 'mission_spend', description: `MISSION: ${t}` }]);
             sync();
         }
+
         async function updateRange() { 
             const e = document.getElementById('targetEmail').value, min = document.getElementById('minRange').value, max = document.getElementById('maxRange').value;
-            await _gv.from('profiles').update({ current_range_min: parseFloat(min), current_range_max: parseFloat(max), is_gifter: true }).eq('email', e); 
-            sync(); alert("Node Authorized."); 
+            const { error } = await _gv.from('profiles').update({ 
+                current_range_min: parseFloat(min), 
+                current_range_max: parseFloat(max), 
+                is_gifter: true 
+            }).eq('email', e); 
+            if(error) alert(error.message);
+            else { sync(); alert("Gifter Node Authorized."); }
         }
-        async function broadcastGrace() { const a = document.getElementById('distAmount').value; if(a) await _gv.from('ledger').insert([{ amount: parseFloat(a), entry_type: 'gift_sent', description: 'Stable Grace' }]); sync(); }
-        async function broadcastWither() { const a = document.getElementById('wAmount').value, m = document.getElementById('wMins').value; if(a && m) { const ex = new Date(Date.now() + m * 60000).toISOString(); await _gv.from('ledger').insert([{ amount: parseFloat(a), entry_type: 'gift_sent', description: `Wither Grace | ${ex}` }]); sync(); } }
-        async function toggleSuspend(id, s) { await _gv.from('profiles').update({ is_suspended: !s }).eq('id', id); sync(); }
-        async function expelNode(id) { if(confirm("Expel?")) { await _gv.from('profiles').delete().eq('id', id); sync(); } }
-        async function broadcastToNode(id) { const m = prompt("Directive:"); if(m) await _gv.from('messages').insert([{ receiver_id: id, sender_name: "SYSTEM", content: m.toUpperCase() }]); }
-        async function systemReset() { if(confirm("WIPE SYSTEM?")) { await _gv.rpc('reset_system'); sync(); } }
-        async function archiveMission(id) { await _gv.from('settled_needs').update({ status: 'ARCHIVED' }).eq('id', id); sync(); }
+
+        async function broadcastGrace() { 
+            const a = document.getElementById('distAmount').value; 
+            if(a) await _gv.from('ledger').insert([{ amount: parseFloat(a), entry_type: 'gift_sent', description: 'Stable Grace' }]); 
+            sync(); 
+        }
+
+        async function broadcastWither() { 
+            const a = document.getElementById('wAmount').value, m = document.getElementById('wMins').value; 
+            if(a && m) { 
+                const ex = new Date(Date.now() + m * 60000).toISOString(); 
+                await _gv.from('ledger').insert([{ amount: parseFloat(a), entry_type: 'gift_sent', description: `Wither Grace | ${ex}` }]); 
+                sync(); 
+            } 
+        }
+
+        async function toggleSuspend(id, s) { 
+            await _gv.from('profiles').update({ is_suspended: !s }).eq('id', id); 
+            sync(); 
+        }
+
+        async function expelNode(id) { 
+            if(confirm("Expel?")) { 
+                await _gv.from('profiles').delete().eq('id', id); 
+                sync(); 
+            } 
+        }
+
+        async function broadcastToNode(id) { 
+            const m = prompt("Directive:"); 
+            if(m) await _gv.from('messages').insert([{ receiver_id: id, sender_name: "SYSTEM", content: m.toUpperCase() }]); 
+        }
+
+        async function systemReset() { 
+            if(confirm("WIPE SYSTEM?")) { 
+                await _gv.rpc('reset_system'); 
+                sync(); 
+            } 
+        }
+
+        async function archiveMission(id) { 
+            await _gv.from('settled_needs').update({ status: 'ARCHIVED' }).eq('id', id); 
+            sync(); 
+        }
 
         function openTab(e, n) { 
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); 
@@ -284,8 +321,7 @@
         }
 
         sync();
-        setInterval(sync, 15000);
+        setInterval(sync, 10000);
     </script>
-
 </body>
 </html>
