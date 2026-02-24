@@ -15,15 +15,15 @@
         /* THE WITHERED STORM STATE */
         body.withered { filter: grayscale(0.5) brightness(0.6); overflow: hidden !important; background: #020617; }
         
-        /* THE STORM OVERLAY (PURE ATMOSPHERE) */
+        /* THE STORM OVERLAY */
         #suspension-overlay { 
             display: none; 
             position: fixed; 
             inset: 0; 
-            z-index: 80; /* Sits behind the Menu but over the Dash */
+            z-index: 80; 
             background: rgba(2, 6, 23, 0.4); 
             backdrop-filter: blur(10px);
-            pointer-events: none; /* Allows clicks to pass through to the Header/Menu */
+            pointer-events: none; 
         }
         body.withered #suspension-overlay { display: block; animation: lightning 5s infinite; }
 
@@ -49,7 +49,7 @@
             opacity: 0.4;
         }
 
-        /* HEADER STYLES & ANIMATIONS */
+        /* HEADER STYLES */
         .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; box-shadow: 0 4px 15px rgba(0,0,0,0.02); z-index: 100; }
         .seed-scatter { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; border-radius: 2rem; }
         .seed { position: absolute; background: var(--emerald); border-radius: 50%; opacity: 0; animation: scatterGrow 4s infinite ease-out; }
@@ -60,7 +60,7 @@
         }
 
         /* NODE MENU */
-        .node-menu { position: fixed; top: 75px; right: 2rem; width: 180px; background: white; border-radius: 1.5rem; border: 1px solid #f1f5f9; box-shadow: 0 15px 35px rgba(0,0,0,0.15); display: none; z-index: 200; overflow: hidden; }
+        .node-menu { position: fixed; top: 75px; right: 2rem; width: 180px; background: white; border-radius: 1.5rem; border: 1px solid #f1f5f9; box-shadow: 0 15px 35px rgba(0,0,0,0.15); display: none; z-index: 500; overflow: hidden; }
         .node-menu.active { display: block; animation: menuFade 0.2s ease-out; }
         @keyframes menuFade { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .menu-item { width: 100%; padding: 14px 20px; text-align: left; font-size: 9px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #f8fafc; color: #64748b; cursor: pointer; }
@@ -120,12 +120,16 @@
                     <p id="user-display" class="text-[7px] font-black text-emerald-600 uppercase italic">NODE ACTIVE</p>
                 </div>
             </div>
-            <button onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 uppercase border border-slate-100 px-4 py-1.5 rounded-lg bg-white relative z-[300]">ENGINE ROOM</button>
+            <button onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 uppercase border border-slate-100 px-4 py-1.5 rounded-lg bg-white relative z-[600]">ENGINE ROOM</button>
         </div>
         
         <div class="relative z-10 flex gap-3">
             <div class="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Seed Base</p>
+                <div class="flex justify-between items-start mb-1">
+                    <p class="text-[8px] font-black text-slate-400 uppercase">Seed Base</p>
+                    <div id="status-icon" class="flex items-center gap-1">
+                        </div>
+                </div>
                 <div class="text-sm font-black text-slate-900 tracking-tighter" id="s-seed">GH₵0.00</div>
             </div>
             <div class="flex-1 bg-emerald-50 p-4 rounded-2xl border-b-2 border-emerald-200">
@@ -168,7 +172,7 @@
         </div>
     </main>
 
-    <div id="withdrawModal" class="fixed inset-0 bg-black/95 hidden z-[400] items-center justify-center p-6 text-slate-900">
+    <div id="withdrawModal" class="fixed inset-0 bg-black/95 hidden z-[700] items-center justify-center p-6 text-slate-900">
         <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-xs">
             <p class="text-[10px] font-black uppercase text-emerald-600 mb-1">Claim Vaulted</p>
             <p class="text-[8px] font-bold text-slate-400 mb-6 italic uppercase">Available: <span id="m-avail" class="text-slate-900">GH₵0.00</span></p>
@@ -198,8 +202,6 @@
             const seedBox = document.getElementById('seed-box'), cediBox = document.getElementById('cedis-box'), overlay = document.getElementById('suspension-overlay');
             if(!seedBox || !cediBox) return;
             seedBox.innerHTML = ''; cediBox.innerHTML = '';
-            
-            // Add Rain to overlay
             for(let i=0; i<40; i++) {
                 const drop = document.createElement('div');
                 drop.className = 'rain-drop';
@@ -208,7 +210,6 @@
                 drop.style.animationDuration = (Math.random() * 0.4 + 0.4) + 's';
                 overlay.appendChild(drop);
             }
-
             for(let i=0; i<15; i++) {
                 const s = document.createElement('div'); s.className = 'seed';
                 s.style.width = s.style.height = `${Math.random()*4+2}px`;
@@ -237,12 +238,15 @@
             const isUnverified = !profile || profile.is_verified !== true;
             const isSuspended = profile?.is_suspended === true;
 
+            const iconContainer = document.getElementById('status-icon');
             if (isUnverified || isSuspended) {
                 document.body.classList.add('withered');
                 document.getElementById('user-display').innerText = isSuspended ? "SUSPENDED" : "PENDING";
+                iconContainer.innerHTML = `<span class="text-[6px] font-black text-amber-500 uppercase tracking-tighter">Withered</span><div class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>`;
             } else {
                 document.body.classList.remove('withered');
                 document.getElementById('user-display').innerText = userObj.email.split('@')[0].toUpperCase();
+                iconContainer.innerHTML = `<span class="text-[6px] font-black text-emerald-500 uppercase tracking-tighter">Vital</span><div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>`;
             }
 
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
