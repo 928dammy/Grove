@@ -130,8 +130,8 @@
     </nav>
 
     <script>
-        const SB_URL = window.CONFIG?.SB_URL;
-        const SB_KEY = window.CONFIG?.SB_KEY;
+        const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
+        const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
         const _gv = supabase.createClient(SB_URL, SB_KEY);
         let adminUser = null;
 
@@ -140,18 +140,32 @@
                 const { data: { user } } = await _gv.auth.getUser();
                 adminUser = user;
 
-                const { data: nodes } = await _gv.from('profiles').select('*');
-                const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
-                const { data: missions } = await _gv.from('settled_needs').select('*').neq('status', 'ARCHIVED').order('created_at', { ascending: false });
+                // 1. Fetch data with full table error safety
+                const { data: nodes, error: nErr } = await _gv.from('profiles').select('*');
+                const { data: ledger, error: lErr } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
+                
+                // Mission fetch with safety fallback to prevent entire page crash if table empty
+                const { data: missions } = await _gv.from('settled_needs').select('*').neq('status', 'ARCHIVED').order('created_at', { ascending: false }).catch(() => ({data: []}));
+
+                if (nErr) console.error("Profile Fetch Error:", nErr);
 
                 let globalSeeded = 0, globalWithdrawn = 0, totalVaulted = 0;
                 const nodeDetails = {};
                 
-                // Initialize nodes to ensure they appear even with zero transactions
+                // 2. Map every profile entry immediately so unverified users show up
                 nodes?.forEach(n => { 
-                    nodeDetails[n.id] = { seeded: 0, vaulted: 0, withdrawn: 0, email: n.email, is_verified: n.is_verified, is_suspended: n.is_suspended }; 
+                    nodeDetails[n.id] = { 
+                        seeded: 0, 
+                        vaulted: 0, 
+                        withdrawn: 0, 
+                        email: n.email || 'Node', 
+                        is_verified: n.is_verified, 
+                        is_suspended: n.is_suspended,
+                        payment_ref: n.payment_ref || 'NO REF' 
+                    }; 
                 });
 
+                // 3. Process Ledger Math
                 ledger?.forEach(l => {
                     const val = parseFloat(l.amount) || 0;
                     const type = (l.entry_type || "").toLowerCase();
@@ -195,32 +209,33 @@
                         </div>
                     </div>`).join('') : `<div class="py-20 text-center opacity-20"><p class="text-[8px] font-black uppercase tracking-[0.5em]">No Payouts Pending</p></div>`;
 
-                // Render Node List
-                document.getElementById('nodeList').innerHTML = Object.entries(nodeDetails).map(([id, n]) => {
-                    const vColor = n.is_verified ? 'text-emerald-400' : 'text-amber-500';
-                    return `<div class="auth-card p-4">
+                // 4. Render Node List (Mapping directly from nodes list to ensure all 18 appear)
+                document.getElementById('nodeList').innerHTML = nodes?.sort((a,b) => a.is_verified - b.is_verified).map(n => {
+                    const stats = nodeDetails[n.id];
+                    const vColor = n.is_verified ? 'text-emerald-400' : 'text-amber-500 animate-pulse';
+                    return `<div class="auth-card p-4 border ${n.is_verified ? 'border-white/5' : 'border-amber-500/20'}">
                         <div class="flex justify-between items-start mb-4">
                             <div>
-                                <p class="text-[10px] font-black uppercase ${n.is_suspended ? 'text-rose-400' : 'text-emerald-400'}">${n.email.split('@')[0]}</p>
-                                <p class="text-[7px] text-slate-500 uppercase mt-1">${n.email}</p>
+                                <p class="text-[10px] font-black uppercase ${n.is_suspended ? 'text-rose-400' : 'text-white'}">${n.email?.split('@')[0]}</p>
+                                <p class="text-[7px] text-slate-500 uppercase mt-1">REF: ${n.payment_ref || 'PENDING'}</p>
                             </div>
                             <div class="flex items-center gap-2">
-                                 <span class="text-[6px] font-black px-2 py-0.5 rounded bg-white/5 ${vColor} uppercase border border-white/5">${n.is_verified ? 'Verified Node' : 'Unverified'}</span>
+                                 <span class="text-[6px] font-black px-2 py-0.5 rounded bg-white/5 ${vColor} uppercase border border-white/5">${n.is_verified ? 'Verified Node' : 'Awaiting Activation'}</span>
                             </div>
                         </div>
                         <div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-3 rounded-xl border border-white/5">
-                            <div class="text-center"><p class="text-[6px] text-slate-500 uppercase font-bold">Seeded</p><p class="text-[9px] font-black">₵${n.seeded.toFixed(0)}</p></div>
-                            <div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase font-bold">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, n.vaulted-n.withdrawn).toFixed(2)}</p></div>
-                            <div class="text-center"><p class="text-[6px] text-rose-500 uppercase font-bold">Taken</p><p class="text-[9px] font-black text-rose-400">₵${n.withdrawn.toFixed(0)}</p></div>
+                            <div class="text-center"><p class="text-[6px] text-slate-500 uppercase font-bold">Seeded</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div>
+                            <div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase font-bold">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted - stats.withdrawn).toFixed(2)}</p></div>
+                            <div class="text-center"><p class="text-[6px] text-rose-500 uppercase font-bold">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div>
                         </div>
                         <div class="grid grid-cols-4 gap-2">
-                            <button onclick="broadcastToNode('${id}')" class="btn-action btn-msg">Msg</button>
-                            <button onclick="toggleSuspend('${id}', ${n.is_suspended})" class="btn-action btn-freeze">${n.is_suspended ? 'Rel' : 'Susp'}</button>
-                            <button onclick="toggleVerify('${id}', ${n.is_verified})" class="btn-action bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-black">${n.is_verified ? 'Lock' : 'Verify'}</button>
-                            <button onclick="expelNode('${id}')" class="btn-action btn-expel">Expel</button>
+                            <button onclick="broadcastToNode('${n.id}')" class="btn-action btn-msg">Msg</button>
+                            <button onclick="toggleSuspend('${n.id}', ${n.is_suspended})" class="btn-action btn-freeze">${n.is_suspended ? 'Rel' : 'Susp'}</button>
+                            <button onclick="toggleVerify('${n.id}', ${n.is_verified})" class="btn-action ${n.is_verified ? 'bg-white/5 text-slate-500' : 'bg-emerald-500 text-black'} font-black">${n.is_verified ? 'Lock' : 'ACTIVATE'}</button>
+                            <button onclick="expelNode('${n.id}')" class="btn-action btn-expel">Expel</button>
                         </div>
                     </div>`;
-                }).join('');
+                }).join('') || `<div class="py-10 text-center opacity-20 text-[8px] font-black uppercase">No Nodes Found</div>`;
 
                 // Render Mission Log
                 document.getElementById('missionLog').innerHTML = missions?.map(m => {
@@ -230,7 +245,7 @@
 
                 // Render Ledger
                 document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 15).map(l => {
-                    const userName = nodes?.find(p => p.id === l.user_id)?.email.split('@')[0] || "👑 ADMIN";
+                    const userName = nodes?.find(p => p.id === l.user_id)?.email?.split('@')[0] || "👑 ADMIN";
                     return `<div class="p-4 flex justify-between items-center text-[10px] border-b border-white/5"><div><p class="font-black uppercase ${!l.user_id ? 'text-emerald-500' : 'text-slate-500'} text-[8px]">${userName}</p><p class="italic text-white/40 text-[9px]">${l.entry_type}</p><p class="text-[7px] text-slate-500 uppercase">${l.description || ''}</p></div><p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p></div>`;
                 }).join('');
 
