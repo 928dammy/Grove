@@ -167,30 +167,34 @@
         }
 
         async function checkAdmin() {
-            const { data: { user } } = await _gv.auth.getUser();
-            
-            if (!user) {
-                window.location.href = 'consoleenter.html';
-                return;
-            }
+    const { data: { user }, error: userError } = await _gv.auth.getUser();
+    
+    if (userError || !user) {
+        console.log("No active session found.");
+        window.location.href = 'consoleenter.html';
+        return;
+    }
 
-            // FOOLPROOF: Verify current user ID exists in the grove_admins management table
-            const { data: adminEntry, error } = await _gv
-                .from('grove_admins')
-                .select('id')
-                .eq('id', user.id)
-                .maybeSingle();
+    // Direct check against the grove_admins table
+    const { data: adminEntry, error: adminError } = await _gv
+        .from('grove_admins')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
 
-            if (error || !adminEntry) {
-                // If logged in user is NOT an authorized admin, force sign out and kick
-                await _gv.auth.signOut();
-                window.location.href = 'consoleenter.html'; 
-                return;
-            }
-            
-            adminUser = user;
-            init(); // Start sync once verified
-        }
+    if (adminError || !adminEntry) {
+        console.error("Access Denied: User ID not found in grove_admins.");
+        // Optional: alert("Unauthorized Access Detected.");
+        await _gv.auth.signOut();
+        window.location.href = 'consoleenter.html'; 
+        return;
+    }
+    
+    adminUser = user;
+    console.log("Admin verified. Initializing terminal...");
+    init(); 
+}
+
 
         async function sync() {
             if(!adminUser) return;
