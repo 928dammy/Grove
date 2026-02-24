@@ -15,48 +15,42 @@
         /* THE WITHERED STORM STATE */
         body.withered { filter: grayscale(0.5) brightness(0.6); overflow: hidden !important; background: #020617; }
         
-        /* STORM OVERLAY */
+        /* THE STORM OVERLAY (PURE ATMOSPHERE) */
         #suspension-overlay { 
             display: none; 
             position: fixed; 
             inset: 0; 
-            z-index: 9999; 
-            background: rgba(2, 6, 23, 0.6); 
-            backdrop-filter: blur(8px);
-            align-items: center; 
-            justify-content: center; 
-            flex-direction: column;
-            padding: 2rem;
-            text-align: center;
-            pointer-events: auto !important;
+            z-index: 80; /* Sits behind the Menu but over the Dash */
+            background: rgba(2, 6, 23, 0.4); 
+            backdrop-filter: blur(10px);
+            pointer-events: none; /* Allows clicks to pass through to the Header/Menu */
         }
-        body.withered #suspension-overlay { display: flex; animation: lightning 5s infinite; }
+        body.withered #suspension-overlay { display: block; animation: lightning 5s infinite; }
 
         @keyframes lightning {
-            0%, 95%, 98% { background: rgba(2, 6, 23, 0.6); }
-            96%, 99% { background: rgba(147, 51, 234, 0.2); } /* Purple flash */
+            0%, 95%, 98% { background: rgba(2, 6, 23, 0.4); }
+            96%, 99% { background: rgba(147, 51, 234, 0.15); }
         }
 
         .rain-drop {
             position: absolute;
             background: rgba(255, 255, 255, 0.1);
             width: 1px;
-            height: 50px;
+            height: 60px;
             top: -100px;
-            animation: rainFall 0.8s linear infinite;
+            animation: rainFall 0.7s linear infinite;
         }
-        @keyframes rainFall { to { transform: translateY(100vh); } }
+        @keyframes rainFall { to { transform: translateY(110vh); } }
 
-        /* Disable interaction for background */
-        body.withered .seed-header, 
+        /* BLOCK INTERACTION FOR DASHBOARD CONTENT ONLY */
         body.withered .terminal-parent, 
-        body.withered #nodeMenu { 
+        body.withered .seed-header .flex-1 { 
             pointer-events: none !important; 
             opacity: 0.4;
         }
 
         /* HEADER STYLES & ANIMATIONS */
-        .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; box-shadow: 0 4px 15px rgba(0,0,0,0.02); z-index: 50; }
+        .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; box-shadow: 0 4px 15px rgba(0,0,0,0.02); z-index: 100; }
         .seed-scatter { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; border-radius: 2rem; }
         .seed { position: absolute; background: var(--emerald); border-radius: 50%; opacity: 0; animation: scatterGrow 4s infinite ease-out; }
         @keyframes scatterGrow {
@@ -66,7 +60,7 @@
         }
 
         /* NODE MENU */
-        .node-menu { position: fixed; top: 75px; right: 2rem; width: 180px; background: white; border-radius: 1.5rem; border: 1px solid #f1f5f9; box-shadow: 0 15px 35px rgba(0,0,0,0.15); display: none; z-index: 100; overflow: hidden; }
+        .node-menu { position: fixed; top: 75px; right: 2rem; width: 180px; background: white; border-radius: 1.5rem; border: 1px solid #f1f5f9; box-shadow: 0 15px 35px rgba(0,0,0,0.15); display: none; z-index: 200; overflow: hidden; }
         .node-menu.active { display: block; animation: menuFade 0.2s ease-out; }
         @keyframes menuFade { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .menu-item { width: 100%; padding: 14px 20px; text-align: left; font-size: 9px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #f8fafc; color: #64748b; cursor: pointer; }
@@ -79,7 +73,7 @@
         @keyframes morph { 0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* TERMINAL & TICKER ANIMATION */
-        .terminal-parent { background: var(--grove-deep); border-radius: 2rem; color: #ecfdf5; min-height: 540px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; }
+        .terminal-parent { background: var(--grove-deep); border-radius: 2rem; color: #ecfdf5; min-height: 540px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; z-index: 50; }
         .broadcast-ticker { position: relative; height: 40px; overflow: hidden; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(16, 185, 129, 0.05); }
         .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
         @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
@@ -106,26 +100,7 @@
 </head>
 <body class="max-w-md mx-auto" onclick="closeMenu()">
 
-    <div id="suspension-overlay">
-        <div class="w-full max-w-xs relative z-20">
-            <h2 class="text-emerald-500 font-black italic text-4xl tracking-tighter mb-2">GROVE</h2>
-            <p class="text-white/30 text-[8px] font-black uppercase tracking-[0.4em] mb-12">"Givers Never Lack"</p>
-            
-            <div class="bg-black/60 border border-white/10 p-8 rounded-[2.5rem] mb-10 shadow-2xl backdrop-blur-md">
-                <div class="w-10 h-10 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>
-                </div>
-                <p id="overlay-status" class="text-[10px] font-black text-emerald-500 tracking-[0.5em] uppercase italic mb-2">Awaiting Verification</p>
-                <p class="text-white/40 text-[9px] font-bold uppercase tracking-widest leading-loose">
-                    The storm is passing. Node access will be granted once your seed base is verified.
-                </p>
-            </div>
-
-            <button onclick="logout()" class="w-full py-5 bg-rose-600 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl shadow-2xl">
-                Disconnect Node
-            </button>
-        </div>
-    </div>
+    <div id="suspension-overlay"></div>
 
     <div id="nodeMenu" class="node-menu">
         <button onclick="requestOp('Email Update Requested')" class="menu-item">Change Email</button>
@@ -145,7 +120,7 @@
                     <p id="user-display" class="text-[7px] font-black text-emerald-600 uppercase italic">NODE ACTIVE</p>
                 </div>
             </div>
-            <button onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 uppercase border border-slate-100 px-4 py-1.5 rounded-lg bg-white">ENGINE ROOM</button>
+            <button onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 uppercase border border-slate-100 px-4 py-1.5 rounded-lg bg-white relative z-[300]">ENGINE ROOM</button>
         </div>
         
         <div class="relative z-10 flex gap-3">
@@ -193,7 +168,7 @@
         </div>
     </main>
 
-    <div id="withdrawModal" class="fixed inset-0 bg-black/95 hidden z-[200] items-center justify-center p-6 text-slate-900">
+    <div id="withdrawModal" class="fixed inset-0 bg-black/95 hidden z-[400] items-center justify-center p-6 text-slate-900">
         <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-xs">
             <p class="text-[10px] font-black uppercase text-emerald-600 mb-1">Claim Vaulted</p>
             <p class="text-[8px] font-bold text-slate-400 mb-6 italic uppercase">Available: <span id="m-avail" class="text-slate-900">GH₵0.00</span></p>
@@ -225,12 +200,12 @@
             seedBox.innerHTML = ''; cediBox.innerHTML = '';
             
             // Add Rain to overlay
-            for(let i=0; i<30; i++) {
+            for(let i=0; i<40; i++) {
                 const drop = document.createElement('div');
                 drop.className = 'rain-drop';
                 drop.style.left = Math.random() * 100 + 'vw';
-                drop.style.animationDelay = Math.random() * 1 + 's';
-                drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+                drop.style.animationDelay = Math.random() * 2 + 's';
+                drop.style.animationDuration = (Math.random() * 0.4 + 0.4) + 's';
                 overlay.appendChild(drop);
             }
 
@@ -264,7 +239,6 @@
 
             if (isUnverified || isSuspended) {
                 document.body.classList.add('withered');
-                document.getElementById('overlay-status').innerText = isSuspended ? "Node Suspended" : "Storming: Verification Required";
                 document.getElementById('user-display').innerText = isSuspended ? "SUSPENDED" : "PENDING";
             } else {
                 document.body.classList.remove('withered');
