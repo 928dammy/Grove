@@ -13,16 +13,29 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; min-height: 100vh; padding: 1rem; margin: 0; overflow-x: hidden; color: #1e293b; transition: filter 0.5s ease; }
         
         /* GATEKEEPER / SUSPENSION / WITHERED STATE */
-        body.withered { filter: grayscale(1) brightness(0.7); background: #020617; }
-        body.withered .terminal-parent { border-color: rgba(255, 0, 0, 0.3); }
+        body.withered { filter: grayscale(1) brightness(0.7); background: #020617; overflow: hidden; }
+        
+        /* HARD LOCKOUT: DISABLE ALL CLICKS ON DASHBOARD */
+        body.withered .terminal-parent, 
+        body.withered .seed-header .flex-1,
+        body.withered .seed-header .seed-scatter { 
+            pointer-events: none !important; 
+            user-select: none;
+            opacity: 0.5;
+        }
+
         #suspension-overlay { display: none; }
         body.withered #suspension-overlay { 
             display: flex; position: fixed; inset: 0; z-index: 45; 
             background: rgba(0,0,0,0.4); backdrop-filter: blur(2px);
             align-items: center; justify-content: center; pointer-events: none;
         }
-        body.withered *:not(.node-menu):not(.node-menu *):not(header):not(header *) { pointer-events: none !important; }
+
+        /* EXCEPTIONS: ALLOW THE MENU AND EXIT TO WORK */
+        body.withered .node-menu { pointer-events: auto !important; }
+        body.withered header button { pointer-events: auto !important; }
         body.withered .node-menu .menu-item:not(:last-child) { opacity: 0.2; pointer-events: none; }
+        body.withered .node-menu .menu-item:last-child { opacity: 1; pointer-events: auto; }
 
         /* HEADER STYLES & ANIMATIONS */
         .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; box-shadow: 0 4px 15px rgba(0,0,0,0.02); z-index: 50; }
@@ -204,7 +217,7 @@
         }
 
         async function sync() {
-            // Updated Security Logic (Restriction Check)
+            // HARD LOCKOUT SECURITY CHECK
             const { data: profile } = await _gv.from('profiles').select('is_suspended, is_verified').eq('id', userObj.id).single();
             const isUnverified = profile?.is_verified === false;
             const isSuspended = profile?.is_suspended === true;
@@ -213,6 +226,9 @@
                 document.body.classList.add('withered');
                 document.getElementById('overlay-status').innerText = isUnverified ? "Awaiting Verification" : "Node Suspended";
                 document.getElementById('user-display').innerText = isUnverified ? "PENDING" : "SUSPENDED";
+                
+                // DATA SEVERING: DO NOT LOAD LEDGER OR ORCHARD FOR UNVERIFIED USERS
+                return; 
             } else {
                 document.body.classList.remove('withered');
                 document.getElementById('user-display').innerText = userObj.email.split('@')[0].toUpperCase();
@@ -236,7 +252,6 @@
                 const type = (l.entry_type || "").toLowerCase();
                 const desc = (l.description || "").toLowerCase();
                 
-                // SEED BASE LOGIC (Matches Admin Sync)
                 if ((type === 'seed' || desc.includes('seed')) && !desc.includes('vault transfer')) sa += v;
                 if (type === 'gift_received') tr += v;
                 if (desc.includes('vault transfer')) tv += v;
@@ -263,7 +278,6 @@
             document.getElementById('ledger-content').innerHTML = myLedger.slice(0, 10).map(l => `<div class="p-4 flex justify-between items-center bg-white/5"><div><p class="text-[9px] font-black uppercase text-white/80">${l.entry_type}</p><p class="text-[7px] font-bold text-white/30 italic">${new Date(l.created_at).toLocaleDateString()}</p></div><p class="text-[10px] font-black ${parseFloat(l.amount) < 0 ? 'text-rose-400' : 'text-emerald-400'}">₵${Math.abs(l.amount).toFixed(2)}</p></div>`).join('');
         }
 
-        // 2% SERVICE CHARGE CALCULATION
         function calcCharge() { 
             const amt = parseFloat(document.getElementById('w-amount').value) || 0;
             const fee = amt * 0.02; 
@@ -271,28 +285,14 @@
         }
 
         async function claim(id, amt) { await _gv.from('ledger').insert([{ user_id: userObj.id, amount: amt, entry_type: 'gift_received', description: `Claim: ${id}` }]); sync(); }
-        
-        async function vaultAll() { 
-            if (capturableSum > 0) { 
-                await _gv.from('ledger').insert([{ user_id: userObj.id, amount: capturableSum, entry_type: 'seed', description: 'Vault Transfer' }]); 
-                sync(); 
-            } 
-        }
+        async function vaultAll() { if (capturableSum > 0) { await _gv.from('ledger').insert([{ user_id: userObj.id, amount: capturableSum, entry_type: 'seed', description: 'Vault Transfer' }]); sync(); } }
 
         async function requestWithdrawal() {
             const amt = parseFloat(document.getElementById('w-amount').value), phone = document.getElementById('w-phone').value, net = document.getElementById('w-network').value;
             if (!amt || amt > vaultedSum) return alert("Insufficient Balance");
             if (!phone || phone.length < 10) return alert("Valid MoMo Number Required");
-            
             const fee = (amt * 0.02).toFixed(2);
-            // Record Withdrawal with Fee in Description for Admin
-            await _gv.from('ledger').insert([{ 
-                user_id: userObj.id, 
-                amount: -amt, 
-                entry_type: 'withdrawal', 
-                description: `MOMO: ${net} | ${phone} | Fee: ₵${fee}` 
-            }]);
-            
+            await _gv.from('ledger').insert([{ user_id: userObj.id, amount: -amt, entry_type: 'withdrawal', description: `MOMO: ${net} | ${phone} | Fee: ₵${fee}` }]);
             toggleModal('withdrawModal', false); 
             sync(); 
             alert("Withdrawal Requested. Awaiting Approval.");
@@ -302,7 +302,7 @@
         function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
         async function logout() { await _gv.auth.signOut(); window.location.href = "index.html"; }
         init();
-        setInterval(sync, 15000); // Keep dashboard synced
+        setInterval(sync, 15000);
     </script>
 </body>
 </html>
