@@ -136,13 +136,12 @@
         const _gv = supabase.createClient(SB_URL, SB_KEY);
         let adminUser = null;
 
-        // Add this inside your <script> tag to handle the 2% rule
-function calculateWithdrawal(amount) {
-    const fee = amount * 0.02;
-    const final = amount - fee;
-    return { fee, final };
-}
-
+        function calculateWithdrawal(amount) {
+            const absAmt = Math.abs(amount);
+            const fee = absAmt * 0.02;
+            const final = absAmt - fee;
+            return { fee, final };
+        }
 
         async function sync() {
             const { data: { user } } = await _gv.auth.getUser();
@@ -179,30 +178,33 @@ function calculateWithdrawal(amount) {
             document.getElementById('stat-withdrawn').innerText = `GH₵${globalWithdrawn.toFixed(0)}`;
             document.getElementById('stat-nodes').innerText = nodes?.length || 0;
 
-            // Render Payouts (Moved to its own tab)
+            // Render Payouts with 2% Calculation
             const withdrawals = ledger?.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID'));
-            document.getElementById('payoutList').innerHTML = withdrawals?.length ? withdrawals.map(w => `
+            document.getElementById('payoutList').innerHTML = withdrawals?.length ? withdrawals.map(w => {
+                const { fee, final } = calculateWithdrawal(w.amount);
+                return `
                 <div class="auth-card p-4 flex justify-between items-center border border-white/5 mb-2">
                     <div>
-                        <p class="text-[10px] font-black text-amber-400">GH₵${Math.abs(w.amount).toFixed(2)}</p>
+                        <p class="text-[10px] font-black text-amber-400">PAY: GH₵${final.toFixed(2)}</p>
+                        <p class="text-[7px] font-bold text-rose-500 uppercase mb-1 italic">Service Charge: ₵${fee.toFixed(2)}</p>
                         <p class="text-[7px] font-bold text-slate-500 uppercase">${w.description}</p>
                     </div>
-                    <button onclick="approvePayout('${w.id}')" class="px-3 py-2 bg-blue-600 text-white text-[7px] font-black uppercase rounded-lg">Approve Payout</button>
-                </div>`).join('') : `<p class="text-center text-[7px] font-black opacity-30 py-8 uppercase italic">Queue Empty</p>`;
+                    <button onclick="approvePayout('${w.id}')" class="px-3 py-2 bg-blue-600 text-white text-[7px] font-black uppercase rounded-lg">Confirm Paid</button>
+                </div>`}).join('') : `<p class="text-center text-[7px] font-black opacity-30 py-8 uppercase italic">Queue Empty</p>`;
 
-            // Render Node List with Verification toggle
+            // Node Management
             document.getElementById('nodeList').innerHTML = nodes?.map(n => {
                 const stats = nodeDetails[n.id] || {seeded:0, vaulted:0, withdrawn:0};
                 return `<div class="auth-card p-4"><div class="flex justify-between items-start mb-4"><div><p class="text-[10px] font-black uppercase ${n.is_suspended ? 'text-rose-400' : 'text-emerald-400'}">${n.email.split('@')[0]}</p><p class="text-[7px] text-slate-500 uppercase mt-1">${n.email}</p></div><span class="text-[6px] font-black px-2 py-0.5 rounded ${n.is_verified ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'} uppercase">${n.is_verified ? 'Verified' : 'Pending'}</span></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-3 rounded-xl border border-white/5"><div class="text-center"><p class="text-[6px] text-slate-500 uppercase font-bold">Seeded</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase font-bold">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div class="text-center"><p class="text-[6px] text-rose-500 uppercase font-bold">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="grid grid-cols-4 gap-2"><button onclick="broadcastToNode('${n.id}')" class="btn-action btn-msg">Msg</button><button onclick="toggleSuspend('${n.id}', ${n.is_suspended})" class="btn-action btn-freeze">${n.is_suspended ? 'Rel' : 'Susp'}</button><button onclick="toggleVerify('${n.id}', ${n.is_verified})" class="btn-action bg-white/5 border border-white/10 text-white">${n.is_verified ? 'Unver' : 'Verify'}</button><button onclick="expelNode('${n.id}')" class="btn-action btn-expel">Expel</button></div></div>`;
             }).join('');
 
-            // Render Missions
+            // Missions
             document.getElementById('missionLog').innerHTML = missions?.map(m => {
                 const isLive = m.status === 'LIVE';
                 return `<div class="auth-card p-3 flex justify-between items-center ${isLive ? 'border-amber-500/20' : 'border-white/5'} mb-2"><div class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full ${isLive ? 'bg-amber-500 animate-pulse' : 'bg-slate-700'}"></div><div><p class="text-[9px] font-black uppercase ${isLive ? 'text-amber-500' : 'text-slate-500'} leading-tight">${m.description}</p><p class="text-[7px] text-slate-500 font-bold">₵${parseFloat(m.cost_to_settle).toFixed(2)}</p></div></div><div class="flex gap-2"><button onclick="toggleMissionStatus('${m.id}', '${m.status}')" class="p-2 bg-white/5 text-white/50 rounded-lg text-[7px] font-black uppercase">${isLive ? 'Finish' : 'Go Live'}</button><button onclick="archiveMission('${m.id}')" class="p-2 bg-rose-500/10 text-rose-400 rounded-lg text-[7px] font-black uppercase italic">Clear</button></div></div>`;
             }).join('');
 
-            // Render Ledger
+            // Global Stream
             document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 15).map(l => {
                 const userName = nodes?.find(p => p.id === l.user_id)?.email.split('@')[0] || "👑 ADMIN";
                 return `<div class="p-4 flex justify-between items-center text-[10px] border-b border-white/5"><div><p class="font-black uppercase ${!l.user_id ? 'text-emerald-500' : 'text-slate-500'} text-[8px]">${userName}</p><p class="italic text-white/40 text-[9px]">${l.entry_type}</p><p class="text-[7px] text-slate-500 uppercase">${l.description || ''}</p></div><p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p></div>`;
@@ -232,7 +234,17 @@ function calculateWithdrawal(amount) {
         async function broadcastToNode(id) { const m = prompt("Enter Directive:"); if(m) { await _gv.from('messages').insert([{ receiver_id: id, sender_name: "SYSTEM", content: m.toUpperCase() }]); alert("Transmitted."); } }
         async function systemReset() { if(confirm("WIPE SYSTEM?")) { await _gv.rpc('reset_system'); sync(); } }
         function openTab(e, n) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active')); document.getElementById(n).classList.add('active'); e.currentTarget.classList.add('active'); }
-        async function init() { sync(); _gv.channel('any').on('postgres_changes', {event:'*', schema:'public'}, () => sync()).subscribe(); }
+        
+        async function init() { 
+            sync(); 
+            // REALTIME COLLAB ENGINE
+            _gv.channel('admin_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => sync())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'ledger' }, () => sync())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'settled_needs' }, () => sync())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => sync())
+            .subscribe();
+        }
         init(); setInterval(sync, 15000);
     </script>
 </body>
