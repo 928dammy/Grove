@@ -63,6 +63,17 @@
         }
         body.withered #manual-pay-card.active { display: block; }
 
+        /* NETWORK LOGO SPECIFIC STYLING */
+        #p-net-logo {
+            width: 70px;
+            height: 45px;
+            margin: 0 auto 10px;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+        }
+
         /* RESTORE BUTTON */
         #restore-pay-btn {
             display: none;
@@ -152,7 +163,8 @@
         <p class="text-[8px] font-black text-amber-500 uppercase tracking-[0.2em] mb-1 italic">Activation Required</p>
         <h3 class="text-lg font-black text-white italic tracking-tighter mb-4">NODE LOCKOUT</h3>
         <div class="bg-black/40 rounded-xl p-4 border border-white/5 mb-4 text-center">
-            <div id="p-net-logo" class="w-8 h-8 rounded-lg mx-auto mb-2 shadow-lg"></div>
+            <div id="p-net-logo"></div>
+            
             <div class="space-y-3">
                 <div class="flex justify-between items-end border-b border-white/5 pb-2">
                     <p class="text-[7px] font-bold text-slate-400 uppercase italic">Amount</p>
@@ -282,6 +294,15 @@
         
         let userObj = null, globalVaulted = 0;
 
+        // ASSET MAP FOR NETWORK LOGOS
+        const NET_LOGOS = {
+            MTN: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/MTN_Logo.svg/1200px-MTN_Logo.svg.png",
+            TELECEL: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Telecel_Group_Logo.png/600px-Telecel_Group_Logo.png",
+            VODAFONE: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Telecel_Group_Logo.png/600px-Telecel_Group_Logo.png",
+            AT: "https://upload.wikimedia.org/wikipedia/commons/1/1d/AirtelTigo_Logo.png",
+            AIRTELTIGO: "https://upload.wikimedia.org/wikipedia/commons/1/1d/AirtelTigo_Logo.png"
+        };
+
         function toggleMenu(e) { e.stopPropagation(); document.getElementById('nodeMenu').classList.toggle('active'); }
         function closeMenu() { document.getElementById('nodeMenu').classList.remove('active'); }
         function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
@@ -333,11 +354,15 @@
                 if(profile) {
                     document.getElementById('p-amount').innerText = parseFloat(profile.current_range_max || 0).toFixed(2);
                     document.getElementById('p-ref').innerText = profile.payment_ref || "GROVE";
-                    const merch = document.getElementById('p-merch'), logo = document.getElementById('p-net-logo');
+                    const merch = document.getElementById('p-merch'), logoEl = document.getElementById('p-net-logo');
                     const net = (profile.network || "MTN").toUpperCase();
-                    if(net === "MTN") { merch.innerText = "024XXXXXXX"; logo.style.background = "#fbbf24"; }
-                    else if(net === "TELECEL") { merch.innerText = "020XXXXXXX"; logo.style.background = "#ef4444"; }
-                    else { merch.innerText = "026XXXXXXX"; logo.style.background = "#3b82f6"; }
+                    
+                    // APPLY LOGO SUBSTITUTION
+                    logoEl.style.backgroundImage = `url('${NET_LOGOS[net] || NET_LOGOS.MTN}')`;
+
+                    if(net === "MTN") { merch.innerText = "024XXXXXXX"; }
+                    else if(net === "TELECEL" || net === "VODAFONE") { merch.innerText = "020XXXXXXX"; }
+                    else { merch.innerText = "026XXXXXXX"; }
                 }
             } else {
                 document.body.classList.remove('withered');
