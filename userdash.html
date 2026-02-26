@@ -11,7 +11,7 @@
     <style>
         :root { --emerald: #10b981; --grove-deep: #061a14; --grove-leaf: #064e3b; --gold: #fbbf24; }
         
-        /* ORIGINAL SCROLL & BODY STYLE */
+        /* SCROLL & BODY */
         html, body { height: 100%; margin: 0; padding: 0; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; min-height: 100vh; padding: 1rem; color: #1e293b; overflow-x: hidden; overflow-y: auto; }
         
@@ -26,19 +26,24 @@
         .rain-drop { position: absolute; background: rgba(255, 255, 255, 0.1); width: 1px; height: 60px; top: -100px; animation: rainFall 0.7s linear infinite; }
         @keyframes rainFall { to { transform: translateY(110vh); } }
 
-        /* NEW COMPACT PAYMENT CARD */
-        .compact-activation-card {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 1000; width: 90%; max-width: 320px;
-            background: #0f172a; border: 1px solid rgba(251, 191, 36, 0.3);
-            border-radius: 2rem; padding: 1.25rem; text-align: center;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            display: none;
+        /* VAULT ANIMATION */
+        .vault-glow { animation: vaultPulse 4s infinite ease-in-out; }
+        @keyframes vaultPulse {
+            0%, 100% { box-shadow: inset 0 0 50px rgba(16, 185, 129, 0.1); }
+            50% { box-shadow: inset 0 0 100px rgba(16, 185, 129, 0.3); }
         }
 
-        #p-net-logo { width: 100%; height: 35px; background-repeat: no-repeat; background-position: center; background-size: contain; margin-bottom: 10px; }
-        
-        /* TERMINAL UI ELEMENTS */
+        /* COMPACT PAYMENT CARD */
+        .compact-activation-card {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 1000; width: 92%; max-width: 320px;
+            background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2.5rem; padding: 1.5rem; text-align: center;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8); display: none;
+            animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* TERMINAL UI */
         .terminal-parent { background: var(--grove-deep); border-radius: 2.5rem; color: #ecfdf5; min-height: 580px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; z-index: 50; display: flex; flex-direction: column; }
         .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
         @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
@@ -50,14 +55,11 @@
         .tab-content.active { display: flex; flex-direction: column; }
 
         .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; z-index: 100; }
-        .node-menu { position: fixed; top: 75px; right: 2rem; width: 180px; background: white; border-radius: 1.5rem; border: 1px solid #f1f5f9; box-shadow: 0 15px 35px rgba(0,0,0,0.15); display: none; z-index: 500; overflow: hidden; }
-        .node-menu.active { display: block; }
-        .menu-item { width: 100%; padding: 14px 20px; text-align: left; font-size: 9px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #f8fafc; color: #64748b; cursor: pointer; }
-
+        
         /* CUSTOM MODAL STYLE */
-        .grove-modal-overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.9); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 1rem; }
-        .grove-modal-box { background: white; width: 100%; max-width: 300px; border-radius: 2rem; padding: 1.5rem; text-align: center; animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .grove-modal-overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 1rem; }
+        .grove-modal-box { background: white; width: 100%; max-width: 300px; border-radius: 2.5rem; padding: 2rem; text-align: center; animation: modalPop 0.3s ease-out; }
+        @keyframes modalPop { from { transform: scale(0.9) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
     </style>
 </head>
 <body class="max-w-md mx-auto" onclick="closeMenu()">
@@ -68,45 +70,50 @@
         <div class="grove-modal-box">
             <p class="text-[9px] font-black text-emerald-600 uppercase mb-4 italic tracking-widest">Withdrawal Node</p>
             <div class="space-y-3 mb-6 text-left">
-                <div class="flex justify-between text-[10px] font-bold">
-                    <span class="text-slate-400">AVAILABLE</span>
+                <div class="flex justify-between text-[10px] font-bold text-slate-400">
+                    <span>VAULT TOTAL</span>
                     <span id="m-avail" class="text-slate-900">GH₵ 0.00</span>
                 </div>
                 <div class="flex justify-between text-[10px] font-bold border-b border-slate-100 pb-2">
-                    <span class="text-rose-500">SERVICE FEE (2%)</span>
-                    <span id="m-fee" class="text-rose-500">-GH₵ 0.00</span>
+                    <span class="text-rose-500 uppercase">Service Charge (2%)</span>
+                    <span id="m-fee" class="text-rose-500">GH₵ 0.00</span>
                 </div>
                 <div class="flex justify-between text-base font-black italic pt-2">
-                    <span class="text-slate-900">PAYOUT</span>
+                    <span class="text-slate-900 uppercase">Payout</span>
                     <span id="m-final" class="text-emerald-600">GH₵ 0.00</span>
                 </div>
             </div>
-            <button onclick="processWithdrawal()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase shadow-lg mb-2">Confirm Payout</button>
-            <button onclick="toggleModal('withdrawModal', false)" class="w-full py-2 text-[8px] font-black text-slate-400 uppercase">Cancel</button>
+            <button onclick="processWithdrawal()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase shadow-lg mb-2 hover:bg-emerald-700 transition">Confirm Payout</button>
+            <button onclick="toggleModal('withdrawModal', false)" class="w-full py-2 text-[8px] font-black text-slate-400 uppercase tracking-widest">Cancel</button>
         </div>
     </div>
 
     <div id="messageModal" class="grove-modal-overlay">
         <div class="grove-modal-box">
-            <div id="msg-icon" class="text-2xl mb-2">🌿</div>
-            <p id="msg-text" class="text-[11px] font-bold text-slate-700 leading-relaxed mb-6"></p>
-            <button onclick="toggleModal('messageModal', false)" class="w-full py-3 bg-slate-900 text-white font-black rounded-xl text-[9px] uppercase">Got it</button>
+            <div id="msg-icon" class="text-3xl mb-3">🌿</div>
+            <p id="msg-text" class="text-[11px] font-bold text-slate-800 leading-relaxed mb-6"></p>
+            <button onclick="toggleModal('messageModal', false)" class="w-full py-3 bg-slate-900 text-white font-black rounded-xl text-[9px] uppercase">Acknowledge</button>
         </div>
     </div>
 
     <div id="manual-pay-card" class="compact-activation-card">
-        <div id="p-net-logo"></div>
-        <div class="bg-black/30 rounded-xl p-3 mb-4 space-y-2 text-left">
-            <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black">USER</span><span id="p-full-name" class="text-[9px] text-white font-bold italic">---</span></div>
-            <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black">SEED</span><span id="p-seed-amt" class="text-[9px] text-white font-bold">₵0.00</span></div>
-            <div class="flex justify-between items-center border-t border-white/5 pt-2"><span class="text-[7px] text-slate-500 font-black">MERCHANT</span><span id="p-merchant" class="text-[10px] font-black">---</span></div>
-            <div class="text-center pt-2">
-                <p class="text-[7px] text-emerald-500 font-black italic mb-1 uppercase">Reference ID</p>
-                <p id="p-payment-ref" class="text-xl text-white tracking-[0.2em] font-black">----</p>
+        <div id="p-net-logo" class="h-10 mb-3 bg-center bg-no-repeat bg-contain"></div>
+        <p id="p-net-name" class="text-[8px] font-black uppercase tracking-[0.2em] mb-3">Network</p>
+        
+        <div class="bg-black/40 rounded-2xl p-4 mb-4 space-y-3 text-left border border-white/5">
+            <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black uppercase">Recipient</span><span id="p-full-name" class="text-[9px] text-white font-bold italic">---</span></div>
+            <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black uppercase">Your MoMo</span><span id="p-phone" class="text-[10px] font-bold tracking-widest">---</span></div>
+            <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black uppercase">Seed Amount</span><span id="p-seed-amt" class="text-[10px] text-white font-black">₵0.00</span></div>
+            <div class="flex justify-between items-center border-t border-white/10 pt-3"><span class="text-[7px] text-slate-500 font-black uppercase">Merchant No.</span><span id="p-merchant" class="text-[11px] font-black tracking-widest">---</span></div>
+            
+            <div class="text-center pt-2 bg-white/5 rounded-xl py-2 mt-2">
+                <p class="text-[7px] text-emerald-500 font-black italic mb-1 uppercase">Reference ID Required</p>
+                <p id="p-payment-ref" class="text-2xl text-white tracking-[0.3em] font-black">----</p>
             </div>
         </div>
-        <button onclick="confirmPaymentAction()" class="w-full py-3 bg-emerald-600 text-white font-black rounded-xl text-[9px] uppercase shadow-lg mb-2">I made the payment already</button>
-        <button onclick="restoreScroll()" class="text-[7px] font-black text-slate-500 uppercase tracking-widest">Review Dashboard</button>
+        
+        <button onclick="confirmPaymentAction()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase shadow-lg mb-2">I made the payment already</button>
+        <button onclick="restoreScroll()" class="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-2">Close Terminal</button>
     </div>
 
     <header class="seed-header">
@@ -132,30 +139,34 @@
 
         <section id="t-orchard" class="tab-content active">
             <div class="bg-emerald-500/10 p-5 rounded-2xl border border-white/5 mb-8">
-                <p class="text-[9px] text-emerald-100/60 font-semibold leading-relaxed">System monitoring active.</p>
+                <p class="text-[9px] text-emerald-100/60 font-semibold leading-relaxed uppercase tracking-tighter">Impact Node Monitoring Active</p>
             </div>
-            <button id="restore-payment-btn" onclick="showActivationCard()" class="mt-auto mx-auto mb-4 py-3 px-8 border border-amber-500/30 bg-amber-500/5 text-amber-500 text-[9px] font-black uppercase rounded-full hidden">Show Activation Details</button>
+            <button id="restore-payment-btn" onclick="showActivationCard()" class="mt-auto mx-auto mb-4 py-3 px-8 border border-amber-500/30 bg-amber-500/5 text-amber-500 text-[9px] font-black uppercase rounded-full hidden italic">Show Activation Details</button>
         </section>
 
         <section id="t-vault" class="tab-content">
-            <div class="bg-gradient-to-b from-emerald-950 to-emerald-900 rounded-[2rem] p-10 text-center flex flex-col justify-center min-h-[300px]">
+            <div class="bg-gradient-to-b from-emerald-950 to-emerald-900 rounded-[2.5rem] p-10 text-center flex flex-col justify-center min-h-[320px] vault-glow border border-white/5">
                 <p class="text-[8px] font-black text-emerald-400 uppercase mb-2">Claim Vaulted</p>
                 <h2 id="v-balance" class="text-4xl font-black italic text-white mb-8">GH₵0.00</h2>
-                <button onclick="vaultGrace()" class="w-full py-4 bg-white text-emerald-900 rounded-xl text-[8px] font-black mb-3 uppercase">Claim to Vault</button>
-                <button onclick="triggerWithdrawal()" class="w-full py-4 bg-emerald-500/20 text-white rounded-xl text-[8px] font-black uppercase border border-white/10">Withdraw</button>
+                <div class="space-y-3">
+                    <button onclick="vaultGrace()" class="w-full py-4 bg-white text-emerald-900 rounded-xl text-[9px] font-black uppercase tracking-widest">Claim to Vault</button>
+                    <button onclick="triggerWithdrawal()" class="w-full py-4 bg-emerald-500/20 text-white rounded-xl text-[9px] font-black uppercase border border-white/10">Withdraw</button>
+                </div>
             </div>
         </section>
         
         <section id="t-comm" class="tab-content h-full">
             <div id="chat-scroller" class="flex-1 overflow-y-auto pr-2 space-y-4 min-h-[320px] py-4 flex flex-col"></div>
-            <div class="pt-4 border-t border-white/5"><input id="chat-input" type="text" placeholder="SECURE MESSAGE..." class="w-full bg-black/40 border border-white/10 rounded-xl py-4 px-5 text-[10px] text-white focus:outline-none"></div>
+            <div class="pt-4 border-t border-white/5">
+                <input id="chat-input" type="text" placeholder="SECURE CHANNEL..." class="w-full bg-black/40 border border-white/10 rounded-xl py-4 px-5 text-[10px] text-white focus:outline-none">
+            </div>
         </section>
 
         <section id="t-ledger" class="tab-content"><div id="ledger-content" class="bg-black/20 rounded-2xl divide-y divide-white/5"></div></section>
     </main>
 
-    <div id="nodeMenu" class="node-menu">
-        <button onclick="logout()" class="menu-item text-red-500 font-black">Exit Terminal</button>
+    <div id="nodeMenu" class="node-menu fixed top-[75px] right-[2rem] bg-white rounded-2xl hidden z-[3000]">
+        <button onclick="logout()" class="p-4 text-[9px] font-black text-rose-500 uppercase">Exit Terminal</button>
     </div>
 
     <script>
@@ -164,7 +175,10 @@
         const _gv = supabase.createClient(SB_URL, SB_KEY);
         let userObj = null, globalVaulted = 0;
 
-        // MODAL SYSTEM
+        const MERCHANT_MTN = "0535261448";
+        const MERCHANT_TEL = "020XXXXXXX";
+        const MERCHANT_AT = "026XXXXXXX";
+
         function toggleModal(id, show, text = "", icon = "🌿") {
             const m = document.getElementById(id);
             if(text) document.getElementById('msg-text').innerText = text;
@@ -172,8 +186,8 @@
             m.style.display = show ? 'flex' : 'none';
         }
 
-        function toggleMenu(e) { e.stopPropagation(); document.getElementById('nodeMenu').classList.toggle('active'); }
-        function closeMenu() { document.getElementById('nodeMenu').classList.remove('active'); }
+        function toggleMenu(e) { e.stopPropagation(); document.getElementById('nodeMenu').classList.toggle('hidden'); }
+        function closeMenu() { document.getElementById('nodeMenu').classList.add('hidden'); }
         
         function restoreScroll() {
             document.getElementById('manual-pay-card').style.display = 'none';
@@ -192,7 +206,7 @@
             const msg = `PAYMENT_LOG: User marked GH₵${document.getElementById('p-seed-amt').innerText} as paid. [Ref: ${ref}]`;
             const { error } = await _gv.from('messages').insert([{ sender_id: userObj.id, receiver_id: '00000000-0000-0000-0000-000000000000', content: msg, sender_name: 'USER_SYSTEM' }]);
             if(!error) {
-                toggleModal('messageModal', true, "Your payment verification has been logged. Admin will review the reference ID shortly.", "✅");
+                toggleModal('messageModal', true, "Verification request sent. Your terminal will be unlocked once confirmed.", "✅");
                 restoreScroll();
                 openTab('t-comm');
             }
@@ -203,27 +217,33 @@
             
             if(!profile || profile.is_verified !== true) {
                 document.getElementById('restore-payment-btn').classList.remove('hidden');
-                if(!document.body.classList.contains('force-scroll')) showActivationCard();
+                if(!document.body.classList.contains('withered') && !document.body.classList.contains('force-scroll')) showActivationCard();
                 
                 if(profile) {
                     document.getElementById('p-full-name').innerText = profile.full_name || "---";
+                    document.getElementById('p-phone').innerText = profile.phone || "---";
                     document.getElementById('p-seed-amt').innerText = `GH₵ ${(profile.current_range_max || 0).toFixed(2)}`;
                     document.getElementById('p-payment-ref').innerText = profile.payment_ref || "----";
 
                     const net = (profile.network || '').toUpperCase();
                     const logoDiv = document.getElementById('p-net-logo');
                     const merchDiv = document.getElementById('p-merchant');
+                    const phoneDiv = document.getElementById('p-phone');
+                    const nameLabel = document.getElementById('p-net-name');
 
                     const NET_DATA = {
-                        MTN: { logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/MTN_Logo.svg/1200px-MTN_Logo.svg.png", color: "#fbbf24", number: "0535261448" },
-                        TELECEL: { logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Telecel_Logo.svg/1200px-Telecel_Logo.svg.png", color: "#ef4444", number: "020XXXXXXX" },
-                        AT: { logo: "https://upload.wikimedia.org/wikipedia/en/3/3a/AirtelTigo_logo.png", color: "#3b82f6", number: "026XXXXXXX" }
+                        MTN: { logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/MTN_Logo.svg/1200px-MTN_Logo.svg.png", color: "#fbbf24", number: MERCHANT_MTN },
+                        TELECEL: { logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Telecel_Logo.svg/1200px-Telecel_Logo.svg.png", color: "#ef4444", number: MERCHANT_TEL },
+                        AT: { logo: "https://upload.wikimedia.org/wikipedia/en/3/3a/AirtelTigo_logo.png", color: "#3b82f6", number: MERCHANT_AT }
                     };
 
                     if (NET_DATA[net]) {
                         logoDiv.style.backgroundImage = `url('${NET_DATA[net].logo}')`;
                         merchDiv.innerText = NET_DATA[net].number;
                         merchDiv.style.color = NET_DATA[net].color;
+                        phoneDiv.style.color = NET_DATA[net].color;
+                        nameLabel.innerText = net;
+                        nameLabel.style.color = NET_DATA[net].color;
                     }
                 }
             } else {
@@ -256,19 +276,7 @@
             await fetchMessages();
         }
 
-        async function fetchMessages() {
-            const { data: msgs } = await _gv.from('messages').select('*').or(`receiver_id.eq.${userObj.id},sender_id.eq.${userObj.id}`).order('created_at', { ascending: true });
-            const scroller = document.getElementById('chat-scroller');
-            scroller.innerHTML = msgs?.map(m => `
-                <div class="flex flex-col ${m.sender_id === userObj.id ? 'items-end' : 'items-start'}">
-                    <div class="p-3 rounded-xl max-w-[85%] text-[10px] mb-2 ${m.sender_id === userObj.id ? 'bg-white/5 border-r-2 border-white/20' : 'bg-emerald-500/10 border-l-2 border-emerald-500'}">${m.content}</div>
-                </div>
-            `).join('') || '';
-            scroller.scrollTop = scroller.scrollHeight;
-        }
-
         function triggerWithdrawal() { 
-            if(globalVaulted <= 0) return toggleModal('messageModal', true, "Your vault is currently empty.", "⚠️");
             const fee = globalVaulted * 0.02; 
             document.getElementById('m-avail').innerText = `GH₵${globalVaulted.toFixed(2)}`; 
             document.getElementById('m-fee').innerText = `-GH₵${fee.toFixed(2)}`; 
@@ -277,6 +285,7 @@
         }
 
         async function processWithdrawal() { 
+            if(globalVaulted <= 0) return toggleModal('messageModal', true, "Insufficient funds for withdrawal.", "⚠️");
             const { error } = await _gv.from('ledger').insert([{ user_id: userObj.id, amount: -globalVaulted, entry_type: 'withdrawal', description: `Payout processed (2% fee)` }]); 
             if(!error) { toggleModal('withdrawModal', false); toggleModal('messageModal', true, "Withdrawal logged successfully.", "✅"); sync(); }
         }
@@ -288,6 +297,17 @@
             sync();
         }
 
+        async function fetchMessages() {
+            const { data: msgs } = await _gv.from('messages').select('*').or(`receiver_id.eq.${userObj.id},sender_id.eq.${userObj.id}`).order('created_at', { ascending: true });
+            const scroller = document.getElementById('chat-scroller');
+            scroller.innerHTML = msgs?.map(m => `
+                <div class="flex flex-col ${m.sender_id === userObj.id ? 'items-end' : 'items-start'}">
+                    <div class="p-3 rounded-xl max-w-[85%] text-[10px] mb-2 ${m.sender_id === userObj.id ? 'bg-white/5 border-r-2 border-white/20' : 'bg-emerald-500/10 border-l-2 border-emerald-500'}">${m.content}</div>
+                </div>
+            `).join('') || '';
+            scroller.scrollTop = scroller.scrollHeight;
+        }
+
         function createRain() { const ov = document.getElementById('suspension-overlay'); for(let i=0; i<30; i++) { const d = document.createElement('div'); d.className = 'rain-drop'; d.style.left = Math.random() * 100 + 'vw'; d.style.animationDelay = Math.random() * 2 + 's'; ov.appendChild(d); } }
         function openTab(id) { document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); document.getElementById('btn-' + id.split('-')[1]).classList.add('active'); }
         async function logout() { await _gv.auth.signOut(); window.location.href = "index.html"; }
@@ -295,8 +315,7 @@
         async function init() { 
             const { data: { user } } = await _gv.auth.getUser(); 
             if(!user) return window.location.href = "index.html"; 
-            userObj = user; 
-            createRain(); sync();
+            userObj = user; createRain(); sync();
             _gv.channel('realtime-sync').on('postgres_changes', {event:'*', schema:'public'}, () => { sync(); }).subscribe(); 
         }
         init();
