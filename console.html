@@ -29,9 +29,13 @@
         .filter-btn.active { background: #10b981; color: black; border-color: #10b981; }
         .mission-preview { width: 100%; height: 120px; border-radius: 1rem; object-fit: cover; background: #000; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); display: none; }
         
-        .chat-bubble { padding: 10px 14px; border-radius: 1rem; font-size: 11px; max-width: 80%; margin-bottom: 8px; position: relative; }
-        .bubble-in { background: rgba(255,255,255,0.05); color: #cbd5e1; align-self: flex-start; }
-        .bubble-out { background: #10b981; color: black; font-weight: 600; align-self: flex-end; }
+        /* Fixed Chat Alignment & Detailed View */
+        .bubble-wrapper { display: flex; flex-direction: column; width: 100%; margin-bottom: 12px; }
+        .chat-bubble { padding: 10px 14px; border-radius: 1.2rem; font-size: 11px; max-width: 85%; position: relative; line-height: 1.4; }
+        .bubble-in { background: rgba(255,255,255,0.08); color: #cbd5e1; align-self: flex-start; border-bottom-left-radius: 4px; }
+        .bubble-out { background: #10b981; color: #020617; font-weight: 600; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .msg-info { font-size: 7px; text-transform: uppercase; margin-top: 4px; opacity: 0.6; }
+        
         .unread-dot { width: 8px; height: 8px; background: #f43f5e; border-radius: 50%; box-shadow: 0 0 10px #f43f5e; }
         .mute-badge { background: #f43f5e; color: white; font-size: 6px; padding: 1px 4px; border-radius: 3px; margin-left: 5px; }
     </style>
@@ -97,11 +101,6 @@
                     <button onclick="updateRange()" class="w-full py-4 bg-blue-600 text-white font-black rounded-2xl text-[10px] uppercase">Set Range & Authorize</button>
                 </div>
             </div>
-            <div class="mb-6 auth-card p-6 border-blue-500/20">
-                <h3 class="text-xs font-black uppercase text-blue-500 mb-4 italic">Bulk Communication</h3>
-                <textarea id="bulkMessage" placeholder="Broadcast to all verified..." class="input-box h-24 resize-none mb-3"></textarea>
-                <button onclick="sendBulk()" class="w-full py-3 bg-blue-500/10 border border-blue-500/30 text-blue-400 font-black rounded-xl text-[10px] uppercase">Dispatch</button>
-            </div>
             <div class="flex flex-col gap-2 mb-3 px-2">
                 <h3 class="text-[10px] font-black text-slate-500 uppercase">Node Management</h3>
                 <input type="text" id="nodeSearch" oninput="sync()" placeholder="Search..." class="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none text-emerald-400 w-full">
@@ -154,6 +153,7 @@
                     <button onclick="postMission()" class="w-full py-4 bg-amber-500 text-black font-black rounded-2xl text-[10px] uppercase">Broadcast</button>
                 </div>
             </div>
+            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-3 px-2 italic">Broadcast Log</h3>
             <div id="missionLog" class="space-y-2"></div>
         </section>
 
@@ -185,10 +185,6 @@
             </div>
             <div class="auth-card overflow-hidden"><div id="ledgerTable" class="divide-y divide-white/5"></div></div>
         </section>
-
-        <section id="manager-log" class="tab-content">
-            <div class="auth-card overflow-hidden"><div id="adminActionList" class="divide-y divide-white/5"></div></div>
-        </section>
     </main>
 
     <nav class="fixed bottom-0 left-0 right-0 h-20 bg-slate-950/90 border-t border-white/10 backdrop-blur-lg flex justify-around items-center z-50 no-scrollbar overflow-x-auto">
@@ -219,7 +215,7 @@
             if(!adminUser) return;
             const { data: nodes } = await _gv.from('profiles').select('*');
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
-            const { data: missions } = await _gv.from('settled_needs').select('*').neq('status', 'ARCHIVED');
+            const { data: missions } = await _gv.from('settled_needs').select('*').order('created_at', { ascending: false });
             const { data: msgs } = await _gv.from('messages').select('*').order('created_at', { ascending: false });
             
             allNodes = nodes || [];
@@ -241,7 +237,8 @@
                 }
             });
             Object.values(nodeDetails).forEach(u => { totalVaulted += Math.max(0, u.vaulted - u.withdrawn); });
-            const totalBurn = missions?.reduce((sum, m) => sum + (parseFloat(m.cost_to_settle) || 0), 0) || 0;
+            const liveMissions = missions?.filter(m => m.status !== 'ARCHIVED');
+            const totalBurn = liveMissions?.reduce((sum, m) => sum + (parseFloat(m.cost_to_settle) || 0), 0) || 0;
             const grovePool = globalSeeded - totalBurn - globalWithdrawn;
 
             document.getElementById('stat-pool').innerText = `GH₵${grovePool.toFixed(2)}`;
@@ -281,14 +278,23 @@
             const withdrawals = ledger?.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID'));
             document.getElementById('payoutList').innerHTML = withdrawals?.length ? withdrawals.map(w => {
                 const rawAmt = Math.abs(w.amount), fee = rawAmt * 0.02, net = rawAmt - fee;
-                return `<div class="auth-card p-4 border border-white/5 mb-2"><div class="flex justify-between items-center"><div><p class="text-[10px] font-black text-emerald-400">DISPATCH: GH₵${net.toFixed(net % 1 === 0 ? 0 : 2)}</p><p class="text-[7px] font-bold text-slate-500 uppercase">Total: ₵${rawAmt} | Fee: ₵${fee.toFixed(2)} (2%)</p><p class="text-[6px] text-slate-600 italic mt-1">${w.description}</p></div><button onclick="approvePayout('${w.id}', ${rawAmt}, '${w.user_id}')" class="px-4 py-2 bg-emerald-600 text-white text-[8px] font-black uppercase rounded-lg">Confirm Paid</button></div></div>`}).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">Queue Empty</p>`;
+                return `<div class="auth-card p-4 border border-white/5 mb-2"><div class="flex justify-between items-center"><div><p class="text-[10px] font-black text-emerald-400">DISPATCH: GH₵${net.toFixed(2)}</p><p class="text-[7px] font-bold text-slate-500 uppercase">Claim Vaulted: ₵${rawAmt} | 2% Deductible: ₵${fee.toFixed(2)}</p><p class="text-[6px] text-slate-600 italic mt-1">${w.description}</p></div><button onclick="approvePayout('${w.id}', ${rawAmt}, '${w.user_id}')" class="px-4 py-2 bg-emerald-600 text-white text-[8px] font-black uppercase rounded-lg">Confirm Paid</button></div></div>`}).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">Queue Empty</p>`;
 
-            // MISSIONS
+            // MISSIONS (History Included)
             document.getElementById('missionLog').innerHTML = missions?.length ? missions.map(m => `
-                <div class="auth-card p-4 border-l-4 border-amber-500 mb-2">
-                    <div class="flex justify-between items-center"><p class="text-[9px] font-black uppercase text-white">${m.description}</p><button onclick="archiveMission('${m.id}')" class="text-[7px] font-black text-rose-500">Archive</button></div>
+                <div class="auth-card p-4 border-l-4 ${m.status === 'ARCHIVED' ? 'border-slate-700 opacity-40' : 'border-amber-500'} mb-2">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-[6px] font-black text-amber-500 uppercase">${m.category || 'IMPACT'}</p>
+                            <p class="text-[9px] font-black uppercase text-white">${m.description}</p>
+                        </div>
+                        ${m.status !== 'ARCHIVED' ? `<button onclick="archiveMission('${m.id}')" class="text-[7px] font-black text-rose-500">Archive</button>` : `<span class="text-[7px] font-black text-slate-600 uppercase tracking-tighter">Archived Log</span>`}
+                    </div>
                     ${m.image_url ? `<img src="${m.image_url}" class="w-full h-20 object-cover rounded-lg mt-2 border border-white/5">` : ''}
-                    <p class="text-[7px] font-bold text-slate-500 uppercase mt-1">Cost: GH₵${m.cost_to_settle}</p>
+                    <div class="flex justify-between items-center mt-2">
+                        <p class="text-[7px] font-bold text-slate-500 uppercase">Settled: GH₵${m.cost_to_settle}</p>
+                        <p class="text-[6px] text-slate-700 italic">${new Date(m.created_at).toLocaleDateString()}</p>
+                    </div>
                 </div>`).join('') : '';
 
             // LEDGER
@@ -305,17 +311,13 @@
             if(!confirm(`Confirm dispatch of GH₵${net.toFixed(2)}? (2% deduction applied)`)) return;
             
             const stamp = `PAID GH₵${net.toFixed(2)} | SERVICE FEE: ₵${fee.toFixed(2)} | AUTH: ${adminUser.email}`;
-            
-            // Database Ledger Update
-            const { error: ledgerError } = await _gv.from('ledger').update({ description: stamp }).eq('id', id);
-            if(ledgerError) return alert("Ledger Error");
+            await _gv.from('ledger').update({ description: stamp }).eq('id', id);
 
-            // Inbox Pop (System Notification)
             await _gv.from('messages').insert([{
                 sender_id: adminUser.id,
                 receiver_id: userId,
                 sender_name: "SYSTEM | PAYMENTS",
-                content: `✅ WITHDRAWAL DISPATCHED: GH₵${net.toFixed(2)} has been sent to your MoMo. A 2% service charge (GH₵${fee.toFixed(2)}) was applied. Givers Never Lack!`
+                content: `✅ WITHDRAWAL DISPATCHED: GH₵${net.toFixed(2)} has been sent. A 2% service charge (GH₵${fee.toFixed(2)}) was applied. Givers Never Lack!`
             }]);
 
             alert("Payment Confirmed & User Notified");
@@ -341,12 +343,17 @@
             if (!currentChatId || !adminUser) return;
             const { data: msgs } = await _gv.from('messages').select('*').or(`sender_id.eq.${currentChatId},receiver_id.eq.${currentChatId}`).order('created_at', { ascending: true });
             const box = document.getElementById('adminChatBox');
-            box.innerHTML = msgs?.map(m => `
-                <div class="chat-bubble ${m.sender_id === adminUser.id ? 'bubble-out' : 'bubble-in'}">
-                    <p class="text-[8px] font-black uppercase opacity-50 mb-1">${m.sender_name || 'NODE'}</p>
-                    ${m.content}
-                    <p class="text-[6px] opacity-40 mt-1">${new Date(m.created_at).toLocaleTimeString()}</p>
-                </div>`).join('') || '<p class="text-center py-20 opacity-10 text-[8px] font-black uppercase">Start Transmission</p>';
+            box.innerHTML = msgs?.map(m => {
+                const isAdmin = m.sender_id === adminUser.id;
+                return `
+                <div class="bubble-wrapper">
+                    <div class="chat-bubble ${isAdmin ? 'bubble-out' : 'bubble-in'}">
+                        <p class="text-[7px] font-black uppercase opacity-50 mb-1">${isAdmin ? 'ADMIN' : (m.sender_name || 'NODE')}</p>
+                        ${m.content}
+                        <div class="msg-info text-right">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                    </div>
+                </div>`;
+            }).join('') || '<p class="text-center py-20 opacity-10 text-[8px] font-black uppercase">Start Transmission</p>';
             box.scrollTop = box.scrollHeight;
         }
 
@@ -358,9 +365,10 @@
             input.value = ''; refreshChat();
         }
 
-        async function toggleMute(userId, currentMute) {
-            await _gv.from('profiles').update({ is_muted: !currentMute }).eq('id', userId);
-            sync(); openUserChat(userId);
+        async function archiveMission(id) {
+            if(!confirm("Archive this mission? It will move to history log.")) return;
+            await _gv.from('settled_needs').update({ status: 'ARCHIVED' }).eq('id', id);
+            sync();
         }
 
         async function postMission() {
@@ -418,6 +426,7 @@
             _gv.channel('admin_sync').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => sync())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'ledger' }, () => sync())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => { sync(); refreshChat(); })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'settled_needs' }, () => sync())
             .subscribe();
         }
         checkAdmin();
