@@ -11,74 +11,45 @@
     <style>
         :root { --emerald: #10b981; --grove-deep: #061a14; --grove-leaf: #064e3b; --gold: #fbbf24; }
         
-        /* SCROLLING LOGIC */
+        /* SCROLL CONTROL */
+        html, body { height: 100%; margin: 0; padding: 0; }
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background: #f8fafc; 
             min-height: 100vh; 
             padding: 1rem; 
-            margin: 0; 
             color: #1e293b;
             overflow-x: hidden;
-            overflow-y: auto; /* Default allowed */
+            overflow-y: auto;
         }
         
-        /* Locked state when payment card is active */
-        body.withered { 
-            overflow: hidden !important; 
-            background: #020617; 
-        }
+        /* State 1: Locked for Activation */
+        body.withered { overflow: hidden !important; height: 100vh !important; background: #020617; }
+        /* State 2: Unlocked for Review/Normal use */
+        body.force-scroll { overflow-y: auto !important; height: auto !important; }
 
-        /* THE STORM (SUSPENSION/PENDING) */
+        /* ATMOSPHERIC OVERLAY */
         #suspension-overlay { display: none; position: fixed; inset: 0; z-index: 80; background: rgba(2, 6, 23, 0.4); pointer-events: none; }
         body.withered #suspension-overlay { display: block; animation: lightning 5s infinite; }
         @keyframes lightning { 0%, 95%, 98% { background: rgba(2, 6, 23, 0.4); } 96%, 99% { background: rgba(147, 51, 234, 0.15); } }
         .rain-drop { position: absolute; background: rgba(255, 255, 255, 0.1); width: 1px; height: 60px; top: -100px; animation: rainFall 0.7s linear infinite; }
         @keyframes rainFall { to { transform: translateY(110vh); } }
 
-        /* NETWORK BANNER/LOGO FIX */
-        #p-net-logo {
-            width: 100%;
-            height: 45px; /* Forced height */
-            min-height: 45px;
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: contain;
-            display: block;
-            margin-bottom: 15px;
-        }
-
-        /* SOUL AURA */
-        .soul-container { position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
-        .soul-core { width: 6px; height: 6px; background: var(--emerald); border-radius: 50%; box-shadow: 0 0 10px var(--emerald); animation: breathe 3s infinite; }
-        .soul-aura { position: absolute; inset: 0; border: 1.5px solid rgba(16, 185, 129, 0.2); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; animation: morph 8s infinite linear; }
-        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
-        @keyframes morph { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* TERMINAL INTERFACE */
+        /* PAYMENT CARD UI */
+        #p-net-logo { width: 100%; height: 40px; background-repeat: no-repeat; background-position: center; background-size: contain; margin-bottom: 12px; }
+        
+        /* CORE TERMINAL UI */
         .terminal-parent { background: var(--grove-deep); border-radius: 2.5rem; color: #ecfdf5; min-height: 580px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; z-index: 50; display: flex; flex-direction: column; }
         .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
         @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
 
-        /* NAVIGATION & TABS */
         .nav-pill { background: rgba(0, 0, 0, 0.3); padding: 4px; border-radius: 12px; display: flex; gap: 4px; margin: 0 1rem 1rem; }
         .tab-trigger { flex: 1; color: rgba(255,255,255,0.3); font-size: 9px; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 10px 0; text-align: center; border-radius: 8px; }
         .tab-trigger.active { color: #fff; background: var(--grove-leaf); }
         .tab-content { display: none; padding: 0 1rem 1rem; flex: 1; overflow-y: auto; }
         .tab-content.active { display: flex; flex-direction: column; }
 
-        /* CHAT BUBBLES */
-        .chat-bubble { padding: 12px 16px; border-radius: 1.25rem; max-width: 85%; font-size: 11px; line-height: 1.4; margin-bottom: 12px; }
-        .chat-admin { background: rgba(16, 185, 129, 0.15); border-left: 3px solid var(--emerald); color: white; align-self: flex-start; }
-        .chat-user { background: rgba(255, 255, 255, 0.05); color: #94a3b8; align-self: flex-end; border-right: 3px solid rgba(255,255,255,0.2); text-align: right; }
-        
-        /* VAULT & GARDENER */
-        .gardener-emoji { position: absolute; font-size: 40px; bottom: 0; animation: walkAndSowEmoji 8s infinite ease-in-out; }
-        @keyframes walkAndSowEmoji { 0% { transform: translateX(0); } 30%, 55% { transform: translateX(80px); } 75%, 100% { transform: translateX(0); } }
-        .vault-bg { background: linear-gradient(to bottom, #061a14, #064e3b); border-radius: 2rem; min-height: 340px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; width: 100%; }
-        .cedi-symbol { position: absolute; color: rgba(16, 185, 129, 0.15); font-weight: 900; animation: fall linear infinite; }
-        @keyframes fall { from { transform: translateY(-50px); opacity: 1; } to { transform: translateY(350px); opacity: 0; } }
-
+        /* HEADER & MENU */
         .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; z-index: 100; }
         .node-menu { position: fixed; top: 75px; right: 2rem; width: 180px; background: white; border-radius: 1.5rem; border: 1px solid #f1f5f9; box-shadow: 0 15px 35px rgba(0,0,0,0.15); display: none; z-index: 500; overflow: hidden; }
         .node-menu.active { display: block; }
@@ -89,28 +60,44 @@
 
     <div id="suspension-overlay"></div>
 
-    <div id="manual-pay-card" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] w-[85%] max-w-[290px] bg-slate-900/95 border border-amber-500/30 rounded-[2.5rem] p-6 text-center shadow-2xl hidden">
-        <p class="text-[8px] font-black text-amber-500 uppercase italic mb-1">Node Lockout</p>
-        <h3 class="text-lg font-black text-white italic mb-4 uppercase">Activation</h3>
+    <div id="manual-pay-card" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] w-[90%] max-w-[320px] bg-slate-900/95 border border-amber-500/30 rounded-[2.5rem] p-6 text-center shadow-2xl hidden">
+        <p class="text-[8px] font-black text-amber-500 uppercase italic mb-1">Database Sync: Pending</p>
+        <h3 class="text-lg font-black text-white italic mb-4 uppercase">Verify Node</h3>
         
         <div class="bg-black/40 rounded-2xl p-4 mb-4">
             <div id="p-net-logo"></div>
             
-            <div class="space-y-2 text-[9px] font-black uppercase">
-                <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-500">Gifter Range</span><span class="text-white">₵<span id="p-range-min">0</span> - ₵<span id="p-range-max">0</span></span></div>
-                <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-500">Merchant</span><span id="p-merchant-num" class="text-amber-400">0535261448</span></div>
-                <div class="pt-2"><p class="text-[7px] text-emerald-500">Reference</p><p id="p-ref" class="text-xl text-white tracking-widest">----</p></div>
+            <div class="space-y-3 text-[9px] font-black uppercase text-left">
+                <div class="flex justify-between border-b border-white/5 pb-2">
+                    <span class="text-slate-500">Full Name</span>
+                    <span id="p-full-name" class="text-white italic">---</span>
+                </div>
+                <div class="flex justify-between border-b border-white/5 pb-2">
+                    <span class="text-slate-500">MoMo Number</span>
+                    <span id="p-phone" class="text-emerald-400 tracking-widest">---</span>
+                </div>
+                <div class="flex justify-between border-b border-white/5 pb-2">
+                    <span class="text-slate-500">Seed Amount</span>
+                    <span id="p-seed-amt" class="text-white">GH₵ 0.00</span>
+                </div>
+                <div class="flex justify-between border-b border-white/5 pb-2">
+                    <span class="text-slate-500">Merchant</span>
+                    <span id="p-merchant" class="text-amber-400 font-bold">---</span>
+                </div>
+                <div class="pt-2 text-center">
+                    <p class="text-[7px] text-emerald-500 mb-1 italic">Required Reference ID</p>
+                    <p id="p-payment-ref" class="text-2xl text-white tracking-[0.3em] font-black">----</p>
+                </div>
             </div>
         </div>
         
         <p class="text-[9px] font-bold text-slate-500 mb-4 italic">"Givers Never Lack"</p>
-        <button onclick="restoreScroll()" class="w-full py-3 bg-emerald-600 text-white font-black rounded-xl text-[9px] uppercase">Review Terminal</button>
+        <button onclick="restoreScroll()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase shadow-lg">Review Terminal</button>
     </div>
 
     <header class="seed-header">
         <div class="flex justify-between items-center mb-5">
             <div class="flex items-center gap-3">
-                <div class="soul-container"><div class="soul-aura"></div><div class="soul-core"></div></div>
                 <div><h1 class="text-base font-black italic">GROVE</h1><p id="user-display" class="text-[7px] font-black text-emerald-600 uppercase">SYNCING...</p></div>
             </div>
             <button onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 border px-4 py-1.5 rounded-lg bg-white relative z-[600]">ENGINE ⚙️</button>
@@ -133,15 +120,14 @@
 
         <section id="t-orchard" class="tab-content active">
             <div class="bg-emerald-500/10 p-5 rounded-2xl border border-white/5 mb-8">
-                <h3 id="m-title-hero" class="text-sm font-black text-white italic uppercase mb-1">Impact Hub</h3>
-                <p id="m-desc-hero" class="text-[9px] text-emerald-100/60 font-semibold leading-relaxed">Seeds fulfilling needs. Status: Active.</p>
+                <h3 class="text-sm font-black text-white italic uppercase mb-1">Impact Hub</h3>
+                <p class="text-[9px] text-emerald-100/60 font-semibold leading-relaxed">System monitoring active.</p>
             </div>
-            <div class="relative flex justify-center py-10"><div class="relative w-40 h-20"><div class="gardener-emoji">🧑‍🌾</div></div></div>
+            <button id="restore-payment-btn" onclick="showActivationCard()" class="mt-auto mx-auto mb-4 py-3 px-8 border border-amber-500/30 bg-amber-500/5 text-amber-500 text-[9px] font-black uppercase rounded-full hidden">Show Activation Details</button>
         </section>
 
         <section id="t-vault" class="tab-content">
             <div class="vault-bg">
-                <div id="cedis-box" class="absolute inset-0 pointer-events-none"></div>
                 <div class="relative z-30 text-center w-full">
                     <p class="text-[8px] font-black text-emerald-400 uppercase mb-2">Claim Vaulted</p>
                     <h2 id="v-balance" class="text-4xl font-black italic text-white mb-8">GH₵0.00</h2>
@@ -152,7 +138,7 @@
                 </div>
             </div>
         </section>
-
+        
         <section id="t-comm" class="tab-content h-full">
             <div id="chat-scroller" class="flex-1 overflow-y-auto pr-2 space-y-4 min-h-[320px] py-4 flex flex-col"></div>
             <div class="pt-4 border-t border-white/5">
@@ -163,12 +149,10 @@
             </div>
         </section>
 
-        <section id="t-ledger" class="tab-content">
-            <div id="ledger-content" class="bg-black/20 rounded-2xl divide-y divide-white/5"></div>
-        </section>
+        <section id="t-ledger" class="tab-content"><div id="ledger-content" class="bg-black/20 rounded-2xl divide-y divide-white/5"></div></section>
     </main>
 
-    <div id="withdrawModal" class="fixed inset-0 bg-black/95 hidden z-[700] items-center justify-center p-6">
+    <div id="withdrawModal" class="fixed inset-0 bg-black/95 hidden z-[1100] items-center justify-center p-6">
         <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-xs text-center">
             <p class="text-[10px] font-black uppercase text-emerald-600 mb-1 italic">Withdrawal Terminal</p>
             <div class="space-y-4 my-6">
@@ -192,8 +176,9 @@
         let userObj = null, globalVaulted = 0;
 
         const MERCHANT_MTN = "0535261448";
-        const MERCHANT_TEL = "020XXXXXXX";
-        const MERCHANT_AT = "026XXXXXXX";
+        const MERCHANT_TEL = "020XXXXXXX"; // Placeholder as per signup source
+        const MERCHANT_AT = "026XXXXXXX";  // Placeholder as per signup source
+        
         const NET_LOGOS = {
             MTN: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/MTN_Logo.svg/1200px-MTN_Logo.svg.png",
             TELECEL: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Telecel_Logo.svg/1200px-Telecel_Logo.svg.png",
@@ -204,45 +189,52 @@
         function closeMenu() { document.getElementById('nodeMenu').classList.remove('active'); }
         function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
 
-        // CORE FIX: HIDE CARD AND ENABLE SCROLLING
         function restoreScroll() {
             document.getElementById('manual-pay-card').style.display = 'none';
-            // Force scrolling back on
-            document.body.style.overflowY = "auto";
-            document.body.style.overflowX = "hidden";
+            document.body.classList.remove('withered');
+            document.body.classList.add('force-scroll');
+        }
+
+        function showActivationCard() {
+            document.body.classList.add('withered');
+            document.body.classList.remove('force-scroll');
+            document.getElementById('manual-pay-card').style.display = 'block';
         }
 
         async function sync() {
             const { data: profile } = await _gv.from('profiles').select('*').eq('id', userObj.id).maybeSingle();
             
             if(!profile || profile.is_verified !== true || profile.is_suspended) {
-                document.body.classList.add('withered');
-                document.getElementById('manual-pay-card').style.display = 'block';
+                document.getElementById('restore-payment-btn').classList.remove('hidden');
+                if(!document.body.classList.contains('force-scroll')) showActivationCard();
                 
                 if(profile) {
-                    document.getElementById('p-range-min').innerText = profile.current_range_min || 0;
-                    document.getElementById('p-range-max').innerText = profile.current_range_max || 0;
-                    document.getElementById('p-ref').innerText = profile.payment_ref || "GROVE";
+                    // NAMING CONSISTENCY WITH BLUEPRINT
+                    document.getElementById('p-full-name').innerText = profile.full_name || "---";
+                    document.getElementById('p-phone').innerText = profile.phone || "---";
+                    document.getElementById('p-seed-amt').innerText = `GH₵ ${(profile.current_range_max || 0).toFixed(2)}`;
+                    document.getElementById('p-payment-ref').innerText = profile.payment_ref || "----";
 
-                    // NETWORK & LOGO LOGIC
                     const net = (profile.network || '').toUpperCase();
                     const logoDiv = document.getElementById('p-net-logo');
-                    const merchDiv = document.getElementById('p-merchant-num');
+                    const merchDiv = document.getElementById('p-merchant');
 
                     if (NET_LOGOS[net]) {
                         logoDiv.style.backgroundImage = `url('${NET_LOGOS[net]}')`;
                         if(net === 'MTN') merchDiv.innerText = MERCHANT_MTN;
-                        if(net === 'TELECEL') merchDiv.innerText = MERCHANT_TEL;
-                        if(net === 'AT') merchDiv.innerText = MERCHANT_AT;
+                        else if(net === 'TELECEL') merchDiv.innerText = MERCHANT_TEL;
+                        else if(net === 'AT') merchDiv.innerText = MERCHANT_AT;
                     }
                 }
             } else {
                 document.body.classList.remove('withered');
-                document.body.style.overflowY = "auto";
+                document.body.classList.add('force-scroll');
                 document.getElementById('manual-pay-card').style.display = 'none';
+                document.getElementById('restore-payment-btn').classList.add('hidden');
                 document.getElementById('user-display').innerText = userObj.email.split('@')[0].toUpperCase();
             }
 
+            // Standard Sync Logic for Balance/Ledger
             const { data: ledger } = await _gv.from('ledger').select('*').eq('user_id', userObj.id).order('created_at', { ascending: false });
             let ts=0, tg=0, tv=0, tw=0;
             ledger?.forEach(l => {
@@ -267,6 +259,7 @@
             await fetchMessages();
         }
 
+        // Standard Utility Functions
         async function fetchMessages() {
             const { data: msgs } = await _gv.from('messages').select('*').or(`receiver_id.eq.${userObj.id},sender_id.eq.${userObj.id}`).order('created_at', { ascending: true });
             const scroller = document.getElementById('chat-scroller');
