@@ -19,9 +19,13 @@
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .input-box { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: white; border-radius: 1rem; padding: 1rem; width: 100%; outline: none; font-size: 16px; }
         .btn-action { padding: 8px; border-radius: 10px; font-size: 9px; font-weight: 900; text-transform: uppercase; transition: 0.2s; text-align: center; border: none; cursor: pointer; }
+        .btn-verify { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: #10b981; }
+        .btn-suspend { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .btn-expel { background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); color: #f43f5e; }
         .btn-msg { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); color: #60a5fa; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .slogan-badge { font-size: 8px; font-weight: 900; color: #fbbf24; letter-spacing: 2px; }
+        .status-pill { font-size: 7px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
         
         /* Chat UI */
         .bubble-wrapper { display: flex; flex-direction: column; width: 100%; margin-bottom: 8px; }
@@ -36,7 +40,6 @@
         /* Scroll Helpers */
         #adminChatBox::-webkit-scrollbar { width: 3px; }
         #adminChatBox::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.3); border-radius: 10px; }
-        #jumpBottom { position: absolute; bottom: 85px; right: 20px; background: #10b981; color: #020617; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer; border: 2px solid #020617; z-index: 10; }
     </style>
 </head>
 <body class="bg-slate-950">
@@ -83,14 +86,14 @@
     <main class="p-4 max-w-4xl mx-auto">
         <section id="nodes" class="tab-content active">
             <div class="mb-6 auth-card p-6">
-                <h3 class="text-xs font-black uppercase text-blue-400 mb-4 italic">Authorize Gifter Node</h3>
+                <h3 class="text-xs font-black uppercase text-blue-400 mb-4 italic">Unlock New Node (Removal of Lockout)</h3>
                 <div class="space-y-3">
                     <input type="email" id="targetEmail" placeholder="Node Email" class="input-box">
                     <div class="flex gap-2">
                         <input type="number" id="minRange" placeholder="Min Gift ₵" class="input-box">
                         <input type="number" id="maxRange" placeholder="Max Gift ₵" class="input-box">
                     </div>
-                    <button onclick="updateRange()" class="w-full py-4 bg-blue-600 text-white font-black rounded-2xl text-[10px] uppercase">Authorize Node</button>
+                    <button onclick="updateNodeStatus('verify')" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl text-[10px] uppercase italic">Verify & Unlock Dashboard</button>
                 </div>
             </div>
             <input type="text" id="nodeSearch" oninput="sync()" placeholder="Search nodes..." class="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none text-emerald-400 w-full mb-4">
@@ -118,7 +121,6 @@
                     </div>
                 </div>
                 <div id="adminChatBox" class="flex-1 overflow-y-auto pr-2 mb-4 space-y-2 flex flex-col"></div>
-                <div id="jumpBottom" class="view-hidden" onclick="scrollToBottom()">↓</div>
                 <div class="relative">
                     <input id="adminReplyInput" type="text" placeholder="TYPE MESSAGE..." class="input-box text-[12px] pr-16 h-14" onkeydown="if(event.key==='Enter') sendAdminReply()">
                     <button onclick="sendAdminReply()" class="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-500 text-black px-4 py-2 rounded-xl font-black text-[9px] uppercase">Send</button>
@@ -196,8 +198,6 @@
         async function checkAdmin() {
             const { data: { user } } = await _gv.auth.getUser();
             if (!user) { window.location.href = 'consoleenter.html'; return; }
-            
-            // Reverted to simple auth check as requested - if they are in, they are in.
             adminUser = user;
             document.getElementById('admin-email').innerText = user.email;
             init();
@@ -238,7 +238,8 @@
             const term = document.getElementById('nodeSearch').value.toLowerCase();
             document.getElementById('nodeList').innerHTML = nodes?.filter(n => n.email.toLowerCase().includes(term)).map(n => {
                 const stats = nodeDetails[n.id] || {seeded:0, vaulted:0, withdrawn:0};
-                return `<div class="auth-card p-4"><div class="flex justify-between items-center mb-2"><div><p class="text-[10px] font-black uppercase text-white">${n.full_name || 'ANON'}</p><p class="text-[7px] text-slate-500">${n.email}</p></div><span class="text-[8px] opacity-40">${n.payment_ref}</span></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-2 rounded-xl text-center"><div><p class="text-[6px] uppercase">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div><p class="text-[6px] uppercase">Seed</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div><p class="text-[6px] uppercase">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="flex gap-2"><button onclick="openUserChat('${n.id}')" class="btn-action btn-msg flex-1">Message</button></div></div>`;
+                const statusColor = n.is_gifter ? 'bg-emerald-500/20 text-emerald-500' : 'bg-rose-500/20 text-rose-500';
+                return `<div class="auth-card p-4"><div class="flex justify-between items-start mb-2"><div><p class="text-[10px] font-black uppercase text-white">${n.full_name || 'ANON'}</p><p class="text-[7px] text-slate-500">${n.email}</p></div><span class="status-pill ${statusColor}">${n.is_gifter ? 'Verified' : 'Locked Out'}</span></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-2 rounded-xl text-center"><div><p class="text-[6px] uppercase">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div><p class="text-[6px] uppercase">Seed</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div><p class="text-[6px] uppercase">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="grid grid-cols-2 gap-2"><button onclick="quickUpdate('${n.email}', 'verify')" class="btn-action btn-verify">Verify</button><button onclick="quickUpdate('${n.email}', 'suspend')" class="btn-action btn-suspend">Suspend</button><button onclick="quickUpdate('${n.email}', 'expel')" class="btn-action btn-expel">Expel</button><button onclick="openUserChat('${n.id}')" class="btn-action btn-msg">Message</button></div></div>`;
             }).join('');
 
             renderInbox();
@@ -250,11 +251,36 @@
                 return `<div class="auth-card p-4 flex justify-between items-center mb-2"><div><p class="text-[10px] font-black text-emerald-400">DISPATCH: GH₵${net.toFixed(2)}</p><p class="text-[7px] text-slate-500 uppercase">Vault: ₵${raw} | 2% Fee: ₵${fee.toFixed(2)}</p></div><button onclick="approvePayout('${w.id}', ${raw}, '${w.user_id}')" class="px-4 py-2 bg-emerald-600 text-white text-[8px] font-black uppercase rounded-lg">Confirm</button></div>`}).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">Queue Empty</p>`;
 
             document.getElementById('missionLog').innerHTML = missions?.map(m => `<div class="p-3 bg-white/5 rounded-xl border border-white/5 text-[9px] mb-2 uppercase"><div class="flex justify-between"><b>${m.description}</b><span class="text-emerald-500">₵${m.cost_to_settle}</span></div></div>`).join('');
-
+            
             let dL = ledger || [];
             if(seedFilter) dL = dL.filter(l => l.entry_type === 'seed');
             if(withdrawFilter) dL = dL.filter(l => l.entry_type === 'withdrawal');
             document.getElementById('ledgerTable').innerHTML = dL.slice(0, 30).map(l => `<div class="p-4 flex justify-between items-center text-[10px]"><div><p class="text-[7px] text-slate-500 uppercase">${l.description}</p></div><p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p></div>`).join('');
+        }
+
+        async function quickUpdate(email, action) {
+            let updates = {};
+            if(action === 'verify') updates = { is_gifter: true };
+            if(action === 'suspend') updates = { is_gifter: false };
+            if(action === 'expel') {
+                if(!confirm("Expel node? This will block their gift access entirely.")) return;
+                updates = { is_gifter: false, current_range_max: 0 };
+            }
+            await _gv.from('profiles').update(updates).eq('email', email);
+            alert(`Node ${action}ed.`); sync();
+        }
+
+        async function updateNodeStatus(action) {
+            const e = document.getElementById('targetEmail').value;
+            const min = document.getElementById('minRange').value;
+            const max = document.getElementById('maxRange').value;
+            if(!e) return;
+            await _gv.from('profiles').update({ 
+                is_gifter: true, 
+                current_range_min: parseFloat(min || 0), 
+                current_range_max: parseFloat(max || 0) 
+            }).eq('email', e);
+            alert("Node Verified & Dashboard Unlocked."); sync();
         }
 
         async function markAsRead(nodeId) {
@@ -269,11 +295,9 @@
                 const isAdmin = m.sender_id === adminUser.id || m.sender_name === 'ADMIN';
                 return `<div class="bubble-wrapper"><div class="chat-bubble ${isAdmin ? 'bubble-out' : 'bubble-in'}">${m.content}<span class="msg-time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div>`;
             }).join('');
-            scrollToBottom();
+            box.scrollTop = box.scrollHeight;
             markAsRead(currentChatId);
         }
-
-        function scrollToBottom() { const box = document.getElementById('adminChatBox'); box.scrollTop = box.scrollHeight; }
 
         async function sendAdminReply() {
             const i = document.getElementById('adminReplyInput'); if(!i.value.trim() || !currentChatId) return;
@@ -318,18 +342,11 @@
         }
 
         async function approvePayout(id, raw, userId) {
-            const fee = raw * 0.02;
-            const net = raw - fee;
+            const net = raw * 0.98;
             if(!confirm(`Approve GH₵${net.toFixed(2)} (2% Fee Deducted)?`)) return;
             await _gv.from('ledger').update({ description: `PAID GH₵${net.toFixed(2)}` }).eq('id', id);
-            await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: userId, sender_name: "SYSTEM", content: `✅ PAYOUT: GH₵${net.toFixed(2)} DISPATCHED.` }]);
+            await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: userId, sender_name: "SYSTEM", content: `✅ PAYOUT: GH₵${net.toFixed(2)} DISPATCHED. GIVERS NEVER LACK.` }]);
             sync();
-        }
-
-        async function updateRange() { 
-            const e = document.getElementById('targetEmail').value, min = document.getElementById('minRange').value, max = document.getElementById('maxRange').value;
-            await _gv.from('profiles').update({ current_range_min: parseFloat(min), current_range_max: parseFloat(max), is_gifter: true }).eq('email', e);
-            alert("Node Range Authorized."); sync();
         }
 
         function setMsgFilter(t) { msgFilter = t; renderInbox(); }
