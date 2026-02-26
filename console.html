@@ -150,10 +150,18 @@
 
         <section id="ledger" class="tab-content">
             <div class="flex gap-2 mb-3">
-                <button onclick="toggleSeedFilter()" id="btnFilterSeed" class="filter-btn">Seeds 🌱</button>
-                <button onclick="toggleWithdrawFilter()" id="btnFilterWithdraw" class="filter-btn">Withdrawals 💰</button>
+                <button onclick="setLedgerFilter('all')" id="btnFilterAll" class="filter-btn active">Live Feed 📡</button>
+                <button onclick="setLedgerFilter('seed')" id="btnFilterSeed" class="filter-btn">Seeds 🌱</button>
+                <button onclick="setLedgerFilter('withdrawal')" id="btnFilterWithdraw" class="filter-btn">Withdrawals 💰</button>
             </div>
-            <div class="auth-card overflow-hidden"><div id="ledgerTable" class="divide-y divide-white/5"></div></div>
+            <div class="auth-card overflow-hidden">
+                <div class="grid grid-cols-4 p-4 border-b border-white/5 text-[7px] font-black uppercase text-slate-500">
+                    <div class="col-span-1">Node</div>
+                    <div class="col-span-2 text-center">Protocol</div>
+                    <div class="col-span-1 text-right">Value</div>
+                </div>
+                <div id="ledgerTable" class="divide-y divide-white/5 max-h-[60vh] overflow-y-auto no-scrollbar"></div>
+            </div>
         </section>
     </main>
 
@@ -169,7 +177,7 @@
         const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
         const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
         const _gv = supabase.createClient(SB_URL, SB_KEY);
-        let adminUser = null, allNodes = [], currentChatId = null, allMsgs = [], msgFilter = 'all', seedFilter = false, withdrawFilter = false;
+        let adminUser = null, allNodes = [], currentChatId = null, allMsgs = [], msgFilter = 'all', ledgerFilter = 'all';
 
         async function checkAdmin() {
             const { data: { user } } = await _gv.auth.getUser();
@@ -190,7 +198,12 @@
 
             let globalSeeded = 0, globalWithdrawn = 0, totalVaulted = 0;
             const nodeDetails = {};
-            nodes?.forEach(n => { nodeDetails[n.id] = { seeded: 0, vaulted: 0, withdrawn: 0 }; });
+            const userMap = {};
+            nodes?.forEach(n => { 
+                nodeDetails[n.id] = { seeded: 0, vaulted: 0, withdrawn: 0 };
+                userMap[n.id] = n.full_name || n.email.split('@')[0];
+            });
+
             ledger?.forEach(l => {
                 const val = parseFloat(l.amount) || 0;
                 const type = (l.entry_type || "").toLowerCase();
@@ -203,6 +216,7 @@
                     if (type === 'withdrawal') nodeDetails[l.user_id].withdrawn += Math.abs(val);
                 }
             });
+
             Object.values(nodeDetails).forEach(u => { totalVaulted += Math.max(0, u.vaulted - u.withdrawn); });
 
             document.getElementById('stat-pool').innerText = `GH₵${(globalSeeded - globalWithdrawn).toFixed(2)}`;
@@ -225,10 +239,32 @@
                 const raw = Math.abs(w.amount), fee = raw * 0.02, net = raw - fee;
                 return `<div class="auth-card p-4 flex justify-between items-center mb-2"><div><p class="text-[10px] font-black text-emerald-400">DISPATCH: GH₵${net.toFixed(2)}</p><p class="text-[7px] text-slate-500 uppercase">Vault: ₵${raw} | 2% Fee: ₵${fee.toFixed(2)}</p></div><button onclick="approvePayout('${w.id}', ${raw}, '${w.user_id}')" class="px-4 py-2 bg-emerald-600 text-white text-[8px] font-black uppercase rounded-lg">Confirm</button></div>`}).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">Queue Empty</p>`;
 
+            // ENHANCED LEDGER RENDERER
             let dL = ledger || [];
-            if(seedFilter) dL = dL.filter(l => l.entry_type === 'seed');
-            if(withdrawFilter) dL = dL.filter(l => l.entry_type === 'withdrawal');
-            document.getElementById('ledgerTable').innerHTML = dL.slice(0, 30).map(l => `<div class="p-4 flex justify-between items-center text-[10px]"><div><p class="text-[7px] text-slate-500 uppercase">${l.description}</p></div><p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p></div>`).join('');
+            if(ledgerFilter !== 'all') dL = dL.filter(l => l.entry_type === ledgerFilter);
+            
+            document.getElementById('ledgerTable').innerHTML = dL.map(l => {
+                const isWithdrawal = l.entry_type === 'withdrawal';
+                const isVault = l.description.includes('Vault');
+                const time = new Date(l.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const userName = userMap[l.user_id] || 'SYS';
+                const color = isWithdrawal ? 'text-rose-400' : (isVault ? 'text-emerald-400' : 'text-blue-400');
+                const symbol = isWithdrawal ? '↓' : '↑';
+
+                return `
+                <div class="p-4 grid grid-cols-4 items-center hover:bg-white/[0.02] transition-colors">
+                    <div class="col-span-1">
+                        <p class="text-[9px] font-black uppercase text-white truncate">${userName}</p>
+                        <p class="text-[6px] text-slate-500 uppercase">${time}</p>
+                    </div>
+                    <div class="col-span-2 text-center px-2">
+                        <p class="text-[7px] text-slate-400 uppercase font-bold tracking-tight leading-tight">${l.description}</p>
+                    </div>
+                    <div class="col-span-1 text-right">
+                        <p class="text-[10px] font-black ${color}">${symbol} ₵${Math.abs(l.amount).toFixed(0)}</p>
+                    </div>
+                </div>`;
+            }).join('');
         }
 
         async function quickUpdate(email, action) {
@@ -316,20 +352,31 @@
         }
 
         function setMsgFilter(t) { msgFilter = t; renderInbox(); }
+        
+        function setLedgerFilter(f) {
+            ledgerFilter = f;
+            document.querySelectorAll('#ledger .filter-btn').forEach(btn => btn.classList.remove('active'));
+            if(f === 'all') document.getElementById('btnFilterAll').classList.add('active');
+            if(f === 'seed') document.getElementById('btnFilterSeed').classList.add('active');
+            if(f === 'withdrawal') document.getElementById('btnFilterWithdraw').classList.add('active');
+            sync();
+        }
+
         function updateNavBadge() {
             const unreadCount = allMsgs.filter(m => m.receiver_id === adminUser.id && !m.is_read).length;
             const b = document.getElementById('navMsgBadge');
             if(unreadCount > 0) { b.innerText = unreadCount; b.classList.remove('view-hidden'); } else b.classList.add('view-hidden');
         }
-        function toggleSeedFilter() { seedFilter = !seedFilter; withdrawFilter = false; sync(); }
-        function toggleWithdrawFilter() { withdrawFilter = !withdrawFilter; seedFilter = false; sync(); }
+
         function openTab(e, n) { 
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); 
             document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active')); 
             document.getElementById(n).classList.add('active'); 
             if(e) e.currentTarget.classList.add('active');
             if(n === 'messages') closeChat();
+            if(n === 'ledger') sync();
         }
+        
         function payoutTabClick(e) { openTab(e, 'payouts'); sync(); }
 
         async function init() { 
