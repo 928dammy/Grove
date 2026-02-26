@@ -19,12 +19,13 @@
         .input-box { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: white; border-radius: 1rem; padding: 1rem; width: 100%; outline: none; font-size: 14px; }
         .btn-verify { background: #10b981; color: #020617; font-weight: 900; }
         .status-pill { font-size: 7px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
-        
-        /* Notification Badge */
         .badge { position: absolute; top: -2px; right: 8px; background: #f43f5e; color: white; font-size: 9px; min-width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 900; border: 2px solid #020617; z-index: 60; }
         
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
+        /* Modal and Card View Styles */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px); }
         .modal.active { display: flex; }
+        .profile-card { background: linear-gradient(145deg, #0f172a, #020617); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 2rem; width: 100%; max-width: 400px; padding: 30px; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .view-hidden { display: none !important; }
         
@@ -36,62 +37,77 @@
 <body class="bg-slate-950">
 
     <div id="nodeModal" class="modal">
-        <div class="auth-card w-full max-w-md p-8 relative">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500 font-black">CLOSE</button>
-            <h2 id="mNodeTitle" class="text-xl font-black text-emerald-500 mb-1 uppercase">NODE DATA</h2>
-            <p id="mNodeEmail" class="text-[10px] text-slate-400 mb-6 font-bold uppercase"></p>
-            <div id="mNodeContent" class="space-y-4"></div>
+        <div class="profile-card relative">
+            <button onclick="closeModal()" class="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            
+            <div class="text-center mb-6">
+                <div class="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-emerald-500/20">
+                    <span class="text-3xl">👤</span>
+                </div>
+                <h2 id="mNodeTitle" class="text-xl font-black text-white uppercase tracking-tight">NODE_NAME</h2>
+                <p id="mNodeStatusLabel" class="text-[9px] font-black text-emerald-500 tracking-[0.2em] uppercase mt-1">VERIFIED STATUS</p>
+            </div>
+
+            <div id="mNodeContent" class="space-y-3">
+                </div>
+
+            <div class="mt-8 pt-6 border-t border-white/5 flex gap-3">
+                <button id="modalAuthBtn" class="flex-1 py-3 bg-emerald-600 text-black font-black text-[10px] rounded-xl uppercase">Authorize</button>
+                <button onclick="openChatFromModal()" class="flex-1 py-3 bg-white/5 text-white font-black text-[10px] rounded-xl uppercase border border-white/10">Message</button>
+            </div>
         </div>
     </div>
 
     <header class="p-6 sticky top-0 z-40 bg-slate-950/80 backdrop-blur-md border-b border-white/5">
         <div class="flex justify-between items-center mb-4">
             <div>
-                <h1 class="text-xl font-black italic tracking-tighter text-emerald-500">.admin</h1>
-                <p class="text-[8px] font-black text-amber-500 uppercase mt-1 tracking-widest">Givers Never Lack</p>
+                <h1 class="text-xl font-black italic tracking-tighter text-emerald-500">.terminal</h1>
+                <p class="text-[8px] font-black text-amber-500 uppercase mt-1 tracking-widest italic">"Givers Never Lack"</p>
             </div>
             <div class="text-right">
                 <p id="stat-pool" class="text-lg font-black text-emerald-400 italic">₵0.00</p>
-                <p class="text-[7px] font-black text-slate-500 uppercase">System Liquidity</p>
+                <p class="text-[7px] font-black text-slate-500 uppercase">Liquidity Index</p>
             </div>
         </div>
         <div class="flex justify-between items-center">
-            <div id="admin-email" class="text-[7px] font-bold text-slate-500 uppercase italic">Awaiting Sync...</div>
-            <button onclick="rebornApp()" class="text-[7px] font-black text-rose-500 bg-rose-500/10 px-3 py-1 rounded-lg border border-rose-500/20">REBORN SYSTEM</button>
+            <div id="admin-email" class="text-[7px] font-bold text-slate-500 uppercase italic">Syncing...</div>
+            <button onclick="rebornApp()" class="text-[7px] font-black text-rose-500 bg-rose-500/5 px-3 py-1 rounded-lg border border-rose-500/10">REBORN SYSTEM</button>
         </div>
     </header>
 
     <main class="p-4">
         
         <section id="nodes" class="tab-content active">
-            <div class="auth-card p-6 mb-4 border-blue-500/20">
-                <h3 class="text-xs font-black uppercase text-blue-400 mb-4 italic">Verification & Limit Control</h3>
+            <div class="auth-card p-6 mb-4 border-blue-500/10">
+                <h3 class="text-[10px] font-black uppercase text-blue-400 mb-4 tracking-widest italic">Manual Override</h3>
                 <div class="space-y-3">
-                    <input type="email" id="targetEmail" placeholder="Node Email to Verify" class="input-box">
+                    <input type="email" id="targetEmail" placeholder="Direct Email Entry" class="input-box">
                     <div class="flex gap-2">
                         <input type="number" id="minRange" placeholder="Min ₵" class="input-box" value="10">
                         <input type="number" id="maxRange" placeholder="Max ₵" class="input-box" value="500">
                     </div>
-                    <button onclick="updateNodeStatus()" class="w-full py-4 btn-verify rounded-2xl text-[10px] uppercase">Verify Node & Lift Storm</button>
+                    <button onclick="updateNodeStatus()" class="w-full py-4 btn-verify rounded-2xl text-[10px] uppercase">Lift Storm Lock</button>
                 </div>
             </div>
-            <input type="text" id="nodeSearch" oninput="renderNodes()" placeholder="Search Name, Email, or Phone..." class="input-box border-emerald-500/10 mb-4">
+            <input type="text" id="nodeSearch" oninput="renderNodes()" placeholder="Search Nodes..." class="input-box border-emerald-500/10 mb-4">
             <div id="nodeList" class="space-y-3"></div>
         </section>
 
         <section id="missions" class="tab-content">
             <div class="auth-card p-6 mb-6">
-                <h3 class="text-sm font-black uppercase text-amber-500 mb-4 italic">Broadcast Mission</h3>
+                <h3 class="text-xs font-black uppercase text-amber-500 mb-4 italic">Broadcast Mission</h3>
                 <div class="space-y-3">
                     <select id="missionCategory" class="input-box bg-slate-900">
                         <option value="Social Need">Social Need</option>
                         <option value="Youth Empowerment">Youth Empowerment</option>
                     </select>
-                    <input type="text" id="missionTitle" placeholder="Project Name" class="input-box">
-                    <textarea id="missionDesc" placeholder="Narrative text..." class="input-box h-20"></textarea>
+                    <input type="text" id="missionTitle" placeholder="Project Title" class="input-box">
+                    <textarea id="missionDesc" placeholder="Project Description..." class="input-box h-20"></textarea>
                     <input type="text" id="missionImage" placeholder="Image URL" class="input-box">
-                    <input type="number" id="missionGoal" placeholder="Goal ₵" class="input-box">
-                    <button onclick="publishMission()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl text-[9px] uppercase">Post to Impact Hub</button>
+                    <input type="number" id="missionGoal" placeholder="Goal Amount ₵" class="input-box">
+                    <button onclick="publishMission()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl text-[9px] uppercase">Deploy Mission</button>
                 </div>
             </div>
             <div class="billboard-container no-scrollbar" id="billboardContent"></div>
@@ -99,35 +115,37 @@
 
         <section id="harvest" class="tab-content">
              <div class="auth-card p-6 mb-4 border-emerald-500/20">
-                <h3 class="text-sm font-black uppercase text-emerald-500 mb-4 italic">Grace Distribution</h3>
+                <h3 class="text-sm font-black uppercase text-emerald-500 mb-2 italic">Global Grace</h3>
+                <p class="text-[8px] text-slate-500 mb-4 uppercase">Direct deposit to every active vault</p>
                 <input type="number" id="hAmount" placeholder="Amount ₵" class="input-box mb-3">
-                <button onclick="broadcastGrace()" class="w-full py-4 bg-emerald-600 text-black font-black rounded-2xl text-xs uppercase">Release Grace</button>
+                <button onclick="broadcastGrace()" class="w-full py-4 bg-emerald-600 text-black font-black rounded-2xl text-xs uppercase italic">Inject Funds</button>
              </div>
              <div class="auth-card p-6 border-rose-500/20">
-                <h3 class="text-sm font-black uppercase text-rose-500 mb-4 italic">System Wither</h3>
+                <h3 class="text-sm font-black uppercase text-rose-500 mb-2 italic">Global Wither</h3>
+                <p class="text-[8px] text-slate-500 mb-4 uppercase">Direct deduction from every active vault</p>
                 <input type="number" id="wAmount" placeholder="Amount ₵" class="input-box mb-3">
-                <button onclick="broadcastWither()" class="w-full py-4 bg-rose-600 text-white font-black rounded-2xl text-xs uppercase">Engage Wither</button>
+                <button onclick="broadcastWither()" class="w-full py-4 bg-rose-600 text-white font-black rounded-2xl text-xs uppercase italic">Deduct Funds</button>
              </div>
         </section>
 
         <section id="payouts" class="tab-content">
-            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-4 px-2 italic">Withdrawal Log (2% Service Charge Deductible)</h3>
+            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-4 px-2 italic">Recent Withdrawals (-2% Service Fee)</h3>
             <div id="payoutList" class="space-y-3"></div>
         </section>
 
         <section id="messages" class="tab-content">
             <div id="chatHeader" class="view-hidden mb-4 p-4 auth-card border-emerald-500/20 flex items-center justify-between">
                 <div>
-                    <p class="text-[8px] font-black text-emerald-500 uppercase">Conversation With</p>
+                    <p class="text-[8px] font-black text-emerald-500 uppercase">SECURE LINK</p>
                     <h2 id="activeChatPartner" class="text-sm font-black text-white">---</h2>
                 </div>
-                <button onclick="closeChat()" class="text-[9px] font-black bg-white/10 px-4 py-2 rounded-lg">EXIT</button>
+                <button onclick="closeChat()" class="text-[9px] font-black bg-white/10 px-4 py-2 rounded-lg">DISCONNECT</button>
             </div>
             <div id="contactList" class="space-y-2"></div>
             <div id="chatBox" class="view-hidden flex flex-col h-[55vh]">
                 <div id="msgFeed" class="flex-1 overflow-y-auto space-y-2 mb-4 p-2 no-scrollbar"></div>
                 <div class="flex gap-2">
-                    <input type="text" id="adminMsgInput" placeholder="Reply..." class="input-box">
+                    <input type="text" id="adminMsgInput" placeholder="Message..." class="input-box">
                     <button onclick="sendMsg()" class="bg-emerald-500 text-black px-6 rounded-xl font-black text-[10px]">SEND</button>
                 </div>
             </div>
@@ -153,7 +171,7 @@
         const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
         const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
         const _gv = supabase.createClient(SB_URL, SB_KEY);
-        let adminUser = null, allNodes = [], currentChatId = null, nodeStats = {};
+        let adminUser = null, allNodes = [], currentChatId = null, nodeStats = {}, lastNodesList = [];
 
         async function sync() {
             const { data: nodes } = await _gv.from('profiles').select('*');
@@ -190,11 +208,10 @@
             const filtered = allNodes.filter(n => (n.full_name||'').toLowerCase().includes(term) || (n.email||'').toLowerCase().includes(term) || (n.phone_number||'').toLowerCase().includes(term));
             
             document.getElementById('nodeList').innerHTML = filtered.map(n => {
-                // If is_gifter is false, the user DASHBOARD is locked by the storm.
                 const isVerified = n.is_gifter === true; 
                 return `
-                <div class="auth-card p-4 flex justify-between items-center ${isVerified ? 'border-emerald-500/10' : 'border-rose-500/30'}">
-                    <div onclick="showNodeDetails('${n.id}')" class="cursor-pointer">
+                <div onclick="showNodeDetails('${n.id}')" class="auth-card p-4 flex justify-between items-center cursor-pointer hover:bg-white/5 transition-all">
+                    <div>
                         <p class="text-[10px] font-black uppercase text-white">${n.full_name || 'PENDING ID'}</p>
                         <p class="text-[7px] text-slate-500 font-bold">${n.email}</p>
                     </div>
@@ -202,22 +219,75 @@
                         <span class="status-pill ${isVerified ? 'bg-emerald-500/20 text-emerald-500' : 'bg-rose-500/20 text-rose-500'}">
                             ${isVerified ? 'Verified' : 'Locked'}
                         </span>
-                        ${!isVerified ? `<button onclick="quickAuth('${n.email}')" class="text-[8px] bg-emerald-500 text-black font-black px-2 py-1 rounded">AUTH</button>` : ''}
+                        <span class="text-white/20 text-[10px]">→</span>
                     </div>
                 </div>`;
             }).join('');
         }
 
+        function showNodeDetails(id) {
+            const n = allNodes.find(x => x.id === id);
+            const s = nodeStats[id] || {s:0,v:0,w:0};
+            const isVerified = n.is_gifter === true;
+
+            document.getElementById('mNodeTitle').innerText = n.full_name || 'ANONYMOUS NODE';
+            document.getElementById('mNodeStatusLabel').innerText = isVerified ? 'ACCESS GRANTED' : 'STORM LOCKED';
+            document.getElementById('mNodeStatusLabel').className = `text-[9px] font-black tracking-[0.2em] uppercase mt-1 ${isVerified ? 'text-emerald-500' : 'text-rose-500'}`;
+
+            document.getElementById('mNodeContent').innerHTML = `
+                <div class="grid grid-cols-1 gap-2">
+                    <div class="bg-black/40 p-3 rounded-xl border border-white/5 flex justify-between items-center">
+                        <span class="text-slate-500 text-[8px] font-black uppercase">Email</span>
+                        <span class="text-[10px] font-bold text-white">${n.email}</span>
+                    </div>
+                    <div class="bg-black/40 p-3 rounded-xl border border-white/5 flex justify-between items-center">
+                        <span class="text-slate-500 text-[8px] font-black uppercase">Phone</span>
+                        <span class="text-[10px] font-bold text-emerald-400">${n.phone_number || 'N/A'}</span>
+                    </div>
+                    <div class="bg-black/40 p-3 rounded-xl border border-white/5 flex justify-between items-center">
+                        <span class="text-slate-500 text-[8px] font-black uppercase">Max Capacity</span>
+                        <span class="text-[10px] font-bold text-white">₵${n.current_range_max}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex-1 bg-black/40 p-3 rounded-xl border border-white/5">
+                            <p class="text-emerald-500 text-[8px] font-black uppercase mb-1">Vault</p>
+                            <p class="text-sm font-black tracking-tighter italic">₵${(s.v-s.w).toFixed(2)}</p>
+                        </div>
+                        <div class="flex-1 bg-black/40 p-3 rounded-xl border border-white/5">
+                            <p class="text-blue-500 text-[8px] font-black uppercase mb-1">Total Seed</p>
+                            <p class="text-sm font-black tracking-tighter italic">₵${s.s.toFixed(2)}</p>
+                        </div>
+                    </div>
+                </div>`;
+
+            const authBtn = document.getElementById('modalAuthBtn');
+            authBtn.innerText = isVerified ? "De-Authorize" : "Authorize Node";
+            authBtn.onclick = () => quickAuth(n.email, !isVerified);
+            
+            // Set current chat context for the modal message button
+            window.lastInspectedNodeId = id;
+
+            document.getElementById('nodeModal').classList.add('active');
+        }
+
+        async function quickAuth(email, targetState) {
+            await _gv.from('profiles').update({ is_gifter: targetState, current_range_max: 500 }).eq('email', email);
+            closeModal();
+            sync();
+        }
+
+        function openChatFromModal() {
+            closeModal();
+            openChat(window.lastInspectedNodeId);
+            openTab(null, 'messages');
+        }
+
+        // Standard logic remains below...
         async function updateNodeStatus() {
             const email = document.getElementById('targetEmail').value;
             const max = document.getElementById('maxRange').value || 500;
             const min = document.getElementById('minRange').value || 10;
-            const { error } = await _gv.from('profiles').update({ is_gifter: true, current_range_min: parseFloat(min), current_range_max: parseFloat(max) }).eq('email', email);
-            if(!error) { alert("Node Authorized."); sync(); }
-        }
-
-        async function quickAuth(email) {
-            await _gv.from('profiles').update({ is_gifter: true, current_range_max: 500 }).eq('email', email);
+            await _gv.from('profiles').update({ is_gifter: true, current_range_min: parseFloat(min), current_range_max: parseFloat(max) }).eq('email', email);
             sync();
         }
 
@@ -227,49 +297,31 @@
                 const node = allNodes.find(n => n.id === w.user_id);
                 const charge = Math.abs(w.amount) * 0.02;
                 return `
-                <div class="auth-card p-4 border border-white/5">
-                    <div class="flex justify-between items-center">
-                        <div><p class="text-[10px] font-black uppercase">${node?.full_name || 'Node'}</p><p class="text-[7px] text-slate-500">${new Date(w.created_at).toLocaleString()}</p></div>
-                        <div class="text-right"><p class="text-[11px] font-black text-rose-500">₵${Math.abs(w.amount).toFixed(2)}</p><p class="text-[7px] font-black text-amber-500 uppercase">FEE: ₵${charge.toFixed(2)}</p></div>
-                    </div>
+                <div class="auth-card p-4 border border-white/5 flex justify-between items-center">
+                    <div><p class="text-[10px] font-black uppercase">${node?.full_name || 'Node'}</p><p class="text-[7px] text-slate-500">${new Date(w.created_at).toLocaleString()}</p></div>
+                    <div class="text-right"><p class="text-[11px] font-black text-rose-500">₵${Math.abs(w.amount).toFixed(2)}</p><p class="text-[7px] font-black text-amber-500">Fee: ₵${charge.toFixed(2)}</p></div>
                 </div>`;
             }).join('');
-        }
-
-        function showNodeDetails(id) {
-            const n = allNodes.find(x => x.id === id);
-            const s = nodeStats[id] || {s:0,v:0,w:0};
-            document.getElementById('mNodeTitle').innerText = n.full_name || 'NODE';
-            document.getElementById('mNodeEmail').innerText = n.email;
-            document.getElementById('mNodeContent').innerHTML = `
-                <div class="grid grid-cols-2 gap-3 text-[10px] font-bold">
-                    <div class="bg-black/40 p-3 rounded-xl border border-white/5"><p class="text-slate-500 text-[8px] mb-1">STORM LOCK</p>${n.is_gifter ? 'REMOVED' : 'ACTIVE'}</div>
-                    <div class="bg-black/40 p-3 rounded-xl border border-white/5"><p class="text-slate-500 text-[8px] mb-1">RANGE</p>₵${n.current_range_max}</div>
-                    <div class="bg-black/40 p-3 rounded-xl border border-white/5"><p class="text-emerald-500 text-[8px] mb-1">VAULT</p>₵${(s.v-s.w).toFixed(2)}</div>
-                    <div class="bg-black/40 p-3 rounded-xl border border-white/5"><p class="text-blue-500 text-[8px] mb-1">SEEDED</p>₵${s.s.toFixed(2)}</div>
-                </div>`;
-            document.getElementById('nodeModal').classList.add('active');
         }
 
         async function broadcastGrace() {
             const amt = parseFloat(document.getElementById('hAmount').value);
             if(!amt) return;
             for(let node of allNodes) { await _gv.from('ledger').insert([{ user_id: node.id, amount: amt, entry_type: 'seed', description: 'System Grace (Vault)' }]); }
-            alert("Grace Sent."); sync();
+            alert("Grace Distributed."); sync();
         }
 
         async function broadcastWither() {
             const amt = parseFloat(document.getElementById('wAmount').value);
             if(!amt) return;
             for(let node of allNodes) { await _gv.from('ledger').insert([{ user_id: node.id, amount: -amt, entry_type: 'withdrawal', description: 'System Wither' }]); }
-            alert("Wither Done."); sync();
+            alert("Wither Completed."); sync();
         }
 
         function renderMessages(msgs) {
             const unread = msgs.filter(m => m.receiver_id === adminUser?.id && !m.is_read).length;
             const b = document.getElementById('unreadBadge');
             unread > 0 ? (b.innerText = unread, b.classList.remove('view-hidden')) : b.classList.add('view-hidden');
-            
             if(currentChatId) {
                 const partner = allNodes.find(n => n.id === currentChatId);
                 document.getElementById('activeChatPartner').innerText = partner?.full_name || partner?.email;
@@ -281,7 +333,7 @@
             }
         }
 
-        function openChat(id) { currentChatId = id; document.getElementById('contactList').classList.add('view-hidden'); document.getElementById('chatHeader').classList.remove('view-hidden'); document.getElementById('chatBox').classList.remove('view-hidden'); sync(); }
+        function openChat(id) { currentChatId = id; document.getElementById('contactList').classList.add('view-hidden'); document.getElementById('chatHeader').classList.remove('view-hidden'); document.getElementById('chatBox').classList.remove('view-hidden'); }
         function closeChat() { currentChatId = null; document.getElementById('contactList').classList.remove('view-hidden'); document.getElementById('chatHeader').classList.add('view-hidden'); document.getElementById('chatBox').classList.add('view-hidden'); }
         async function sendMsg() {
             const input = document.getElementById('adminMsgInput');
@@ -299,18 +351,19 @@
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); 
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active')); 
             document.getElementById(n).classList.add('active'); 
-            e.currentTarget.classList.add('active'); 
+            if(e) e.currentTarget.classList.add('active');
+            else document.querySelector(`[onclick*="${n}"]`).classList.add('active');
             if(n === 'messages') closeChat(); 
         }
 
         function closeModal() { document.getElementById('nodeModal').classList.remove('active'); }
-        async function rebornApp() { if(confirm("Purge Ecosystem?") && prompt("Type REBORN:") === "REBORN") { await _gv.from('ledger').delete().neq('id', '0'); await _gv.from('profiles').delete().neq('id', adminUser.id); location.reload(); } }
+        async function rebornApp() { if(confirm("Purge?") && prompt("Type REBORN:") === "REBORN") { await _gv.from('ledger').delete().neq('id', '0'); await _gv.from('profiles').delete().neq('id', adminUser.id); location.reload(); } }
 
         async function init() {
             const { data: { user } } = await _gv.auth.getUser();
             if (!user) return;
             adminUser = user;
-            document.getElementById('admin-email').innerText = `TERMINAL LIVE: ${user.email}`;
+            document.getElementById('admin-email').innerText = `MASTER CONTROL: ${user.email}`;
             sync();
             _gv.channel('realtime').on('postgres_changes', { event: '*', schema: 'public' }, () => sync()).subscribe();
         }
