@@ -29,7 +29,6 @@
         .filter-btn.active { background: #10b981; color: black; border-color: #10b981; }
         .mission-preview { width: 100%; height: 120px; border-radius: 1rem; object-fit: cover; background: #000; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); display: none; }
         
-        /* Message UI Improvements */
         .chat-bubble { padding: 10px 14px; border-radius: 1rem; font-size: 11px; max-width: 80%; margin-bottom: 8px; position: relative; }
         .bubble-in { background: rgba(255,255,255,0.05); color: #cbd5e1; align-self: flex-start; }
         .bubble-out { background: #10b981; color: black; font-weight: 600; align-self: flex-end; }
@@ -175,7 +174,7 @@
         </section>
 
         <section id="payouts" class="tab-content">
-            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-3 px-2 italic">Withdrawal Queue (2% Deductible Applied)</h3>
+            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-3 px-2 italic">Withdrawal Queue (2% Deductible Logic)</h3>
             <div id="payoutList" class="space-y-2"></div>
         </section>
 
@@ -226,7 +225,6 @@
             allNodes = nodes || [];
             allMsgs = msgs || [];
 
-            // STATS CALCULATION
             let globalSeeded = 0, globalWithdrawn = 0, totalVaulted = 0;
             const nodeDetails = {};
             nodes?.forEach(n => { nodeDetails[n.id] = { seeded: 0, vaulted: 0, withdrawn: 0 }; });
@@ -252,14 +250,14 @@
             document.getElementById('stat-withdrawn').innerText = `GH₵${globalWithdrawn.toFixed(0)}`;
             document.getElementById('stat-nodes').innerText = nodes?.length || 0;
 
-            // NODE LIST RENDER
+            // NODE LIST
             const searchTerm = document.getElementById('nodeSearch').value.toLowerCase();
             document.getElementById('nodeList').innerHTML = nodes?.filter(n => n.email.toLowerCase().includes(searchTerm)).map(n => {
                 const stats = nodeDetails[n.id] || {seeded:0, vaulted:0, withdrawn:0};
                 return `<div class="auth-card p-4"><div class="flex justify-between items-start mb-2"><div><div class="flex items-center gap-2"><p class="text-[10px] font-black uppercase text-white">${n.full_name || 'ANON'}${n.is_muted ? '<span class="mute-badge">MUTED</span>' : ''}</p><span class="ref-tag">${n.payment_ref}</span></div><p class="text-[7px] text-slate-500 uppercase mt-1">${n.email}</p></div><span class="text-[6px] font-black px-2 py-0.5 rounded ${n.is_verified ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'} uppercase">${n.is_verified ? 'Verified' : 'Pending'}</span></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-3 rounded-xl border border-white/5"><div class="text-center"><p class="text-[6px] text-slate-500 uppercase">Seeded</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div class="text-center"><p class="text-[6px] text-rose-500 uppercase">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="grid grid-cols-4 gap-2"><button onclick="openUserChat('${n.id}')" class="btn-action btn-msg">Msg</button><button onclick="toggleSuspend('${n.id}', ${n.is_suspended})" class="btn-action btn-freeze">${n.is_suspended ? 'Rel' : 'Susp'}</button><button onclick="toggleVerify('${n.id}', ${n.is_verified})" class="btn-action bg-white/5 border border-white/10 text-white italic">Node</button><button onclick="expelNode('${n.id}')" class="btn-action btn-expel">Expel</button></div></div>`;
             }).join('');
 
-            // CONVERSATION LIST (With Unread Logic)
+            // CONVERSATIONS
             const sortedNodes = [...nodes].sort((a, b) => {
                 const aNew = allMsgs.find(m => m.sender_id === a.id && m.receiver_id === adminUser.id);
                 const bNew = allMsgs.find(m => m.sender_id === b.id && m.receiver_id === adminUser.id);
@@ -270,43 +268,58 @@
                 const lastUserMsg = allMsgs.find(m => m.sender_id === n.id);
                 const lastAdminMsg = allMsgs.find(m => m.receiver_id === n.id);
                 const isUnread = lastUserMsg && (!lastAdminMsg || new Date(lastUserMsg.created_at) > new Date(lastAdminMsg.created_at));
-                
-                return `<div onclick="openUserChat('${n.id}')" class="p-3 rounded-xl cursor-pointer hover:bg-white/5 transition flex items-center justify-between gap-3 ${currentChatId === n.id ? 'bg-emerald-500/10 border border-emerald-500/20' : ''}">
+                return `<div onclick="openUserChat('${n.id}')" class="p-3 rounded-xl cursor-pointer hover:bg-white/5 flex items-center justify-between gap-3 ${currentChatId === n.id ? 'bg-emerald-500/10 border border-emerald-500/20' : ''}">
                     <div class="flex items-center gap-3">
                         <div class="w-2 h-2 rounded-full ${n.is_suspended ? 'bg-rose-500' : 'bg-emerald-500'}"></div>
-                        <div>
-                            <p class="text-[9px] font-black uppercase ${isUnread ? 'text-emerald-400' : ''}">${n.full_name || 'Node'} ${n.is_muted ? '🔇' : ''}</p>
-                            <p class="text-[7px] text-slate-500 truncate w-32">${n.email}</p>
-                        </div>
+                        <div><p class="text-[9px] font-black uppercase ${isUnread ? 'text-emerald-400' : ''}">${n.full_name || 'Node'} ${n.is_muted ? '🔇' : ''}</p><p class="text-[7px] text-slate-500 truncate w-32">${n.email}</p></div>
                     </div>
                     ${isUnread ? '<div class="unread-dot animate-pulse"></div>' : ''}
                 </div>`;
             }).join('');
 
-            // PAYOUT LIST (2% DEDUCTIBLE)
+            // PAYOUT LIST (2% LOGIC)
             const withdrawals = ledger?.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID'));
             document.getElementById('payoutList').innerHTML = withdrawals?.length ? withdrawals.map(w => {
-                const absAmt = Math.abs(w.amount), fee = absAmt * 0.02, final = absAmt - fee;
-                return `<div class="auth-card p-4 flex justify-between items-center border border-white/5 mb-2"><div><p class="text-[10px] font-black text-amber-400">PAY: GH₵${final.toFixed(2)}</p><p class="text-[7px] font-bold text-rose-500 uppercase mb-1 italic">Deducted: ₵${fee.toFixed(2)} (2%)</p><p class="text-[7px] font-bold text-slate-500 uppercase">${w.description}</p></div><button onclick="approvePayout('${w.id}', ${final}, ${fee})" class="px-3 py-2 bg-blue-600 text-white text-[7px] font-black uppercase rounded-lg">Confirm Paid</button></div>`}).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">Queue Empty</p>`;
+                const rawAmt = Math.abs(w.amount), fee = rawAmt * 0.02, net = rawAmt - fee;
+                return `<div class="auth-card p-4 border border-white/5 mb-2"><div class="flex justify-between items-center"><div><p class="text-[10px] font-black text-emerald-400">DISPATCH: GH₵${net.toFixed(net % 1 === 0 ? 0 : 2)}</p><p class="text-[7px] font-bold text-slate-500 uppercase">Total: ₵${rawAmt} | Fee: ₵${fee.toFixed(2)} (2%)</p><p class="text-[6px] text-slate-600 italic mt-1">${w.description}</p></div><button onclick="approvePayout('${w.id}', ${rawAmt}, '${w.user_id}')" class="px-4 py-2 bg-emerald-600 text-white text-[8px] font-black uppercase rounded-lg">Confirm Paid</button></div></div>`}).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">Queue Empty</p>`;
 
-            // MISSION LOG RENDER
+            // MISSIONS
             document.getElementById('missionLog').innerHTML = missions?.length ? missions.map(m => `
                 <div class="auth-card p-4 border-l-4 border-amber-500 mb-2">
-                    <div class="flex justify-between items-center">
-                        <p class="text-[9px] font-black uppercase text-white">${m.description}</p>
-                        <button onclick="archiveMission('${m.id}')" class="text-[7px] font-black text-rose-500">Archive</button>
-                    </div>
+                    <div class="flex justify-between items-center"><p class="text-[9px] font-black uppercase text-white">${m.description}</p><button onclick="archiveMission('${m.id}')" class="text-[7px] font-black text-rose-500">Archive</button></div>
                     ${m.image_url ? `<img src="${m.image_url}" class="w-full h-20 object-cover rounded-lg mt-2 border border-white/5">` : ''}
                     <p class="text-[7px] font-bold text-slate-500 uppercase mt-1">Cost: GH₵${m.cost_to_settle}</p>
                 </div>`).join('') : '';
 
-            // LEDGER RENDER
+            // LEDGER
             let displayLedger = ledger || [];
             if(seedFilter) displayLedger = displayLedger.filter(l => l.entry_type === 'seed');
             document.getElementById('ledgerTable').innerHTML = displayLedger.slice(0, 30).map(l => {
                 const user = nodes?.find(p => p.id === l.user_id);
                 return `<div class="p-4 flex justify-between items-center text-[10px] border-b border-white/5"><div><p class="font-black uppercase text-emerald-500 text-[8px]">${user ? user.full_name : 'SYSTEM'}</p><p class="text-[7px] text-slate-500 uppercase">${l.description || ''}</p></div><p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p></div>`;
             }).join('');
+        }
+
+        async function approvePayout(id, rawAmt, userId) { 
+            const fee = rawAmt * 0.02, net = rawAmt - fee;
+            if(!confirm(`Confirm dispatch of GH₵${net.toFixed(2)}? (2% deduction applied)`)) return;
+            
+            const stamp = `PAID GH₵${net.toFixed(2)} | SERVICE FEE: ₵${fee.toFixed(2)} | AUTH: ${adminUser.email}`;
+            
+            // Database Ledger Update
+            const { error: ledgerError } = await _gv.from('ledger').update({ description: stamp }).eq('id', id);
+            if(ledgerError) return alert("Ledger Error");
+
+            // Inbox Pop (System Notification)
+            await _gv.from('messages').insert([{
+                sender_id: adminUser.id,
+                receiver_id: userId,
+                sender_name: "SYSTEM | PAYMENTS",
+                content: `✅ WITHDRAWAL DISPATCHED: GH₵${net.toFixed(2)} has been sent to your MoMo. A 2% service charge (GH₵${fee.toFixed(2)}) was applied. Givers Never Lack!`
+            }]);
+
+            alert("Payment Confirmed & User Notified");
+            sync(); 
         }
 
         async function openUserChat(userId) {
@@ -330,6 +343,7 @@
             const box = document.getElementById('adminChatBox');
             box.innerHTML = msgs?.map(m => `
                 <div class="chat-bubble ${m.sender_id === adminUser.id ? 'bubble-out' : 'bubble-in'}">
+                    <p class="text-[8px] font-black uppercase opacity-50 mb-1">${m.sender_name || 'NODE'}</p>
                     ${m.content}
                     <p class="text-[6px] opacity-40 mt-1">${new Date(m.created_at).toLocaleTimeString()}</p>
                 </div>`).join('') || '<p class="text-center py-20 opacity-10 text-[8px] font-black uppercase">Start Transmission</p>';
@@ -347,13 +361,6 @@
         async function toggleMute(userId, currentMute) {
             await _gv.from('profiles').update({ is_muted: !currentMute }).eq('id', userId);
             sync(); openUserChat(userId);
-        }
-
-        async function approvePayout(id, amt, fee) { 
-            if(!confirm(`Confirm payment of GH₵${amt.toFixed(2)}?`)) return;
-            const stamp = `PAID GH₵${amt} (-₵${fee} FEE) | AUTH BY: ${adminUser.email} | ${new Date().toLocaleDateString()}`;
-            await _gv.from('ledger').update({ description: stamp }).eq('id', id); 
-            sync(); 
         }
 
         async function postMission() {
