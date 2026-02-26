@@ -9,7 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; min-height: 100vh; margin: 0; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; min-height: 100vh; margin: 0; overflow-x: hidden; }
         .auth-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1.5rem; }
         .nav-link { display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.4; transition: 0.3s; cursor: pointer; position: relative; }
         .nav-link.active { opacity: 1; color: #10b981; }
@@ -20,22 +20,19 @@
         .input-box { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: white; border-radius: 1rem; padding: 1rem; width: 100%; outline: none; font-size: 16px; }
         .btn-action { padding: 8px; border-radius: 10px; font-size: 9px; font-weight: 900; text-transform: uppercase; transition: 0.2s; text-align: center; border: none; cursor: pointer; }
         .btn-msg { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); color: #60a5fa; }
-        .btn-freeze { background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.2); color: #fbbf24; }
-        .btn-expel { background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); color: #fb7185; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .slogan-badge { font-size: 8px; font-weight: 900; color: #fbbf24; letter-spacing: 2px; }
-        .ref-tag { background: #10b981; color: black; font-size: 8px; padding: 2px 6px; border-radius: 4px; font-weight: 900; }
-        .filter-btn { font-size: 7px; font-weight: 900; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); cursor: pointer; text-transform: uppercase; }
-        .filter-btn.active { background: #10b981; color: black; border-color: #10b981; }
-
-        /* Real-time Inbox Styles */
+        
+        /* Chat UI */
         .bubble-wrapper { display: flex; flex-direction: column; width: 100%; margin-bottom: 8px; }
-        .chat-bubble { padding: 10px 14px; border-radius: 1.2rem; font-size: 11px; max-width: 85%; position: relative; line-height: 1.4; }
+        .chat-bubble { padding: 12px 16px; border-radius: 1.2rem; font-size: 11px; max-width: 85%; position: relative; line-height: 1.4; }
         .bubble-in { background: rgba(255,255,255,0.08); color: #f1f5f9; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid rgba(255,255,255,0.05); }
         .bubble-out { background: #10b981; color: #020617; font-weight: 800; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .msg-time { font-size: 7px; opacity: 0.4; margin-top: 4px; display: block; }
+        .msg-time { font-size: 7px; opacity: 0.5; margin-top: 4px; display: block; }
         .unread-dot { width: 8px; height: 8px; background: #f43f5e; border-radius: 50%; box-shadow: 0 0 12px #f43f5e; }
         .view-hidden { display: none !important; }
+        .filter-btn { font-size: 7px; font-weight: 900; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); cursor: pointer; text-transform: uppercase; }
+        .filter-btn.active { background: #10b981; color: black; border-color: #10b981; }
     </style>
 </head>
 <body class="bg-slate-950">
@@ -117,7 +114,7 @@
                         </button>
                         <div>
                             <p id="activeChatName" class="text-[10px] font-black uppercase text-white truncate w-32"></p>
-                            <p class="text-[7px] text-emerald-500 font-bold uppercase">Secure Transmission</p>
+                            <p class="text-[7px] text-emerald-500 font-bold uppercase">Real-time Syncing</p>
                         </div>
                     </div>
                 </div>
@@ -143,7 +140,7 @@
                     <input type="number" id="mCost" placeholder="Target Amount ₵" class="input-box">
                     <div class="flex items-center gap-2 p-3 bg-white/5 rounded-xl">
                         <input type="checkbox" id="pushAlert" class="accent-emerald-500">
-                        <label for="pushAlert" class="text-[9px] font-black text-slate-400 uppercase">Trigger Global System Alert</label>
+                        <label for="pushAlert" class="text-[9px] font-black text-slate-400 uppercase">Notify All Inboxes</label>
                     </div>
                     <button onclick="postMission()" class="w-full py-4 bg-amber-500 text-black font-black rounded-2xl text-[10px] uppercase">Post Mission</button>
                 </div>
@@ -245,71 +242,77 @@
             const term = document.getElementById('nodeSearch').value.toLowerCase();
             document.getElementById('nodeList').innerHTML = nodes?.filter(n => n.email.toLowerCase().includes(term)).map(n => {
                 const stats = nodeDetails[n.id] || {seeded:0, vaulted:0, withdrawn:0};
-                return `<div class="auth-card p-4"><div class="flex justify-between items-center mb-2"><div><p class="text-[10px] font-black uppercase text-white">${n.full_name || 'ANON'}</p><p class="text-[7px] text-slate-500">${n.email}</p></div><span class="ref-tag">${n.payment_ref}</span></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-2 rounded-xl text-center"><div class="border-r border-white/5"><p class="text-[6px] uppercase">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div><p class="text-[6px] uppercase">Seed</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div class="border-l border-white/5"><p class="text-[6px] uppercase">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="flex gap-2"><button onclick="openUserChat('${n.id}')" class="btn-action btn-msg flex-1">Message</button><button onclick="toggleVerify('${n.id}', ${n.is_verified})" class="btn-action bg-white/5 text-white w-20 italic">Node</button></div></div>`;
+                return `<div class="auth-card p-4"><div class="flex justify-between items-center mb-2"><div><p class="text-[10px] font-black uppercase text-white">${n.full_name || 'ANON'}</p><p class="text-[7px] text-slate-500">${n.email}</p></div><span class="ref-tag">${n.payment_ref}</span></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-2 rounded-xl text-center"><div class="border-r border-white/5"><p class="text-[6px] uppercase">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div><p class="text-[6px] uppercase">Seed</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div class="border-l border-white/5"><p class="text-[6px] uppercase">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="flex gap-2"><button onclick="openUserChat('${n.id}')" class="btn-action btn-msg flex-1">Message</button></div></div>`;
             }).join('');
 
             renderInbox();
             updateNavBadge();
 
-            // Withdrawals Queue Logic
             const withdrawals = ledger?.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID'));
             document.getElementById('payoutList').innerHTML = withdrawals?.length ? withdrawals.map(w => {
                 const raw = Math.abs(w.amount), fee = raw * 0.02, net = raw - fee;
                 return `<div class="auth-card p-4 flex justify-between items-center mb-2"><div><p class="text-[10px] font-black text-emerald-400">DISPATCH: GH₵${net.toFixed(2)}</p><p class="text-[7px] text-slate-500 uppercase">Vault: ₵${raw} | 2% Deductible: ₵${fee.toFixed(2)}</p></div><button onclick="approvePayout('${w.id}', ${raw}, '${w.user_id}')" class="px-4 py-2 bg-emerald-600 text-white text-[8px] font-black uppercase rounded-lg">Confirm</button></div>`}).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">Queue Empty</p>`;
 
-            // Mission Log
             document.getElementById('missionLog').innerHTML = missions?.map(m => `<div class="p-3 bg-white/5 rounded-xl border border-white/5 text-[9px] mb-2 uppercase"><div class="flex justify-between"><b>${m.description}</b><span class="text-emerald-500">₵${m.cost_to_settle}</span></div></div>`).join('');
 
-            // Ledger View
-            let displayLedger = ledger || [];
-            if(seedFilter) displayLedger = displayLedger.filter(l => l.entry_type === 'seed');
-            if(withdrawFilter) displayLedger = displayLedger.filter(l => l.entry_type === 'withdrawal');
-            document.getElementById('ledgerTable').innerHTML = displayLedger.slice(0, 30).map(l => `<div class="p-4 flex justify-between items-center text-[10px]"><div><p class="text-[7px] text-slate-500 uppercase">${l.description}</p></div><p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p></div>`).join('');
+            let dL = ledger || [];
+            if(seedFilter) dL = dL.filter(l => l.entry_type === 'seed');
+            if(withdrawFilter) dL = dL.filter(l => l.entry_type === 'withdrawal');
+            document.getElementById('ledgerTable').innerHTML = dL.slice(0, 30).map(l => `<div class="p-4 flex justify-between items-center text-[10px]"><div><p class="text-[7px] text-slate-500 uppercase">${l.description}</p></div><p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p></div>`).join('');
         }
 
-        // --- HARVEST ACTIONS ---
-        async function broadcastGrace() {
-            const amt = parseFloat(document.getElementById('distAmount').value);
-            if(!amt) return;
-            await _gv.from('system_events').insert([{ type: 'grace', value: amt }]);
-            alert("Grace Dispatched."); sync();
+        // --- AUTOMATIC MARK AS READ LOGIC ---
+        async function markAsRead(nodeId) {
+            if(!nodeId) return;
+            // Updates all messages sent BY the user TO the admin that are currently unread
+            await _gv.from('messages')
+                .update({ is_read: true })
+                .match({ sender_id: nodeId, receiver_id: adminUser.id, is_read: false });
         }
 
-        async function broadcastWither() {
-            const amt = parseFloat(document.getElementById('wAmount').value);
-            const mins = parseInt(document.getElementById('wMins').value);
-            if(!amt || !mins) return;
-            await _gv.from('system_events').insert([{ type: 'wither', value: amt, duration: mins }]);
-            alert("Wither Unleashed."); sync();
-        }
-
-        async function postMission() {
-            const title = document.getElementById('mTitle').value.toUpperCase(), cost = document.getElementById('mCost').value, isAlert = document.getElementById('pushAlert').checked;
-            if(!title || !cost) return;
-            await _gv.from('settled_needs').insert([{ description: title, cost_to_settle: parseFloat(cost), status: 'LIVE', category: document.getElementById('mCategory').value, message: document.getElementById('mDesc').value }]);
-            if(isAlert) {
-                allNodes.forEach(async n => {
-                    await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: n.id, sender_name: "SYSTEM", content: `🚨 MISSION LIVE: "${title}". GIVERS NEVER LACK!` }]);
-                });
-            }
-            alert("Mission Broadcasted!"); sync();
-        }
-
-        // --- CHAT ACTIONS ---
         async function refreshChat() {
             if(!currentChatId) return;
-            const { data } = await _gv.from('messages').select('*')
-                .or(`and(sender_id.eq.${currentChatId},receiver_id.eq.${adminUser.id}),and(sender_id.eq.${adminUser.id},receiver_id.eq.${currentChatId})`)
+            
+            const { data, error } = await _gv.from('messages')
+                .select('*')
+                .or(`sender_id.eq.${currentChatId},receiver_id.eq.${currentChatId}`)
                 .order('created_at', { ascending: true });
+            
+            if(error) return;
+
             const box = document.getElementById('adminChatBox');
-            box.innerHTML = data?.map(m => `<div class="bubble-wrapper"><div class="chat-bubble ${m.sender_id === adminUser.id ? 'bubble-out' : 'bubble-in'}">${m.content}<span class="msg-time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div>`).join('');
+            if(!data || data.length === 0) {
+                box.innerHTML = `<p class="text-center py-10 opacity-20 text-[9px] font-black">START CONVERSATION</p>`;
+            } else {
+                box.innerHTML = data.map(m => {
+                    const isAdmin = m.sender_name === 'ADMIN' || m.sender_name === 'SYSTEM' || m.sender_id === adminUser.id;
+                    return `
+                    <div class="bubble-wrapper">
+                        <div class="chat-bubble ${isAdmin ? 'bubble-out' : 'bubble-in'}">
+                            ${m.content}
+                            <span class="msg-time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
             box.scrollTop = box.scrollHeight;
+            
+            // Trigger automatic read update
+            markAsRead(currentChatId);
         }
 
         async function sendAdminReply() {
-            const i = document.getElementById('adminReplyInput'); if(!i.value.trim()) return;
-            const content = i.value.toUpperCase(); i.value = '';
-            await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: currentChatId, content: content, sender_name: 'ADMIN' }]);
+            const i = document.getElementById('adminReplyInput'); 
+            if(!i.value.trim() || !currentChatId) return;
+            const content = i.value.toUpperCase();
+            i.value = '';
+            await _gv.from('messages').insert([{ 
+                sender_id: adminUser.id, 
+                receiver_id: currentChatId, 
+                content: content, 
+                sender_name: 'ADMIN',
+                is_read: true // Admin's own messages are read by default
+            }]);
             refreshChat();
         }
 
@@ -320,36 +323,73 @@
                 return (mb?.created_at || 0) - (ma?.created_at || 0);
             });
             document.getElementById('contactList').innerHTML = sorted.map(n => {
-                const lastIn = allMsgs.find(m => m.sender_id === n.id);
-                const lastOut = allMsgs.find(m => m.receiver_id === n.id);
-                const isUnread = lastIn && (!lastOut || new Date(lastIn.created_at) > new Date(lastOut.created_at));
-                if(msgFilter === 'unread' && !isUnread) return '';
-                return `<div onclick="openUserChat('${n.id}')" class="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between cursor-pointer"><div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full ${isUnread ? 'bg-rose-500 animate-pulse' : 'bg-white/10'}"></div><p class="text-[10px] font-black uppercase ${isUnread ? 'text-white' : 'text-slate-500'}">${n.full_name || 'NODE'}</p></div>${isUnread ? '<div class="unread-dot"></div>' : ''}</div>`;
+                const unreads = allMsgs.filter(m => m.sender_id === n.id && m.receiver_id === adminUser.id && !m.is_read);
+                const hasUnread = unreads.length > 0;
+                
+                if(msgFilter === 'unread' && !hasUnread) return '';
+                
+                return `
+                <div onclick="openUserChat('${n.id}')" class="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <div class="w-2 h-2 rounded-full ${hasUnread ? 'bg-rose-500 animate-pulse' : 'bg-white/10'}"></div>
+                        <p class="text-[10px] font-black uppercase ${hasUnread ? 'text-white' : 'text-slate-500'}">${n.full_name || 'NODE'}</p>
+                    </div>
+                    ${hasUnread ? `<div class="bg-rose-500 text-[7px] font-black px-2 py-1 rounded-full">${unreads.length}</div>` : ''}
+                </div>`;
             }).join('');
         }
 
         async function openUserChat(id) {
-            currentChatId = id; const node = allNodes.find(x => x.id === id);
+            currentChatId = id; const n = allNodes.find(x => x.id === id);
             openTab(null, 'messages');
             document.getElementById('inboxView').classList.add('view-hidden');
             document.getElementById('chatView').classList.remove('view-hidden');
-            document.getElementById('activeChatName').innerText = node.full_name || node.email;
+            document.getElementById('activeChatName').innerText = n.full_name || n.email;
             refreshChat();
         }
 
         function closeChat() { currentChatId = null; document.getElementById('chatView').classList.add('view-hidden'); document.getElementById('inboxView').classList.remove('view-hidden'); sync(); }
 
-        // --- TAB & UI LOGIC ---
+        // --- GLOBAL SYSTEM ACTIONS ---
+        async function broadcastGrace() {
+            const amt = parseFloat(document.getElementById('distAmount').value);
+            if(amt) { await _gv.from('system_events').insert([{ type: 'grace', value: amt }]); alert("Grace Sent."); sync(); }
+        }
+        async function broadcastWither() {
+            const amt = parseFloat(document.getElementById('wAmount').value);
+            const mins = parseInt(document.getElementById('wMins').value);
+            if(amt && mins) { await _gv.from('system_events').insert([{ type: 'wither', value: amt, duration: mins }]); alert("Wither Sent."); sync(); }
+        }
+        async function postMission() {
+            const title = document.getElementById('mTitle').value.toUpperCase(), cost = document.getElementById('mCost').value, isAlert = document.getElementById('pushAlert').checked;
+            if(!title || !cost) return;
+            await _gv.from('settled_needs').insert([{ description: title, cost_to_settle: parseFloat(cost), status: 'LIVE', category: document.getElementById('mCategory').value, message: document.getElementById('mDesc').value }]);
+            if(isAlert) {
+                allNodes.forEach(async n => { await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: n.id, sender_name: "SYSTEM", content: `🚨 NEW MISSION: ${title}. GIVERS NEVER LACK!` }]); });
+            }
+            alert("Broadcast Complete."); sync();
+        }
+
+        async function approvePayout(id, raw, userId) {
+            const fee = raw * 0.02, net = raw - fee;
+            if(!confirm(`Authorize GH₵${net.toFixed(2)}? (2% Deductible: ₵${fee.toFixed(2)})`)) return;
+            await _gv.from('ledger').update({ description: `PAID GH₵${net.toFixed(2)} | BY: ${adminUser.email}` }).eq('id', id);
+            await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: userId, sender_name: "SYSTEM", content: `✅ WITHDRAWAL SUCCESS: GH₵${net.toFixed(2)} DISPATCHED. GIVERS NEVER LACK!` }]);
+            sync();
+        }
+
+        async function updateRange() { 
+            const e = document.getElementById('targetEmail').value, min = document.getElementById('minRange').value, max = document.getElementById('maxRange').value;
+            await _gv.from('profiles').update({ current_range_min: parseFloat(min), current_range_max: parseFloat(max), is_gifter: true }).eq('email', e);
+            alert("Node Updated."); sync();
+        }
+
+        // --- INTERFACE CONTROL ---
         function setMsgFilter(t) { msgFilter = t; renderInbox(); }
         function updateNavBadge() {
-            let count = 0;
-            allNodes.forEach(n => {
-                const lastIn = allMsgs.find(m => m.sender_id === n.id);
-                const lastOut = allMsgs.find(m => m.receiver_id === n.id);
-                if (lastIn && (!lastOut || new Date(lastIn.created_at) > new Date(lastOut.created_at))) count++;
-            });
+            const unreadCount = allMsgs.filter(m => m.receiver_id === adminUser.id && !m.is_read).length;
             const b = document.getElementById('navMsgBadge');
-            if(count > 0) { b.innerText = count; b.classList.remove('view-hidden'); } else b.classList.add('view-hidden');
+            if(unreadCount > 0) { b.innerText = unreadCount; b.classList.remove('view-hidden'); } else b.classList.add('view-hidden');
         }
         function toggleSeedFilter() { seedFilter = !seedFilter; withdrawFilter = false; sync(); }
         function toggleWithdrawFilter() { withdrawFilter = !withdrawFilter; seedFilter = false; sync(); }
@@ -361,29 +401,6 @@
             if(n === 'messages') closeChat();
         }
         function payoutTabClick(e) { openTab(e, 'payouts'); sync(); }
-
-        async function approvePayout(id, raw, userId) {
-            const fee = raw * 0.02, net = raw - fee;
-            if(!confirm(`Dispatch GH₵${net.toFixed(2)}? (2% Fee: ₵${fee.toFixed(2)})`)) return;
-            await _gv.from('ledger').update({ description: `PAID GH₵${net.toFixed(2)} | AUTH: ${adminUser.email}` }).eq('id', id);
-            await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: userId, sender_name: "SYSTEM", content: `✅ DISPATCHED: GH₵${net.toFixed(2)} SENT. 2% SERVICE CHARGE APPLIED. GIVERS NEVER LACK!` }]);
-            sync();
-        }
-
-        async function updateRange() { 
-            const e = document.getElementById('targetEmail').value, min = document.getElementById('minRange').value, max = document.getElementById('maxRange').value;
-            await _gv.from('profiles').update({ current_range_min: parseFloat(min), current_range_max: parseFloat(max), is_gifter: true }).eq('email', e);
-            alert("Authorized."); sync();
-        }
-
-        function exportLedgerCSV() {
-            let csv = "Date,Description,Amount\n";
-            allMsgs.forEach(l => csv += `${new Date(l.created_at).toLocaleDateString()},"${l.description}",${l.amount}\n`);
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `ledger.csv`; a.click();
-        }
 
         async function init() { 
             sync(); 
