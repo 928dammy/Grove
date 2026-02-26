@@ -17,7 +17,7 @@
         .tab-content { display: none; padding-bottom: 120px; }
         .tab-content.active { display: block; animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .input-box { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: white; border-radius: 1rem; padding: 1rem; width: 100%; outline: none; font-size: 16px; }
+        .input-box { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: white; border-radius: 1rem; padding: 1rem; width: 100%; outline: none; font-size: 14px; }
         .btn-action { padding: 8px; border-radius: 10px; font-size: 9px; font-weight: 900; text-transform: uppercase; transition: 0.2s; text-align: center; border: none; cursor: pointer; }
         .btn-verify { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: #10b981; }
         .btn-suspend { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); color: #f59e0b; }
@@ -93,11 +93,35 @@
                         <input type="number" id="minRange" placeholder="Min Gift ₵" class="input-box">
                         <input type="number" id="maxRange" placeholder="Max Gift ₵" class="input-box">
                     </div>
-                    <button onclick="updateNodeStatus('verify')" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl text-[10px] uppercase italic">Verify & Release Lockout</button>
+                    <button onclick="updateNodeStatus()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl text-[10px] uppercase italic">Verify & Release Lockout</button>
                 </div>
             </div>
             <input type="text" id="nodeSearch" oninput="sync()" placeholder="Search nodes..." class="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none text-emerald-400 w-full mb-4">
             <div id="nodeList" class="space-y-3"></div>
+        </section>
+
+        <section id="missions" class="tab-content">
+            <div class="auth-card p-6 mb-4">
+                <h3 class="text-sm font-black uppercase text-amber-500 mb-4 italic">Deploy Impact Mission</h3>
+                <div class="space-y-3">
+                    <select id="missionCategory" class="input-box bg-slate-900 border-white/10">
+                        <option value="Social Need">Social Need</option>
+                        <option value="Youth Empowerment">Youth Empowerment</option>
+                        <option value="Environment">Environment</option>
+                        <option value="Community Growth">Community Growth</option>
+                        <option value="Health & Wellness">Health & Wellness</option>
+                    </select>
+                    <input type="text" id="missionTitle" placeholder="Mission Name (e.g. Barbershop Revamp)" class="input-box">
+                    <textarea id="missionDesc" placeholder="Narrative: Explain the barbershop revamp or plastic waste strategy..." class="input-box h-24"></textarea>
+                    <input type="text" id="missionImage" placeholder="Image URL (Unsplash/Direct Link)" class="input-box">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="missionGoal" placeholder="Seeding Goal ₵" class="input-box">
+                        <button onclick="publishMission()" class="bg-amber-600 text-white font-black rounded-2xl text-[9px] uppercase tracking-widest">Broadcast</button>
+                    </div>
+                </div>
+            </div>
+            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-3 px-2 italic">Impact Hub Live Feed</h3>
+            <div id="missionList" class="space-y-3"></div>
         </section>
 
         <section id="messages" class="tab-content">
@@ -126,20 +150,6 @@
                     <button onclick="sendAdminReply()" class="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-500 text-black px-4 py-2 rounded-xl font-black text-[9px] uppercase">Send</button>
                 </div>
             </div>
-        </section>
-
-        <section id="missions" class="tab-content">
-            <div class="auth-card p-6 mb-4">
-                <h3 class="text-sm font-black uppercase text-amber-500 mb-4 italic">Broadcast New Mission</h3>
-                <div class="space-y-3">
-                    <input type="text" id="missionTitle" placeholder="Mission Name (e.g. Barbershop Revamp)" class="input-box">
-                    <textarea id="missionDesc" placeholder="Describe the mission details, recycling bin locations, or plastic waste trading terms..." class="input-box h-32"></textarea>
-                    <input type="number" id="missionGoal" placeholder="Seeding Goal ₵" class="input-box">
-                    <button onclick="publishMission()" class="w-full py-4 bg-amber-600 text-white font-black rounded-2xl text-xs uppercase">Deploy Mission</button>
-                </div>
-            </div>
-            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-3 px-2 italic">Active Missions</h3>
-            <div id="missionList" class="space-y-3"></div>
         </section>
 
         <section id="harvest" class="tab-content">
@@ -183,7 +193,7 @@
     <nav class="fixed bottom-0 left-0 right-0 h-20 bg-slate-950/90 border-t border-white/10 backdrop-blur-lg flex justify-around items-center z-50">
         <div class="nav-link active" onclick="openTab(event, 'nodes')"><span>👥</span><span class="text-[7px] font-black uppercase mt-1">Nodes</span></div>
         <div class="nav-link" onclick="openTab(event, 'messages')"><div id="navMsgBadge" class="nav-badge view-hidden">0</div><span>💬</span><span class="text-[7px] font-black uppercase mt-1">Chat</span></div>
-        <div class="nav-link" onclick="openTab(event, 'missions')"><span>🚀</span><span class="text-[7px] font-black uppercase mt-1">Mission</span></div>
+        <div class="nav-link" onclick="openTab(event, 'missions')"><span>🚀</span><span class="text-[7px] font-black uppercase mt-1">Impact</span></div>
         <div class="nav-link" onclick="openTab(event, 'harvest')"><span>🌿</span><span class="text-[7px] font-black uppercase mt-1">Harvest</span></div>
         <div class="nav-link" onclick="payoutTabClick(event)"><span>💰</span><span class="text-[7px] font-black uppercase mt-1">Payouts</span></div>
         <div class="nav-link" onclick="openTab(event, 'ledger')"><span>📜</span><span class="text-[7px] font-black uppercase mt-1">Ledger</span></div>
@@ -251,12 +261,13 @@
             renderInbox();
             updateNavBadge();
 
+            // PAYOUTS
             const withdrawals = ledger?.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID'));
             document.getElementById('payoutList').innerHTML = withdrawals?.length ? withdrawals.map(w => {
                 const raw = Math.abs(w.amount), fee = raw * 0.02, net = raw - fee;
                 return `<div class="auth-card p-4 flex justify-between items-center mb-2"><div><p class="text-[10px] font-black text-emerald-400">DISPATCH: GH₵${net.toFixed(2)}</p><p class="text-[7px] text-slate-500 uppercase">Vault: ₵${raw} | 2% Fee: ₵${fee.toFixed(2)}</p></div><button onclick="approvePayout('${w.id}', ${raw}, '${w.user_id}')" class="px-4 py-2 bg-emerald-600 text-white text-[8px] font-black uppercase rounded-lg">Confirm</button></div>`}).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">Queue Empty</p>`;
 
-            // LEDGER RENDERER
+            // LEDGER
             let dL = ledger || [];
             if(ledgerFilter !== 'all') dL = dL.filter(l => l.entry_type === ledgerFilter);
             document.getElementById('ledgerTable').innerHTML = dL.map(l => {
@@ -265,175 +276,113 @@
                 const time = new Date(l.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const userName = userMap[l.user_id] || 'SYS';
                 const color = isWithdrawal ? 'text-rose-400' : (isVault ? 'text-emerald-400' : 'text-blue-400');
-                const symbol = isWithdrawal ? '↓' : '↑';
-                return `<div class="p-4 grid grid-cols-4 items-center hover:bg-white/[0.02] transition-colors"><div class="col-span-1"><p class="text-[9px] font-black uppercase text-white truncate">${userName}</p><p class="text-[6px] text-slate-500 uppercase">${time}</p></div><div class="col-span-2 text-center px-2"><p class="text-[7px] text-slate-400 uppercase font-bold tracking-tight leading-tight">${l.description}</p></div><div class="col-span-1 text-right"><p class="text-[10px] font-black ${color}">${symbol} ₵${Math.abs(l.amount).toFixed(0)}</p></div></div>`;
+                return `<div class="p-4 grid grid-cols-4 items-center text-[10px]"><div class="col-span-1"><p class="font-black text-white">${userName}</p></div><div class="col-span-2 text-center text-slate-400 text-[7px] uppercase">${l.description}</div><div class="col-span-1 text-right font-black ${color}">₵${Math.abs(l.amount).toFixed(0)}</div></div>`;
             }).join('');
 
-            // MISSION RENDERER
-            document.getElementById('missionList').innerHTML = missions?.length ? missions.map(m => `
-                <div class="auth-card p-4 border border-amber-500/10">
-                    <div class="flex justify-between items-center mb-2">
-                        <p class="text-[10px] font-black text-amber-500 uppercase italic">${m.title || 'GROVE MISSION'}</p>
-                        <span class="text-[8px] font-black bg-amber-500/10 text-amber-500 px-2 py-1 rounded-md tracking-widest uppercase">ACTIVE</span>
-                    </div>
-                    <p class="text-[9px] text-slate-300 leading-relaxed mb-4">${m.description || 'No details provided.'}</p>
-                    <div class="flex justify-between items-center bg-black/40 p-3 rounded-xl border border-white/5">
-                        <div>
-                            <p class="text-[6px] text-slate-500 uppercase">Target Goal</p>
-                            <p class="text-[10px] font-black text-white italic">₵${m.value || 0}</p>
+            // MISSIONS
+            document.getElementById('missionList').innerHTML = missions?.map(m => `
+                <div class="auth-card overflow-hidden">
+                    ${m.image_url ? `<img src="${m.image_url}" class="w-full h-24 object-cover opacity-60">` : ''}
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-[6px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full uppercase">${m.category}</span>
+                            <button onclick="deleteMission('${m.id}')" class="text-rose-500 text-[8px] font-black uppercase">End</button>
                         </div>
-                        <button onclick="deleteMission('${m.id}')" class="text-rose-500 text-[8px] font-black uppercase">End Mission</button>
+                        <p class="text-[10px] font-black uppercase text-white">${m.title}</p>
+                        <p class="text-[8px] text-slate-400 line-clamp-2 mt-1 mb-3">${m.description}</p>
+                        <div class="flex justify-between text-[8px] font-black border-t border-white/5 pt-2">
+                            <p class="text-slate-500 uppercase italic">Goal</p>
+                            <p class="text-amber-400 italic">₵${m.value}</p>
+                        </div>
                     </div>
                 </div>
-            `).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">No Missions Deployed</p>`;
+            `).join('');
         }
 
         async function publishMission() {
+            const cat = document.getElementById('missionCategory').value;
             const title = document.getElementById('missionTitle').value;
             const desc = document.getElementById('missionDesc').value;
             const goal = document.getElementById('missionGoal').value;
-            if(!title || !desc || !goal) return alert("Fill all mission parameters.");
+            const img = document.getElementById('missionImage').value;
+            if(!title || !desc || !goal) return alert("Missing fields.");
             await _gv.from('system_events').insert([{ 
-                type: 'mission', 
-                title: title.toUpperCase(), 
-                description: desc, 
-                value: parseFloat(goal) 
+                type: 'mission', category: cat, title: title.toUpperCase(), 
+                description: desc, value: parseFloat(goal), image_url: img 
             }]);
-            document.getElementById('missionTitle').value = '';
-            document.getElementById('missionDesc').value = '';
-            document.getElementById('missionGoal').value = '';
-            alert("Mission Broadcasted to all Nodes.");
-            sync();
+            alert("Mission Live in Impact Hub."); sync();
         }
 
-        async function deleteMission(id) {
-            if(!confirm("End this mission?")) return;
-            await _gv.from('system_events').delete().eq('id', id);
-            sync();
-        }
-
-        async function quickUpdate(email, action) {
-            let updates = {};
-            if(action === 'verify') updates = { is_gifter: true };
-            if(action === 'suspend') updates = { is_gifter: false };
-            if(action === 'expel') {
-                if(!confirm("Expel node? This will block their dashboard access.")) return;
-                updates = { is_gifter: false, current_range_max: 0 };
-            }
-            await _gv.from('profiles').update(updates).eq('email', email);
-            alert(`Node ${action}ed.`); sync();
-        }
+        async function deleteMission(id) { if(confirm("Delete mission?")) { await _gv.from('system_events').delete().eq('id', id); sync(); } }
 
         async function updateNodeStatus() {
             const e = document.getElementById('targetEmail').value;
             const min = document.getElementById('minRange').value;
             const max = document.getElementById('maxRange').value;
-            if(!e) return;
-            await _gv.from('profiles').update({ 
-                is_gifter: true, 
-                current_range_min: parseFloat(min || 0), 
-                current_range_max: parseFloat(max || 0) 
-            }).eq('email', e);
-            alert("Node Verified & Unlocked."); sync();
+            await _gv.from('profiles').update({ is_gifter: true, current_range_min: parseFloat(min || 0), current_range_max: parseFloat(max || 0) }).eq('email', e);
+            alert("Node Verified."); sync();
         }
 
-        async function markAsRead(nodeId) {
-            await _gv.from('messages').update({ is_read: true }).match({ sender_id: nodeId, receiver_id: adminUser.id, is_read: false });
-        }
-
-        async function refreshChat() {
-            if(!currentChatId) return;
-            const { data } = await _gv.from('messages').select('*').or(`sender_id.eq.${currentChatId},receiver_id.eq.${currentChatId}`).order('created_at', { ascending: true });
-            const box = document.getElementById('adminChatBox');
-            box.innerHTML = data?.map(m => {
-                const isAdmin = m.sender_id === adminUser.id || m.sender_name === 'ADMIN';
-                return `<div class="bubble-wrapper"><div class="chat-bubble ${isAdmin ? 'bubble-out' : 'bubble-in'}">${m.content}<span class="msg-time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div>`;
-            }).join('');
-            box.scrollTop = box.scrollHeight;
-            markAsRead(currentChatId);
+        async function quickUpdate(email, action) {
+            let updates = { is_gifter: (action === 'verify') };
+            if(action === 'expel') updates.current_range_max = 0;
+            await _gv.from('profiles').update(updates).eq('email', email);
+            sync();
         }
 
         async function sendAdminReply() {
-            const i = document.getElementById('adminReplyInput'); if(!i.value.trim() || !currentChatId) return;
-            await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: currentChatId, content: i.value.toUpperCase(), sender_name: 'ADMIN', is_read: true }]);
+            const i = document.getElementById('adminReplyInput'); if(!i.value || !currentChatId) return;
+            await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: currentChatId, content: i.value.toUpperCase(), sender_name: 'ADMIN' }]);
             i.value = ''; refreshChat();
         }
 
+        async function refreshChat() {
+            const { data } = await _gv.from('messages').select('*').or(`sender_id.eq.${currentChatId},receiver_id.eq.${currentChatId}`).order('created_at', { ascending: true });
+            document.getElementById('adminChatBox').innerHTML = data?.map(m => `<div class="bubble-wrapper"><div class="chat-bubble ${m.sender_name === 'ADMIN' ? 'bubble-out' : 'bubble-in'}">${m.content}</div></div>`).join('');
+            document.getElementById('adminChatBox').scrollTop = 9999;
+        }
+
         function renderInbox() {
-            document.getElementById('contactList').innerHTML = allNodes.map(n => {
-                const unreads = allMsgs.filter(m => m.sender_id === n.id && m.receiver_id === adminUser.id && !m.is_read);
-                if(msgFilter === 'unread' && unreads.length === 0) return '';
-                return `<div onclick="openUserChat('${n.id}')" class="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between cursor-pointer"><div><p class="text-[10px] font-black uppercase">${n.full_name || 'NODE'}</p><p class="text-[7px] text-slate-500">${n.email}</p></div>${unreads.length ? `<div class="bg-rose-500 text-[7px] font-black px-2 py-1 rounded-full">${unreads.length}</div>` : ''}</div>`;
-            }).join('');
+            document.getElementById('contactList').innerHTML = allNodes.map(n => `<div onclick="openUserChat('${n.id}')" class="p-4 rounded-2xl bg-white/5 flex justify-between"><div><p class="text-[9px] font-black uppercase">${n.full_name || n.email}</p></div></div>`).join('');
         }
 
-        async function openUserChat(id) {
-            currentChatId = id; const n = allNodes.find(x => x.id === id);
-            openTab(null, 'messages');
-            document.getElementById('inboxView').classList.add('view-hidden');
-            document.getElementById('chatView').classList.remove('view-hidden');
-            document.getElementById('activeChatName').innerText = n.full_name || n.email;
-            refreshChat();
-        }
-
-        function closeChat() { currentChatId = null; document.getElementById('chatView').classList.add('view-hidden'); document.getElementById('inboxView').classList.remove('view-hidden'); }
-
-        async function broadcastGrace() {
-            const amt = document.getElementById('distAmount').value;
-            if(amt) { await _gv.from('system_events').insert([{ type: 'grace', value: parseFloat(amt) }]); alert("Grace Released."); sync(); }
-        }
-
-        async function broadcastWither() {
-            const amt = document.getElementById('wAmount').value, mins = document.getElementById('wMins').value;
-            if(amt && mins) { await _gv.from('system_events').insert([{ type: 'wither', value: parseFloat(amt), duration: parseInt(mins) }]); alert("Wither Unleashed."); sync(); }
-        }
-
-        async function approvePayout(id, raw, userId) {
-            const net = raw * 0.98;
-            if(!confirm(`Confirm payout of GH₵${net.toFixed(2)}?`)) return;
-            await _gv.from('ledger').update({ description: `PAID GH₵${net.toFixed(2)}` }).eq('id', id);
-            await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: userId, sender_name: "SYSTEM", content: `✅ PAYOUT SUCCESS: GH₵${net.toFixed(2)} SENT. GIVERS NEVER LACK.` }]);
-            sync();
-        }
-
-        function setMsgFilter(t) { msgFilter = t; renderInbox(); }
-        
-        function setLedgerFilter(f) {
-            ledgerFilter = f;
-            document.querySelectorAll('#ledger .filter-btn').forEach(btn => btn.classList.remove('active'));
-            if(f === 'all') document.getElementById('btnFilterAll').classList.add('active');
-            if(f === 'seed') document.getElementById('btnFilterSeed').classList.add('active');
-            if(f === 'withdrawal') document.getElementById('btnFilterWithdraw').classList.add('active');
-            sync();
-        }
-
-        function updateNavBadge() {
-            const unreadCount = allMsgs.filter(m => m.receiver_id === adminUser.id && !m.is_read).length;
-            const b = document.getElementById('navMsgBadge');
-            if(unreadCount > 0) { b.innerText = unreadCount; b.classList.remove('view-hidden'); } else b.classList.add('view-hidden');
-        }
-
+        function openUserChat(id) { currentChatId = id; openTab(null, 'messages'); document.getElementById('inboxView').classList.add('view-hidden'); document.getElementById('chatView').classList.remove('view-hidden'); refreshChat(); }
+        function closeChat() { document.getElementById('chatView').classList.add('view-hidden'); document.getElementById('inboxView').classList.remove('view-hidden'); }
         function openTab(e, n) { 
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); 
             document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active')); 
             document.getElementById(n).classList.add('active'); 
             if(e) e.currentTarget.classList.add('active');
-            if(n === 'messages') closeChat();
-            if(n === 'ledger' || n === 'missions') sync();
         }
-        
         function payoutTabClick(e) { openTab(e, 'payouts'); sync(); }
+        function setLedgerFilter(f) { ledgerFilter = f; sync(); }
+        function setMsgFilter(t) { msgFilter = t; sync(); }
+        function updateNavBadge() {} // Optional implementation
+
+        async function approvePayout(id, raw, userId) {
+            const net = raw * 0.98;
+            await _gv.from('ledger').update({ description: `PAID GH₵${net.toFixed(2)}` }).eq('id', id);
+            sync();
+        }
+
+        async function broadcastGrace() {
+            const amt = document.getElementById('distAmount').value;
+            await _gv.from('system_events').insert([{ type: 'grace', value: parseFloat(amt) }]);
+            alert("Grace Distributed."); sync();
+        }
+
+        async function broadcastWither() {
+            const amt = document.getElementById('wAmount').value, mins = document.getElementById('wMins').value;
+            await _gv.from('system_events').insert([{ type: 'wither', value: parseFloat(amt), duration: parseInt(mins) }]);
+            alert("Wither Deployed."); sync();
+        }
 
         async function init() { 
             sync(); 
-            _gv.channel('realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
-                if(currentChatId) refreshChat(); else sync();
-            })
+            _gv.channel('realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => sync())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'ledger' }, () => sync())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'system_events' }, () => sync())
             .subscribe();
         }
-        
         checkAdmin();
     </script>
 </body>
