@@ -14,14 +14,13 @@
         html, body { height: 100%; margin: 0; padding: 0; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; min-height: 100vh; padding: 1rem; color: #1e293b; overflow-x: hidden; overflow-y: auto; }
         
-        /* Fixed but the page behind it can scroll */
+        /* UNMOVABLE PAYMENT CARD - PAGE SCROLLS BEHIND */
         .compact-activation-card {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 1000; width: 92%; max-width: 320px; max-height: 90vh;
+            z-index: 1000; width: 92%; max-width: 340px;
             background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 2.5rem; padding: 1.5rem; text-align: center;
-            box-shadow: 0 0 100px rgba(0,0,0,0.9); display: none;
-            overflow-y: auto;
+            box-shadow: 0 0 60px rgba(0,0,0,0.9); display: none;
         }
 
         .terminal-parent { background: var(--grove-deep); border-radius: 2.5rem; color: #ecfdf5; min-height: 580px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; z-index: 50; display: flex; flex-direction: column; }
@@ -31,11 +30,13 @@
         .nav-pill { background: rgba(0, 0, 0, 0.3); padding: 4px; border-radius: 12px; display: flex; gap: 4px; margin: 0 1rem 1rem; }
         .tab-trigger { flex: 1; color: rgba(255,255,255,0.3); font-size: 9px; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 10px 0; text-align: center; border-radius: 8px; }
         .tab-trigger.active { color: #fff; background: var(--grove-leaf); }
+        
         .tab-content { display: none; padding: 0 1rem 1rem; flex: 1; overflow-y: auto; }
         .tab-content.active { display: flex; flex-direction: column; }
-
-        #chat-scroller { scroll-behavior: smooth; }
         
+        /* SCROLLABLE CONVERSATION VIEW */
+        #chat-scroller { height: 350px; overflow-y: auto; scroll-behavior: smooth; padding-right: 5px; }
+
         .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; z-index: 100; }
         
         .grove-modal-overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.9); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 1rem; }
@@ -46,28 +47,31 @@
 
     <div id="manual-pay-card" class="compact-activation-card">
         <div id="p-net-logo" class="h-10 mb-3 bg-center bg-no-repeat bg-contain"></div>
-        <p id="p-net-name" class="text-[8px] font-black uppercase tracking-[0.2em] mb-3">Network</p>
+        <p id="p-net-name" class="text-[8px] font-black uppercase tracking-[0.2em] mb-4">Awaiting Sync...</p>
         
-        <div class="bg-black/40 rounded-2xl p-4 mb-4 space-y-3 text-left border border-white/5">
-            <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black uppercase">Recipient</span><span id="p-full-name" class="text-[9px] text-white font-bold italic">---</span></div>
-            <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black uppercase">Your MoMo</span><span id="p-phone" class="text-[10px] font-bold tracking-widest">---</span></div>
-            <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black uppercase">Seed Amount</span><span id="p-seed-amt" class="text-[10px] text-white font-black">₵0.00</span></div>
-            <div class="flex justify-between items-center border-t border-white/10 pt-3"><span class="text-[7px] text-slate-500 font-black uppercase">Merchant No.</span><span id="p-merchant" class="text-[11px] font-black tracking-widest">---</span></div>
+        <div class="bg-black/40 rounded-3xl p-5 mb-5 space-y-4 text-left border border-white/5">
+            <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black uppercase">Recipient</span><span id="p-reg-name" class="text-[9px] text-white font-bold italic">---</span></div>
+            <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black uppercase">User Phone</span><span id="p-reg-phone" class="text-[10px] font-black tracking-widest">---</span></div>
+            <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black uppercase">Seed Amount</span><span id="p-gift-val" class="text-[11px] text-white font-black">₵0.00</span></div>
             
-            <div class="text-center pt-2 bg-white/5 rounded-xl py-2 mt-2">
-                <p class="text-[7px] text-emerald-500 font-black italic mb-1 uppercase">Reference ID Required</p>
-                <p id="p-payment-ref" class="text-2xl text-white tracking-[0.3em] font-black">----</p>
+            <div class="border-t border-white/10 pt-4 mt-2">
+                <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black uppercase">Merchant No.</span><span id="p-merch-no" class="text-[11px] font-black tracking-widest">---</span></div>
+            </div>
+            
+            <div class="text-center pt-3 bg-white/5 rounded-2xl py-3 mt-2">
+                <p class="text-[7px] text-emerald-500 font-black italic mb-1 uppercase tracking-widest">Reference ID</p>
+                <p id="p-unique-ref" class="text-2xl text-amber-400 tracking-[0.3em] font-black">----</p>
             </div>
         </div>
         
-        <button onclick="confirmPaymentAction()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase shadow-lg mb-2">I made the payment already</button>
-        <button onclick="hideActivationCard()" class="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-2">Minimize</button>
+        <button onclick="confirmPaymentAction()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase shadow-lg mb-2">I have already paid</button>
+        <button onclick="hidePaymentCard()" class="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-2">Close Terminal View</button>
     </div>
 
     <header class="seed-header">
         <div class="flex justify-between items-center mb-5">
             <div><h1 class="text-base font-black italic">GROVE</h1><p id="user-display" class="text-[7px] font-black text-emerald-600 uppercase">SYNCING...</p></div>
-            <button onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 border px-4 py-1.5 rounded-lg bg-white">ENGINE ⚙️</button>
+            <button onclick="logout()" class="text-[7px] font-black text-rose-500 border px-4 py-1.5 rounded-lg bg-white">EXIT ⏻</button>
         </div>
         <div class="flex gap-3">
             <div class="flex-1 bg-slate-50 p-4 rounded-2xl border"><p class="text-[8px] font-black text-slate-400 uppercase">Seed Base</p><div id="s-seed" class="text-sm font-black italic">GH₵0.00</div></div>
@@ -76,143 +80,151 @@
     </header>
 
     <main class="terminal-parent">
-        <div class="broadcast-ticker"><div id="ticker-output" class="ticker-move italic">GIVERS NEVER LACK • LOADING...</div></div>
+        <div class="broadcast-ticker"><div class="ticker-move italic">GIVERS NEVER LACK • NODE OPERATIONAL • SYNC COMPLETE</div></div>
         
         <nav class="nav-pill">
             <div id="btn-orchard" class="tab-trigger active" onclick="openTab('t-orchard')">Orchard</div>
             <div id="btn-vault" class="tab-trigger" onclick="openTab('t-vault')">Vault</div>
             <div id="btn-comm" class="tab-trigger" onclick="openTab('t-comm')">Messages</div>
-            <div id="btn-ledger" class="tab-trigger" onclick="openTab('t-ledger')">Ledger</div>
         </nav>
 
         <section id="t-orchard" class="tab-content active">
-            <div class="bg-emerald-500/10 p-5 rounded-2xl border border-white/5 mb-8">
-                <p class="text-[9px] text-emerald-100/60 font-semibold leading-relaxed uppercase tracking-tighter">Impact Node Monitoring Active</p>
-            </div>
-            <button id="restore-payment-btn" onclick="showActivationCard()" class="mt-auto mx-auto mb-4 py-3 px-8 border border-amber-500/30 bg-amber-500/5 text-amber-500 text-[9px] font-black uppercase rounded-full hidden italic">Show Activation Details</button>
+            <button id="show-pay-btn" onclick="showPaymentCard()" class="mt-4 py-3 border border-amber-500/30 bg-amber-500/5 text-amber-500 text-[9px] font-black uppercase rounded-xl italic hidden">View Activation Node</button>
         </section>
 
-        <section id="t-comm" class="tab-content h-full">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-[7px] font-black text-slate-500 uppercase">Secure Channel</span>
-                <button onclick="scrollChat('bottom')" class="text-[7px] font-black text-emerald-500 uppercase">↓ Bottom</button>
+        <section id="t-comm" class="tab-content">
+            <div class="flex justify-between mb-2">
+                <button onclick="scrollChat('top')" class="text-[7px] font-black text-slate-500 uppercase">↑ Jump to Top</button>
+                <button onclick="scrollChat('bottom')" class="text-[7px] font-black text-slate-500 uppercase">↓ Jump to Bottom</button>
             </div>
-            <div id="chat-scroller" class="flex-1 overflow-y-auto pr-2 space-y-4 min-h-[300px] max-h-[400px] py-4 flex flex-col"></div>
+            <div id="chat-scroller" class="space-y-4 py-4 flex flex-col"></div>
             <div class="pt-4 border-t border-white/5 flex gap-2">
-                <input id="chat-input" type="text" placeholder="SECURE CHANNEL..." class="flex-1 bg-black/40 border border-white/10 rounded-xl py-4 px-5 text-[10px] text-white focus:outline-none">
-                <button onclick="sendMessage()" class="bg-emerald-600 px-6 rounded-xl text-[9px] font-black uppercase text-white">Send</button>
+                <input id="chat-input" type="text" placeholder="SECURE CHANNEL..." class="flex-1 bg-black/40 border border-white/10 rounded-xl py-4 px-5 text-[10px] text-white outline-none">
+                <button onclick="sendMsg()" class="bg-emerald-600 px-6 rounded-xl text-[9px] font-black text-white uppercase">Send</button>
             </div>
         </section>
 
         <section id="t-vault" class="tab-content">
-            <div class="bg-gradient-to-b from-emerald-950 to-emerald-900 rounded-[2.5rem] p-10 text-center flex flex-col justify-center min-h-[320px] border border-white/5">
-                <p class="text-[8px] font-black text-emerald-400 uppercase mb-2">Claim Vaulted</p>
-                <h2 id="v-balance" class="text-4xl font-black italic text-white mb-8">GH₵0.00</h2>
-                <div class="space-y-3">
-                    <button onclick="vaultGrace()" class="w-full py-4 bg-white text-emerald-900 rounded-xl text-[9px] font-black uppercase tracking-widest">Claim to Vault</button>
-                    <button onclick="triggerWithdrawal()" class="w-full py-4 bg-emerald-500/20 text-white rounded-xl text-[9px] font-black uppercase border border-white/10">Withdraw</button>
-                </div>
+            <div class="bg-emerald-950/50 rounded-[2.5rem] p-8 text-center border border-white/5">
+                <p class="text-[8px] font-black text-emerald-400 uppercase mb-2">Vaulted Balance</p>
+                <h2 id="v-balance" class="text-3xl font-black italic text-white mb-6">GH₵0.00</h2>
+                <button onclick="triggerWithdrawal()" class="w-full py-4 bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase">Withdraw</button>
             </div>
         </section>
-
-        <section id="t-ledger" class="tab-content"><div id="ledger-content" class="bg-black/20 rounded-2xl divide-y divide-white/5"></div></section>
     </main>
-
-    <div id="withdrawModal" class="grove-modal-overlay">
-        <div class="grove-modal-box">
-            <p class="text-[9px] font-black text-emerald-600 uppercase mb-4 italic tracking-widest">Withdrawal Node</p>
-            <div class="space-y-3 mb-6 text-left">
-                <div class="flex justify-between text-[10px] font-bold text-slate-400"><span>VAULT TOTAL</span><span id="m-avail" class="text-slate-900">GH₵ 0.00</span></div>
-                <div class="flex justify-between text-[10px] font-bold border-b border-slate-100 pb-2"><span class="text-rose-500 uppercase">Service Charge (2%)</span><span id="m-fee" class="text-rose-500">GH₵ 0.00</span></div>
-                <div class="flex justify-between text-base font-black italic pt-2"><span class="text-slate-900 uppercase">Payout</span><span id="m-final" class="text-emerald-600">GH₵ 0.00</span></div>
-            </div>
-            <button onclick="processWithdrawal()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase shadow-lg mb-2">Confirm Payout</button>
-            <button onclick="toggleModal('withdrawModal', false)" class="w-full py-2 text-[8px] font-black text-slate-400 uppercase">Cancel</button>
-        </div>
-    </div>
 
     <script>
         const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
         const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
         const _gv = supabase.createClient(SB_URL, SB_KEY);
-        let userObj = null, globalVaulted = 0;
+        let userObj = null;
 
         const MERCHANT_MTN = "0535261448";
         const MERCHANT_TEL = "020XXXXXXX";
         const MERCHANT_AT = "026XXXXXXX";
 
-        function showActivationCard() { document.getElementById('manual-pay-card').style.display = 'block'; }
-        function hideActivationCard() { document.getElementById('manual-pay-card').style.display = 'none'; }
+        const NET_LOGOS = {
+            MTN: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/MTN_Logo.svg/1200px-MTN_Logo.svg.png",
+            TELECEL: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Telecel_Logo.svg/1200px-Telecel_Logo.svg.png",
+            AT: "https://upload.wikimedia.org/wikipedia/en/3/3a/AirtelTigo_logo.png"
+        };
+
+        function showPaymentCard() { document.getElementById('manual-pay-card').style.display = 'block'; }
+        function hidePaymentCard() { document.getElementById('manual-pay-card').style.display = 'none'; }
         
-        function scrollChat(dir) {
-            const s = document.getElementById('chat-scroller');
-            s.scrollTop = dir === 'bottom' ? s.scrollHeight : 0;
+        function scrollChat(pos) {
+            const scroller = document.getElementById('chat-scroller');
+            scroller.scrollTop = pos === 'bottom' ? scroller.scrollHeight : 0;
         }
 
         async function sync() {
             const { data: profile } = await _gv.from('profiles').select('*').eq('id', userObj.id).maybeSingle();
+            if (!profile) return;
+
+            // Populate Payment Card with signup data
+            document.getElementById('p-reg-name').innerText = profile.full_name || "---";
+            document.getElementById('p-reg-phone').innerText = profile.phone || "---";
+            document.getElementById('p-gift-val').innerText = `GH₵ ${(profile.current_range_max || 0).toFixed(2)}`;
+            document.getElementById('p-unique-ref').innerText = profile.payment_ref || "----";
             
-            if(!profile || profile.is_verified !== true) {
-                document.getElementById('restore-payment-btn').classList.remove('hidden');
-                showActivationCard();
-                
-                if(profile) {
-                    document.getElementById('p-full-name').innerText = profile.full_name || "---";
-                    document.getElementById('p-phone').innerText = profile.phone || "---";
-                    document.getElementById('p-seed-amt').innerText = `GH₵ ${(profile.current_range_max || 0).toFixed(2)}`;
-                    document.getElementById('p-payment-ref').innerText = profile.payment_ref || "----";
+            const net = (profile.network || 'UNKNOWN').toUpperCase();
+            const config = {
+                MTN: { color: "#fbbf24", merch: MERCHANT_MTN },
+                TELECEL: { color: "#ef4444", merch: MERCHANT_TEL },
+                AT: { color: "#3b82f6", merch: MERCHANT_AT }
+            };
 
-                    const net = (profile.network || '').toUpperCase();
-                    const NET_DATA = {
-                        MTN: { color: "#fbbf24", number: MERCHANT_MTN, logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/MTN_Logo.svg/1200px-MTN_Logo.svg.png" },
-                        TELECEL: { color: "#ef4444", number: MERCHANT_TEL, logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Telecel_Logo.svg/1200px-Telecel_Logo.svg.png" },
-                        AT: { color: "#3b82f6", number: MERCHANT_AT, logo: "https://upload.wikimedia.org/wikipedia/en/3/3a/AirtelTigo_logo.png" }
-                    };
-
-                    if (NET_DATA[net]) {
-                        const d = NET_DATA[net];
-                        document.getElementById('p-net-logo').style.backgroundImage = `url('${d.logo}')`;
-                        document.getElementById('p-merchant').innerText = d.number;
-                        document.getElementById('p-merchant').style.color = d.color;
-                        document.getElementById('p-phone').style.color = d.color;
-                        document.getElementById('p-net-name').style.color = d.color;
-                        document.getElementById('p-net-name').innerText = net;
-                    }
-                }
-            } else {
-                hideActivationCard();
-                document.getElementById('restore-payment-btn').classList.add('hidden');
+            if (config[net]) {
+                const c = config[net];
+                document.getElementById('p-net-logo').style.backgroundImage = `url('${NET_LOGOS[net]}')`;
+                document.getElementById('p-net-name').innerText = net;
+                document.getElementById('p-net-name').style.color = c.color;
+                // Color code all numbers to network color
+                document.getElementById('p-reg-phone').style.color = c.color;
+                document.getElementById('p-merch-no').innerText = c.merch;
+                document.getElementById('p-merch-no').style.color = c.color;
             }
-            // ... rest of sync logic for balances and ledger
+
+            if (profile.is_verified) {
+                hidePaymentCard();
+                document.getElementById('show-pay-btn').classList.add('hidden');
+                document.getElementById('user-display').innerText = profile.full_name.toUpperCase();
+            } else {
+                showPaymentCard();
+                document.getElementById('show-pay-btn').classList.remove('hidden');
+            }
+            fetchMessages();
         }
 
-        async function sendMessage() {
+        async function sendMsg() {
             const input = document.getElementById('chat-input');
-            if(!input.value.trim()) return;
-            const { error } = await _gv.from('messages').insert([{ 
+            if(!input.value) return;
+            await _gv.from('messages').insert([{ 
                 sender_id: userObj.id, 
                 receiver_id: '00000000-0000-0000-0000-000000000000', 
-                content: input.value, 
-                sender_name: userObj.email.split('@')[0] 
+                content: input.value 
             }]);
-            if(!error) { input.value = ''; fetchMessages(); }
+            input.value = '';
+            fetchMessages();
+        }
+
+        async function confirmPaymentAction() {
+            const ref = document.getElementById('p-unique-ref').innerText;
+            const amt = document.getElementById('p-gift-val').innerText;
+            await _gv.from('messages').insert([{ 
+                sender_id: userObj.id, 
+                receiver_id: '00000000-0000-0000-0000-000000000000', 
+                content: `PAYMENT_CLAIM: I have paid ${amt}. Reference ID: ${ref}` 
+            }]);
+            alert("Verification Message Sent to Admin.");
+            hidePaymentCard();
+        }
+
+        async function fetchMessages() {
+            const { data: msgs } = await _gv.from('messages').select('*').or(`sender_id.eq.${userObj.id},receiver_id.eq.${userObj.id}`).order('created_at', { ascending: true });
+            const container = document.getElementById('chat-scroller');
+            container.innerHTML = msgs.map(m => `
+                <div class="flex flex-col ${m.sender_id === userObj.id ? 'items-end' : 'items-start'}">
+                    <div class="p-3 rounded-2xl max-w-[80%] text-[10px] ${m.sender_id === userObj.id ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-white/5 border border-white/10'}">${m.content}</div>
+                </div>
+            `).join('');
+            scrollChat('bottom');
+        }
+
+        function openTab(id) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('btn-' + id.split('-')[1]).classList.add('active');
         }
 
         async function init() { 
             const { data: { user } } = await _gv.auth.getUser(); 
             if(!user) return window.location.href = "index.html"; 
-            userObj = user; sync();
-            _gv.channel('realtime-sync').on('postgres_changes', {event:'*', schema:'public'}, () => { sync(); }).subscribe(); 
+            userObj = user; sync(); 
         }
         init();
-        
-        function openTab(id) { 
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); 
-            document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active')); 
-            document.getElementById(id).classList.add('active'); 
-            document.getElementById('btn-' + id.split('-')[1]).classList.add('active'); 
-            if(id === 't-comm') scrollChat('bottom');
-        }
+        async function logout() { await _gv.auth.signOut(); window.location.href = "index.html"; }
     </script>
 </body>
 </html>
