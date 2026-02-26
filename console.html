@@ -9,7 +9,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; min-height: 100vh; margin: 0; }
+        /* CLOAKING: Page stays invisible until checkAdmin() passes */
+        body { 
+            display: none; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #020617; 
+            color: white; 
+            min-height: 100vh; 
+            margin: 0; 
+        }
         .auth-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1.5rem; }
         .nav-link { display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.4; transition: 0.3s; cursor: pointer; }
         .nav-link.active { opacity: 1; color: #10b981; }
@@ -29,11 +37,11 @@
         .filter-btn.active { background: #10b981; color: black; border-color: #10b981; }
         .mission-preview { width: 100%; height: 120px; border-radius: 1rem; object-fit: cover; background: #000; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); display: none; }
         
-        /* Fixed Chat Styles */
-        .bubble-container-in { display: flex; flex-direction: column; align-items: flex-start; width: 100%; margin-bottom: 8px; }
-        .bubble-container-out { display: flex; flex-direction: column; align-items: flex-end; width: 100%; margin-bottom: 8px; }
-        .chat-bubble { padding: 10px 14px; border-radius: 1.2rem; font-size: 11px; max-width: 85%; line-height: 1.4; word-wrap: break-word; }
-        .bubble-in { background: rgba(255,255,255,0.08); color: #cbd5e1; border-bottom-left-radius: 4px; }
+        /* Message Alignment Styles */
+        .bubble-container-in { display: flex; flex-direction: column; align-items: flex-start; width: 100%; margin-bottom: 12px; }
+        .bubble-container-out { display: flex; flex-direction: column; align-items: flex-end; width: 100%; margin-bottom: 12px; }
+        .chat-bubble { padding: 10px 14px; border-radius: 1.2rem; font-size: 11px; max-width: 80%; line-height: 1.4; word-wrap: break-word; }
+        .bubble-in { background: rgba(255, 255, 255, 0.08); color: #cbd5e1; border-bottom-left-radius: 4px; }
         .bubble-out { background: #10b981; color: #020617; font-weight: 600; border-bottom-right-radius: 4px; }
         .msg-time { font-size: 7px; opacity: 0.5; margin-top: 4px; text-transform: uppercase; }
         .unread-dot { width: 8px; height: 8px; background: #f43f5e; border-radius: 50%; box-shadow: 0 0 10px #f43f5e; }
@@ -48,7 +56,7 @@
                 <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                 <div>
                     <p id="admin-display" class="text-[9px] font-black text-white uppercase tracking-tighter">Verified Manager</p>
-                    <p id="admin-email" class="text-[7px] font-bold text-slate-500 uppercase">Syncing Session...</p>
+                    <p id="admin-email" class="text-[7px] font-bold text-slate-500 uppercase">Verifying Access...</p>
                 </div>
             </div>
             <button onclick="_gv.auth.signOut().then(() => location.href='consoleenter.html')" class="text-[8px] font-black text-rose-500 bg-rose-500/10 border border-rose-500/20 px-4 py-2 rounded-xl uppercase">Terminate Session</button>
@@ -153,7 +161,7 @@
                     <button onclick="postMission()" class="w-full py-4 bg-amber-500 text-black font-black rounded-2xl text-[10px] uppercase">Broadcast</button>
                 </div>
             </div>
-            <h3 class="text-[10px] font-black text-slate-500 uppercase px-2 mb-2 italic">Broadcast History</h3>
+            <h3 class="text-[9px] font-black text-slate-500 uppercase px-2 mb-2 italic">Broadcast History</h3>
             <div id="missionLog" class="space-y-2"></div>
         </section>
 
@@ -204,10 +212,18 @@
         let adminUser = null, allNodes = [], currentChatId = null, seedFilter = false, allMsgs = [];
 
         async function checkAdmin() {
-            const { data: { user } } = await _gv.auth.getUser();
-            if (!user) { window.location.href = 'consoleenter.html'; return; }
+            const { data: { user }, error } = await _gv.auth.getUser();
+            
+            if (error || !user) { 
+                window.location.replace('consoleenter.html'); 
+                return; 
+            }
+
             adminUser = user;
             document.getElementById('admin-email').innerText = user.email;
+            
+            // SHOW PAGE ONLY AFTER VERIFICATION
+            document.body.style.display = 'block';
             init();
         }
 
@@ -246,14 +262,12 @@
             document.getElementById('stat-withdrawn').innerText = `GH₵${globalWithdrawn.toFixed(0)}`;
             document.getElementById('stat-nodes').innerText = nodes?.length || 0;
 
-            // NODE LIST
             const searchTerm = document.getElementById('nodeSearch').value.toLowerCase();
             document.getElementById('nodeList').innerHTML = nodes?.filter(n => n.email.toLowerCase().includes(searchTerm)).map(n => {
                 const stats = nodeDetails[n.id] || {seeded:0, vaulted:0, withdrawn:0};
                 return `<div class="auth-card p-4"><div class="flex justify-between items-start mb-2"><div><div class="flex items-center gap-2"><p class="text-[10px] font-black uppercase text-white">${n.full_name || 'ANON'}${n.is_muted ? '<span class="mute-badge">MUTED</span>' : ''}</p><span class="ref-tag">${n.payment_ref}</span></div><p class="text-[7px] text-slate-500 uppercase mt-1">${n.email}</p></div><span class="text-[6px] font-black px-2 py-0.5 rounded ${n.is_verified ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'} uppercase">${n.is_verified ? 'Verified' : 'Pending'}</span></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-3 rounded-xl border border-white/5"><div class="text-center"><p class="text-[6px] text-slate-500 uppercase">Seeded</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div class="text-center"><p class="text-[6px] text-rose-500 uppercase">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="grid grid-cols-4 gap-2"><button onclick="openUserChat('${n.id}')" class="btn-action btn-msg">Msg</button><button onclick="toggleSuspend('${n.id}', ${n.is_suspended})" class="btn-action btn-freeze">${n.is_suspended ? 'Rel' : 'Susp'}</button><button onclick="toggleVerify('${n.id}', ${n.is_verified})" class="btn-action bg-white/5 border border-white/10 text-white italic">Node</button><button onclick="expelNode('${n.id}')" class="btn-action btn-expel">Expel</button></div></div>`;
             }).join('');
 
-            // CONVERSATIONS
             const sortedNodes = [...nodes].sort((a, b) => {
                 const aNew = allMsgs.find(m => m.sender_id === a.id && m.receiver_id === adminUser.id);
                 const bNew = allMsgs.find(m => m.sender_id === b.id && m.receiver_id === adminUser.id);
@@ -273,13 +287,11 @@
                 </div>`;
             }).join('');
 
-            // PAYOUT LIST (2% LOGIC)
             const withdrawals = ledger?.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID'));
             document.getElementById('payoutList').innerHTML = withdrawals?.length ? withdrawals.map(w => {
                 const rawAmt = Math.abs(w.amount), fee = rawAmt * 0.02, net = rawAmt - fee;
-                return `<div class="auth-card p-4 border border-white/5 mb-2"><div class="flex justify-between items-center"><div><p class="text-[10px] font-black text-emerald-400">DISPATCH: GH₵${net.toFixed(2)}</p><p class="text-[7px] font-bold text-slate-500 uppercase">Claim Vaulted: ₵${rawAmt} | 2% Deductible: ₵${fee.toFixed(2)}</p><p class="text-[6px] text-slate-600 italic mt-1">${w.description}</p></div><button onclick="approvePayout('${w.id}', ${rawAmt}, '${w.user_id}')" class="px-4 py-2 bg-emerald-600 text-white text-[8px] font-black uppercase rounded-lg">Confirm Paid</button></div></div>`}).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">Queue Empty</p>`;
+                return `<div class="auth-card p-4 border border-white/5 mb-2"><div class="flex justify-between items-center"><div><p class="text-[10px] font-black text-emerald-400">DISPATCH: GH₵${net.toFixed(2)}</p><p class="text-[7px] font-bold text-slate-500 uppercase">Available for withdrawal: GH₵${rawAmt} | 2% Service Charge Deductible: GH₵${fee.toFixed(2)}</p><p class="text-[6px] text-slate-600 italic mt-1">${w.description}</p></div><button onclick="approvePayout('${w.id}', ${rawAmt}, '${w.user_id}')" class="px-4 py-2 bg-emerald-600 text-white text-[8px] font-black uppercase rounded-lg">Confirm Paid</button></div></div>`}).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">Queue Empty</p>`;
 
-            // MISSIONS (WITH HISTORY)
             document.getElementById('missionLog').innerHTML = missions?.length ? missions.map(m => `
                 <div class="auth-card p-4 border-l-4 ${m.status === 'ARCHIVED' ? 'border-slate-700 opacity-50' : 'border-amber-500'} mb-2">
                     <div class="flex justify-between items-center">
@@ -288,17 +300,12 @@
                             <p class="text-[9px] font-black uppercase text-white">${m.description}</p>
                         </div>
                         <div class="flex gap-2">
-                            ${m.status !== 'ARCHIVED' ? `<button onclick="archiveMission('${m.id}')" class="text-[7px] font-black text-rose-500 uppercase">Archive</button>` : `<span class="text-[7px] font-black text-slate-500 uppercase">Archived</span>`}
+                            ${m.status !== 'ARCHIVED' ? `<button onclick="archiveMission('${m.id}')" class="text-[7px] font-black text-rose-500 uppercase">Archive</button>` : `<span class="text-[7px] font-black text-slate-500 uppercase">In History</span>`}
                         </div>
                     </div>
                     ${m.image_url ? `<img src="${m.image_url}" class="w-full h-24 object-cover rounded-lg mt-2 border border-white/5">` : ''}
-                    <div class="flex justify-between items-center mt-2">
-                         <p class="text-[7px] font-bold text-slate-500 uppercase">Goal: GH₵${m.cost_to_settle}</p>
-                         <p class="text-[6px] text-slate-600">${new Date(m.created_at).toLocaleDateString()}</p>
-                    </div>
                 </div>`).join('') : '';
 
-            // LEDGER
             let displayLedger = ledger || [];
             if(seedFilter) displayLedger = displayLedger.filter(l => l.entry_type === 'seed');
             document.getElementById('ledgerTable').innerHTML = displayLedger.slice(0, 30).map(l => {
