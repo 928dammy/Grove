@@ -32,7 +32,10 @@
                 <h1 class="text-lg font-black tracking-tighter text-emerald-500 italic">.grove</h1>
                 <p class="text-[6px] font-black text-amber-500 uppercase tracking-[2px]">Givers Never Lack</p>
             </div>
-            <button onclick="logout()" class="text-[7px] font-black text-rose-500 uppercase bg-rose-500/10 px-3 py-1.5 rounded-full border border-rose-500/20">Logout</button>
+            <div class="text-right">
+                <p id="admin-session-email" class="text-[6px] font-black text-slate-500 uppercase mb-1">Session: Loading...</p>
+                <button onclick="logout()" class="text-[7px] font-black text-rose-500 uppercase bg-rose-500/10 px-3 py-1.5 rounded-full border border-rose-500/20">Logout</button>
+            </div>
         </div>
 
         <div class="grid grid-cols-4 gap-1 bg-white/5 p-2 rounded-xl border border-white/5 mb-2">
@@ -119,12 +122,9 @@
                         <button onclick="injectSystemFunds()" class="bg-blue-600 px-6 rounded-xl font-black text-[9px]">INJECT</button>
                     </div>
                 </div>
-                <div class="auth-card p-5 border-l-4 border-emerald-500">
-                    <p class="text-[9px] font-black uppercase text-emerald-500 mb-3">Grace Distribution (%)</p>
-                    <div class="flex gap-2">
-                        <input type="number" id="graceA" placeholder="%" class="input-box flex-1">
-                        <button onclick="distributeGrace('A')" class="bg-emerald-600 px-6 rounded-xl font-black text-[9px]">GRANT</button>
-                    </div>
+                <div class="auth-card p-5 border-l-4 border-rose-500">
+                    <p class="text-[9px] font-black uppercase text-rose-500 mb-3">Emergency System Purge</p>
+                    <button onclick="purgeSystem()" class="w-full py-3 bg-rose-600/20 text-rose-500 border border-rose-500/30 rounded-xl font-black text-[9px]">WIPE ALL TRANSACTION LOGS</button>
                 </div>
             </div>
         </section>
@@ -153,35 +153,31 @@
         const SB_URL = "https://efiacszdzogknbucfgeu.supabase.co";
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
         const _gv = supabase.createClient(SB_URL, SB_KEY);
-        const SYSTEM_ADMIN_ID = "00000000-0000-0000-0000-000000000000"; // Internal System ID
+        const SYSTEM_ADMIN_ID = "00000000-0000-0000-0000-000000000000";
         let allNodes=[], allMsgs=[], currentChatId=null;
 
         async function sync() {
             const { data: profiles } = await _gv.from('profiles').select('*');
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
             const { data: messages } = await _gv.from('messages').select('*');
-            const { data: events } = await _gv.from('system_events').select('*').order('created_at', { ascending: false });
             
             allNodes = profiles || []; 
             allMsgs = messages || [];
 
-            // GROVE POOL LOGIC: 
-            // Calculated by: All Seeds + All SLI + All Service Charges - All NET Withdrawals
             let totalSeeded = 0;
             let currentPool = 0;
 
             ledger?.forEach(l => {
                 if(l.entry_type === 'seed') totalSeeded += Math.abs(l.amount);
-                currentPool += l.amount; // Ledger handles balance naturally (positive/negative)
+                currentPool += l.amount;
             });
 
             document.getElementById('stat-sunk').innerText = `₵${totalSeeded.toFixed(2)}`;
             document.getElementById('stat-pool').innerText = `₵${currentPool.toFixed(2)}`;
-            
             document.getElementById('total-nodes-count').innerText = allNodes.length;
             document.getElementById('active-nodes-count').innerText = allNodes.filter(n=>n.is_verified).length;
             document.getElementById('pending-nodes-count').innerText = allNodes.filter(n=>!n.is_verified).length;
-            document.getElementById('online-nodes-count').innerText = Math.floor(allNodes.length * (0.7 + Math.random()*0.2));
+            document.getElementById('online-nodes-count').innerText = Math.floor(allNodes.length * 0.85);
 
             const search = document.getElementById('nodeSearch').value.toLowerCase();
             document.getElementById('nodeList').innerHTML = allNodes.filter(n => n.email?.toLowerCase().includes(search) || n.full_name?.toLowerCase().includes(search)).map(n => {
@@ -197,21 +193,21 @@
                             <p class="text-[10px] font-black uppercase text-white">${n.full_name || 'PENDING NODE'}</p>
                             <p class="text-[6px] text-slate-500 font-bold">${n.email}</p>
                         </div>
-                        <p class="text-[8px] font-black ${n.is_verified ? 'text-emerald-500' : 'text-rose-500'}">${n.is_verified ? 'VERIFIED' : 'LOCKED'}</p>
+                        <p class="text-[5px] text-slate-500 uppercase font-black">Ref: ${n.id.slice(0,8)}</p>
                     </div>
-                    <div class="grid grid-cols-3 gap-2 bg-white/5 p-2 rounded-lg text-center border border-white/5">
+                    <div class="grid grid-cols-3 gap-2 bg-white/5 p-2 rounded-lg text-center border border-white/5 mb-3">
                         <div><p class="text-[8px] font-black text-white">₵${seeds.toFixed(2)}</p><p class="text-[5px] text-slate-500 uppercase font-black">Seeded</p></div>
                         <div class="border-x border-white/10"><p class="text-[8px] font-black text-emerald-400">₵${vault.toFixed(2)}</p><p class="text-[5px] text-slate-500 uppercase font-black">Vault</p></div>
                         <div><p class="text-[8px] font-black text-amber-400">₵${claims.toFixed(2)}</p><p class="text-[5px] text-slate-500 uppercase font-black">Claimed</p></div>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 mt-3">
+                    <div class="grid grid-cols-2 gap-2">
                          <button onclick="nodeOp('${n.id}', '${n.is_verified ? 'unverify' : 'verify'}')" class="btn-action ${n.is_verified ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500 text-black'}">${n.is_verified ? 'Freeze' : 'Verify'}</button>
-                         <button onclick="openUserChat('${n.id}')" class="btn-action bg-white/10 text-white">Direct Chat</button>
+                         <button onclick="openUserChat('${n.id}')" class="btn-action bg-white/10 text-white">Chat</button>
+                         <button onclick="deleteNode('${n.id}')" class="btn-action bg-rose-500/10 text-rose-500 col-span-2 mt-1 border border-rose-500/20">TERMINATE NODE</button>
                     </div>
                 </div>`;
             }).join('');
 
-            // Payouts Logic with 2% deduction
             const pendingPayouts = ledger?.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID')) || [];
             document.getElementById('payoutList').innerHTML = pendingPayouts.map(w => {
                 const node = allNodes.find(n => n.id === w.user_id);
@@ -219,17 +215,20 @@
                 const net = Math.abs(w.amount) - charge;
                 return `<div class="auth-card p-4 flex justify-between items-center">
                     <div>
-                        <p class="text-[9px] font-black uppercase text-white">${node?.full_name || 'UNKNOWN'}</p>
-                        <p class="text-[7px] text-emerald-500 font-black">₵${net.toFixed(2)} NET <span class="text-rose-400">(-₵${charge.toFixed(2)} Fee)</span></p>
+                        <p class="text-[9px] font-black uppercase text-white">${node?.full_name || 'NODE'}</p>
+                        <p class="text-[7px] text-emerald-500 font-black">₵${net.toFixed(2)} NET (-2%)</p>
                     </div>
-                    <button onclick="approvePayout('${w.id}','${w.user_id}',${Math.abs(w.amount)})" class="bg-emerald-600 px-4 py-2 rounded-lg text-[8px] font-black">APPROVE & PAY</button>
+                    <button onclick="approvePayout('${w.id}','${w.user_id}',${Math.abs(w.amount)})" class="bg-emerald-600 px-4 py-2 rounded-lg text-[8px] font-black">APPROVE</button>
                 </div>`;
-            }).join('') || '<p class="text-center py-10 text-[8px] opacity-30 font-black uppercase">No pending withdrawals</p>';
+            }).join('') || '<p class="text-center py-10 text-[8px] opacity-30 font-black uppercase">Queue Empty</p>';
 
-            document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 40).map(l => `
+            document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 30).map(l => `
                 <div class="flex justify-between items-center p-3 border-b border-white/5">
-                    <div><p class="text-[8px] font-black uppercase text-slate-200">${l.description}</p><p class="text-[5px] text-slate-500">${new Date(l.created_at).toLocaleString()}</p></div>
-                    <p class="text-[9px] font-black ${l.amount < 0 ? 'text-rose-500' : 'text-emerald-500'}">${l.amount < 0 ? '-' : '+'}₵${Math.abs(l.amount).toFixed(2)}</p>
+                    <div>
+                        <p class="text-[8px] font-black uppercase text-slate-200">${l.description}</p>
+                        <p class="text-[5px] text-slate-500">${new Date(l.created_at).toLocaleString()}</p>
+                    </div>
+                    <p class="text-[9px] font-black ${l.amount < 0 ? 'text-rose-500' : 'text-emerald-500'}">₵${Math.abs(l.amount).toFixed(2)}</p>
                 </div>
             `).join('');
 
@@ -237,54 +236,44 @@
             updateNavBadge();
         }
 
-        async function injectSystemFunds() {
-            const amt = parseFloat(document.getElementById('injectAmt').value);
-            if(!amt || amt <= 0) return alert("Enter valid amount");
-            
-            // Add positive amount to ledger to increase Pool
-            const { error } = await _gv.from('ledger').insert([{
-                user_id: SYSTEM_ADMIN_ID,
-                amount: amt,
-                entry_type: 'sli',
-                description: `SYSTEM LIQUIDITY INJECTION (SLI)`
-            }]);
-
-            if(!error) {
-                alert("POOL INJECTED SUCCESSFULLY");
-                document.getElementById('injectAmt').value = '';
+        async function deleteNode(id) {
+            if(confirm("PERMANENTLY TERMINATE THIS NODE? This cannot be undone.")) {
+                await _gv.from('profiles').delete().eq('id', id);
                 sync();
             }
         }
 
+        async function purgeSystem() {
+            if(confirm("DANGER: WIPE ALL TRANSACTION LOGS? This clears the Global Ledger but keeps profiles.")) {
+                await _gv.from('ledger').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                sync();
+            }
+        }
+
+        async function injectSystemFunds() {
+            const amt = parseFloat(document.getElementById('injectAmt').value);
+            if(!amt || amt <= 0) return;
+            await _gv.from('ledger').insert([{ user_id: SYSTEM_ADMIN_ID, amount: amt, entry_type: 'sli', description: `SYSTEM LIQUIDITY INJECTION (SLI)` }]);
+            document.getElementById('injectAmt').value = '';
+            sync();
+        }
+
         async function approvePayout(ledgerId, userId, fullAmount) {
             const charge = fullAmount * 0.02;
-            const net = fullAmount - charge;
-
-            if(confirm(`Approve payment of ₵${net.toFixed(2)}? 2% Fee (₵${charge.toFixed(2)}) will remain in Grove Pool.`)) {
-                // 1. Mark the original request as PAID
+            if(confirm(`Approve payout? Net will be sent, 2% (₵${charge.toFixed(2)}) stays in Pool.`)) {
                 await _gv.from('ledger').update({ description: 'CLAIM PAID & COMPLETED' }).eq('id', ledgerId);
-                
-                // 2. Re-inject the 2% fee into the pool as a service charge
-                await _gv.from('ledger').insert([{
-                    user_id: SYSTEM_ADMIN_ID,
-                    amount: charge,
-                    entry_type: 'service_charge',
-                    description: `SERVICE CHARGE FROM ${userId.slice(0,5)}`
-                }]);
-
+                await _gv.from('ledger').insert([{ user_id: SYSTEM_ADMIN_ID, amount: charge, entry_type: 'service_charge', description: `SERVICE CHARGE FROM WITHDRAWAL` }]);
                 sync();
             }
         }
 
         async function verifyNodeManual() {
             const email = document.getElementById('targetEmail').value;
-            if(!email) return alert("Enter email");
             const { data } = await _gv.from('profiles').select('id').eq('email', email).single();
             if(data) {
                 await _gv.from('profiles').update({ is_verified: true }).eq('id', data.id);
-                alert("NODE VERIFIED");
                 sync();
-            } else alert("Email not found");
+            }
         }
 
         async function openUserChat(id) {
@@ -336,9 +325,12 @@
             }).join('');
         }
 
+        async function logout() { await _gv.auth.signOut(); location.href = 'consoleenter.html'; }
+
         async function init() {
             const { data: { user } } = await _gv.auth.getUser();
             if(!user) location.href = 'consoleenter.html';
+            document.getElementById('admin-session-email').innerText = `Session: ${user.email}`;
             sync();
             _gv.channel('realtime').on('postgres_changes', { event: '*', schema: 'public' }, () => sync()).subscribe();
         }
