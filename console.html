@@ -138,7 +138,6 @@
                         <button onclick="injectSystemFunds()" class="bg-blue-500 text-white px-8 rounded-2xl font-black text-[9px] uppercase">Fund Pool</button>
                     </div>
                 </div>
-
                 <div class="auth-card p-6 border-l-4 border-emerald-500">
                     <p class="text-[9px] font-black uppercase text-emerald-500 mb-4 tracking-widest">Distribute Orchard Yield (Type A %)</p>
                     <div class="flex gap-3">
@@ -146,7 +145,6 @@
                         <button onclick="distributeGrace('A')" class="bg-emerald-500 text-black px-8 rounded-2xl font-black text-[9px] uppercase">Distribute</button>
                     </div>
                 </div>
-
                 <div class="auth-card p-6 border-l-4 border-blue-500">
                     <p class="text-[9px] font-black uppercase text-blue-400 mb-4 tracking-widest">Distribute Stable Grace (Type B ₵)</p>
                     <div class="flex gap-3">
@@ -158,8 +156,11 @@
         </section>
 
         <section id="payouts" class="tab-content">
-            <p class="text-[9px] font-black uppercase text-slate-500 mb-4 px-2 tracking-widest">Payout Queue (-2% Service Charge)</p>
-            <div id="payoutList" class="space-y-3"></div>
+            <p class="text-[9px] font-black uppercase text-slate-500 mb-4 px-2 tracking-widest">Pending Queue (-2% Fee)</p>
+            <div id="payoutList" class="space-y-3 mb-10"></div>
+            
+            <p class="text-[9px] font-black uppercase text-slate-500 mb-4 px-2 tracking-widest border-t border-white/5 pt-6">Disbursement History</p>
+            <div id="payoutHistory" class="space-y-2 opacity-60"></div>
         </section>
 
         <section id="ledger" class="tab-content">
@@ -211,6 +212,7 @@
             document.getElementById('total-nodes-count').innerText = allNodes.length;
             document.getElementById('active-nodes-count').innerText = allNodes.filter(n=>n.is_verified).length;
 
+            // Render Nodes
             const search = document.getElementById('nodeSearch').value.toLowerCase();
             document.getElementById('nodeList').innerHTML = allNodes.filter(n => n.email?.toLowerCase().includes(search) || n.full_name?.toLowerCase().includes(search)).map(n => `
                 <div class="auth-card p-5">
@@ -219,7 +221,6 @@
                             <div class="flex items-center"><span class="status-dot ${n.is_verified ? 'bg-emerald-500 animate-pulse' : 'bg-slate-700'}"></span><p class="text-[11px] font-black uppercase text-white">${n.full_name || 'ANON'}</p></div>
                             <p class="text-[7px] text-slate-500 ml-4 font-bold uppercase">${n.email}</p>
                         </div>
-                        <div class="text-right"><p class="text-[8px] font-black text-emerald-500 uppercase">Status: ${n.is_verified ? 'Verified' : 'Pending'}</p></div>
                     </div>
                     <div class="grid grid-cols-3 gap-2">
                         <button onclick="nodeOp('${n.id}', '${n.is_verified ? 'unverify' : 'verify'}')" class="btn-action ${n.is_verified ? 'bg-white/5 text-slate-400' : 'bg-emerald-500 text-black'}">${n.is_verified ? 'Lock Access' : 'Verify Node'}</button>
@@ -228,20 +229,30 @@
                     </div>
                 </div>`).join('');
 
-            document.getElementById('payoutList').innerHTML = ledger?.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID')).map(w => {
+            // Payout Queue vs History
+            const withdrawals = ledger?.filter(l => l.entry_type === 'withdrawal' && l.user_id !== SYSTEM_ADMIN_ID) || [];
+            
+            document.getElementById('payoutList').innerHTML = withdrawals.filter(w => !w.description.includes('PAID')).map(w => {
                 const node = allNodes.find(n => n.id === w.user_id);
                 const net = Math.abs(w.amount) * 0.98;
-                return `<div class="auth-card p-5 flex justify-between items-center"><div><p class="text-[10px] font-black uppercase text-white">${node?.full_name || 'NODE'}</p><p class="text-[8px] text-emerald-500 font-black">₵${net.toFixed(2)} (-2% Fee)</p></div><button onclick="approvePayout('${w.id}','${w.user_id}',${Math.abs(w.amount)})" class="px-5 py-3 bg-emerald-600 text-white text-[8px] font-black rounded-xl uppercase">Disburse</button></div>`;
-            }).join('') || '<p class="text-center py-10 text-[8px] opacity-30 font-black">NO PENDING PAYOUTS</p>';
+                return `<div class="auth-card p-5 flex justify-between items-center"><div><p class="text-[10px] font-black uppercase text-white">${node?.full_name || 'NODE'}</p><p class="text-[8px] text-emerald-500 font-black">₵${net.toFixed(2)} NET CLAIM</p></div><button onclick="approvePayout('${w.id}','${w.user_id}',${Math.abs(w.amount)})" class="px-5 py-3 bg-emerald-600 text-white text-[8px] font-black rounded-xl uppercase">Disburse</button></div>`;
+            }).join('') || '<p class="text-center py-10 text-[8px] opacity-30 font-black tracking-widest">QUEUE CLEAR</p>';
 
+            document.getElementById('payoutHistory').innerHTML = withdrawals.filter(w => w.description.includes('PAID')).map(w => {
+                const node = allNodes.find(n => n.id === w.user_id);
+                return `<div class="bg-white/5 p-4 rounded-xl flex justify-between items-center border border-white/5"><div class="flex items-center gap-3"><span class="text-emerald-500 text-[10px]">✔</span><div><p class="text-[9px] font-black uppercase text-white">${node?.full_name || 'NODE'}</p><p class="text-[6px] text-slate-500 uppercase">${new Date(w.created_at).toLocaleDateString()}</p></div></div><p class="text-[9px] font-black text-slate-400">${w.description.split(' - ')[1] || '₵'+Math.abs(w.amount).toFixed(2)}</p></div>`;
+            }).join('') || '<p class="text-center py-4 text-[7px] opacity-30 font-black uppercase">No History</p>';
+
+            // Missions
             document.getElementById('missionList').innerHTML = events?.filter(e => e.type === 'mission').map(m => `
                 <div class="auth-card p-4">
                     <p class="text-[10px] font-black uppercase text-amber-500">${m.title}</p>
-                    ${m.image_url ? `<img src="${m.image_url}" class="w-full h-32 object-cover rounded-xl my-2">` : ''}
+                    ${m.image_url ? `<img src="${m.image_url}" class="w-full h-32 object-cover rounded-xl my-2 border border-white/5">` : ''}
                     <p class="text-[8px] text-slate-400 mb-2">${m.description}</p>
-                    <p class="text-[9px] font-black">GOAL: ₵${m.value}</p>
+                    <p class="text-[9px] font-black">TARGET: ₵${m.value}</p>
                 </div>`).join('');
 
+            // Ledger
             document.getElementById('ledgerTable').innerHTML = ledger?.map(l => `
                 <div class="flex justify-between items-center p-4 border-b border-white/5 bg-white/[0.01]">
                     <div><p class="text-[9px] font-black uppercase">${l.description}</p><p class="text-[6px] text-slate-500 uppercase font-black">${l.entry_type} | ${new Date(l.created_at).toLocaleString()}</p></div>
@@ -261,65 +272,46 @@
         async function distributeGrace(type) {
             const val = type === 'A' ? parseFloat(document.getElementById('graceA').value) : parseFloat(document.getElementById('graceB').value);
             if(!val) return;
-            
             const activeNodes = allNodes.filter(n => n.is_verified);
-            if(!activeNodes.length) return alert("No verified nodes found");
-
-            let totalGraceToDistribute = 0;
-            let transactions = [];
-
+            if(!activeNodes.length) return alert("No verified nodes");
+            let totalGrace = 0; let txs = [];
             activeNodes.forEach(node => {
                 let amt = type === 'A' ? (globalPoolBalance * (val / 100) / activeNodes.length) : val;
-                totalGraceToDistribute += amt;
-                transactions.push({ user_id: node.id, amount: amt, entry_type: 'seed', description: `GRACE ${type} DISTRIBUTION` });
+                totalGrace += amt;
+                txs.push({ user_id: node.id, amount: amt, entry_type: 'seed', description: `GRACE ${type} DISTRIBUTION` });
             });
-
-            if(totalGraceToDistribute > globalPoolBalance) return alert("Insufficient funds in Grove Pool");
-
-            // Deduct from Pool
-            await _gv.from('ledger').insert([{ user_id: SYSTEM_ADMIN_ID, amount: -totalGraceToDistribute, entry_type: 'withdrawal', description: `LIQUIDITY PULL: GRACE ${type}` }]);
-            // Add to users
-            await _gv.from('ledger').insert(transactions);
-            
-            alert(`Grace Type ${type} Distributed. Total: ₵${totalGraceToDistribute.toFixed(2)}`);
-            sync();
+            if(totalGrace > globalPoolBalance) return alert("Grove Pool Exhausted");
+            await _gv.from('ledger').insert([{ user_id: SYSTEM_ADMIN_ID, amount: -totalGrace, entry_type: 'withdrawal', description: `LIQUIDITY PULL: GRACE ${type}` }]);
+            await _gv.from('ledger').insert(txs);
+            alert(`Distributed ₵${totalGrace.toFixed(2)}`); sync();
         }
 
         async function approvePayout(lid, uid, gross) {
             const net = gross * 0.98;
-            if(!confirm(`Approve Disbursement of ₵${net.toFixed(2)}?`)) return;
+            if(!confirm(`Finalize ₵${net.toFixed(2)} disbursement?`)) return;
             await _gv.from('ledger').update({ description: `PAID - ₵${net.toFixed(2)} (CLOSED)` }).eq('id', lid);
-            await _gv.from('messages').insert([{ sender_id: SYSTEM_ADMIN_ID, receiver_id: uid, content: `DISBURSEMENT SUCCESSFUL: ₵${net.toFixed(2)} RECEIVED. GIVERS NEVER LACK.` }]);
+            await _gv.from('messages').insert([{ sender_id: SYSTEM_ADMIN_ID, receiver_id: uid, content: `CLAIM SECURED: ₵${net.toFixed(2)} DISBURSED. GIVERS NEVER LACK.` }]);
             sync();
         }
 
-        async function nodeOp(id, type) {
-            await _gv.from('profiles').update({ is_verified: type === 'verify' }).eq('id', id); sync();
-        }
-
+        async function nodeOp(id, type) { await _gv.from('profiles').update({ is_verified: type === 'verify' }).eq('id', id); sync(); }
         async function updateNodeStatus() {
             const email = document.getElementById('targetEmail').value;
             const max = parseFloat(document.getElementById('maxRange').value) || 0;
             const { data } = await _gv.from('profiles').select('id').eq('email', email).single();
-            if(data) { await _gv.from('profiles').update({ is_verified: true, current_range_max: max }).eq('id', data.id); alert("Access Provisioned"); sync(); }
+            if(data) { await _gv.from('profiles').update({ is_verified: true, current_range_max: max }).eq('id', data.id); alert("Verified"); sync(); }
         }
 
         async function publishMission() {
             const title = document.getElementById('missionTitle').value; 
             const goal = document.getElementById('missionGoal').value;
             const file = document.getElementById('missionFile').files[0];
-            let imageUrl = null;
-            if(!title || !goal) return;
-
+            let imageUrl = null; if(!title || !goal) return;
             if(file) {
                 const fName = `${Date.now()}_${file.name}`;
                 const { data } = await _gv.storage.from('mission-media').upload(fName, file);
-                if(data) {
-                    const { data: url } = _gv.storage.from('mission-media').getPublicUrl(fName);
-                    imageUrl = url.publicUrl;
-                }
+                if(data) imageUrl = _gv.storage.from('mission-media').getPublicUrl(fName).data.publicUrl;
             }
-
             await _gv.from('system_events').insert([{ type: 'mission', title: title.toUpperCase(), value: parseFloat(goal), description: document.getElementById('missionDesc').value, image_url: imageUrl }]);
             sync();
         }
@@ -355,7 +347,7 @@
 
         async function showUserInfo(id) {
             const u = allNodes.find(n => n.id === id); currentEditingUser = id;
-            document.getElementById('modalBody').innerHTML = `<p class="text-[10px] font-black uppercase text-white mb-2 italic">Node Settings</p><input id="edName" class="input-box mb-4" value="${u.full_name || ''}" placeholder="Name"><input id="edMax" type="number" class="input-box" value="${u.current_range_max || 0}" placeholder="Gift Limit">`;
+            document.getElementById('modalBody').innerHTML = `<p class="text-[10px] font-black uppercase text-white mb-2 italic">Node Settings</p><input id="edName" class="input-box mb-4" value="${u.full_name || ''}" placeholder="Name"><input id="edMax" type="number" class="input-box" value="${u.current_range_max || 0}" placeholder="Limit">`;
             document.getElementById('userModal').style.display = 'flex';
         }
 
@@ -382,9 +374,8 @@
         async function logout() { await _gv.auth.signOut(); location.href = 'consoleenter.html'; }
         
         async function purgeSystem() {
-            if(!confirm("DANGER: This will wipe all system events, ledger history, and messages. Proceed?")) return;
-            const pass = prompt("Enter ADMIN PURGE CODE:");
-            if(pass !== "0000") return alert("Unauthorized");
+            if(!confirm("Wipe system data?")) return;
+            const pass = prompt("ADMIN CODE:"); if(pass !== "0000") return;
             await _gv.from('ledger').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             await _gv.from('messages').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             await _gv.from('system_events').delete().neq('id', '00000000-0000-0000-0000-000000000000');
