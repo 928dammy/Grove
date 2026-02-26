@@ -122,6 +122,25 @@
                         <button onclick="injectSystemFunds()" class="bg-blue-600 px-6 rounded-xl font-black text-[9px]">INJECT</button>
                     </div>
                 </div>
+
+                <div class="auth-card p-5 border-l-4 border-emerald-500">
+                    <p class="text-[9px] font-black uppercase text-emerald-500 mb-1">Stable Grace</p>
+                    <p class="text-[6px] text-slate-500 uppercase mb-3">Instant Pool Deduction / Fixed Amount</p>
+                    <div class="flex gap-2">
+                        <input type="number" id="stableAmt" placeholder="₵ Amount" class="input-box flex-1">
+                        <button onclick="distributeGrace('stable')" class="bg-emerald-600 px-6 rounded-xl font-black text-[9px]">RELEASE</button>
+                    </div>
+                </div>
+
+                <div class="auth-card p-5 border-l-4 border-amber-500">
+                    <p class="text-[9px] font-black uppercase text-amber-500 mb-1">Withers Grace</p>
+                    <p class="text-[6px] text-slate-500 uppercase mb-3">Deduct from pool ONLY on claim</p>
+                    <div class="flex gap-2">
+                        <input type="number" id="withersPct" placeholder="Pool %" class="input-box flex-1">
+                        <button onclick="distributeGrace('withers')" class="bg-amber-600 px-6 rounded-xl font-black text-[9px]">WITHER</button>
+                    </div>
+                </div>
+
                 <div class="auth-card p-5 border-l-4 border-rose-500">
                     <p class="text-[9px] font-black uppercase text-rose-500 mb-3">Emergency System Purge</p>
                     <button onclick="purgeSystem()" class="w-full py-3 bg-rose-600/20 text-rose-500 border border-rose-500/30 rounded-xl font-black text-[9px]">WIPE ALL TRANSACTION LOGS</button>
@@ -234,6 +253,47 @@
 
             renderInbox(); 
             updateNavBadge();
+        }
+
+        async function distributeGrace(type) {
+            const verifiedNodes = allNodes.filter(n => n.is_verified);
+            if (verifiedNodes.length === 0) return alert("No verified nodes.");
+            
+            const inserts = [];
+            let amt = 0;
+
+            if (type === 'stable') {
+                amt = parseFloat(document.getElementById('stableAmt').value);
+                if (!amt || amt <= 0) return alert("Enter valid amount");
+                if (!confirm(`Deduct ₵${(amt * verifiedNodes.length).toFixed(2)} from pool now?`)) return;
+
+                verifiedNodes.forEach(n => {
+                    // Immediate Pool Deduction
+                    inserts.push({ user_id: SYSTEM_ADMIN_ID, amount: -amt, entry_type: 'distribution', description: `STABLE GRACE OUTFLOW` });
+                    // User Vault
+                    inserts.push({ user_id: n.id, amount: amt, entry_type: 'grace', description: `Vaulted: STABLE GRACE` });
+                });
+            } else {
+                const pct = parseFloat(document.getElementById('withersPct').value);
+                if (!pct || pct <= 0) return alert("Enter valid percentage");
+                
+                const currentPool = parseFloat(document.getElementById('stat-pool').innerText.replace('₵',''));
+                amt = (currentPool * (pct/100)) / verifiedNodes.length;
+                if (!confirm(`Distribute ₵${amt.toFixed(2)} per node? No pool deduction until claim.`)) return;
+
+                verifiedNodes.forEach(n => {
+                    // User Vault Only (No Pool Deduction Entry)
+                    inserts.push({ user_id: n.id, amount: amt, entry_type: 'grace', description: `Vaulted: WITHERS GRACE` });
+                });
+            }
+
+            const { error } = await _gv.from('ledger').insert(inserts);
+            if(!error) { 
+                alert("DISTRIBUTION INITIALIZED"); 
+                document.getElementById('stableAmt').value = '';
+                document.getElementById('withersPct').value = '';
+                sync(); 
+            }
         }
 
         async function deleteNode(id) {
