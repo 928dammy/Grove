@@ -13,50 +13,41 @@
         
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; min-height: 100vh; padding: 1rem; color: #1e293b; overflow-x: hidden; }
         
-        /* LOCKOUT ATMOSPHERE */
+        /* LOCKOUT ANIMATIONS */
         body.withered { overflow: hidden !important; height: 100vh !important; background: #020617; }
         #suspension-overlay { display: none; position: fixed; inset: 0; z-index: 80; pointer-events: none; }
         body.withered #suspension-overlay { display: block; animation: lightning 5s infinite; }
-        
-        @keyframes lightning { 0%, 95%, 98% { background: rgba(2, 6, 23, 0.4); } 96%, 99% { background: rgba(147, 51, 234, 0.2); } }
+        @keyframes lightning { 0%, 95%, 98% { background: rgba(2, 6, 23, 0.4); } 96%, 99% { background: rgba(147, 51, 234, 0.15); } }
         
         .rain-drop { position: absolute; background: rgba(255, 255, 255, 0.1); width: 1px; height: 60px; top: -100px; animation: rainFall 0.7s linear infinite; }
         @keyframes rainFall { to { transform: translateY(110vh); } }
 
-        /* CEDIS ANIMATION */
-        .cedi-rain { position: absolute; color: rgba(16, 185, 129, 0.3); font-size: 16px; font-weight: 800; pointer-events: none; animation: cediFall 3s linear infinite; z-index: 5; }
+        /* CEDI RAIN */
+        .cedi-rain { position: absolute; color: rgba(16, 185, 129, 0.4); font-size: 14px; font-weight: 800; pointer-events: none; animation: cediFall 3s linear forwards; z-index: 5; }
         @keyframes cediFall { from { transform: translateY(-20px) rotate(0deg); opacity: 1; } to { transform: translateY(300px) rotate(360deg); opacity: 0; } }
 
-        /* PAYMENT CARD & MODALS */
-        .compact-activation-card {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 1000; width: 92%; max-width: 320px;
-            background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 2.5rem; padding: 1.5rem; text-align: center; display: none;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-
-        .grove-modal-overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.9); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 1.5rem; }
-        .grove-modal-box { background: white; width: 100%; max-width: 300px; border-radius: 2.5rem; padding: 2rem; text-align: center; transform: scale(1); transition: 0.3s; }
-
-        /* TERMINAL STRUCTURE */
-        .terminal-parent { background: var(--grove-deep); border-radius: 2.5rem; color: #ecfdf5; min-height: 550px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; display: flex; flex-direction: column; }
+        /* UI COMPONENTS */
+        .terminal-parent { background: var(--grove-deep); border-radius: 2.5rem; color: #ecfdf5; min-height: 580px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; display: flex; flex-direction: column; }
         .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
         @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
 
         .nav-pill { background: rgba(0, 0, 0, 0.3); padding: 4px; border-radius: 12px; display: flex; gap: 4px; margin: 0 1rem 1rem; }
-        .tab-trigger { flex: 1; color: rgba(255,255,255,0.3); font-size: 9px; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 10px 0; text-align: center; border-radius: 8px; }
+        .tab-trigger { flex: 1; color: rgba(255,255,255,0.3); font-size: 9px; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 10px 0; text-align: center; border-radius: 8px; position: relative; }
         .tab-trigger.active { color: #fff; background: var(--grove-leaf); }
         .tab-content { display: none; padding: 0 1rem 1rem; flex: 1; overflow-y: auto; }
         .tab-content.active { display: flex; flex-direction: column; }
 
-        /* COLOR CODES */
+        /* NETWORK COLORS */
         .net-mtn { color: #facc15 !important; }
         .net-telecel { color: #ef4444 !important; }
         .net-at { color: #3b82f6 !important; }
 
-        .btn-locked { opacity: 0.2; filter: grayscale(1); pointer-events: none; }
-        #unread-badge { position: absolute; top: 2px; right: 2px; background: #f43f5e; color: white; font-size: 7px; min-width: 12px; height: 12px; border-radius: 4px; display: none; align-items: center; justify-content: center; font-weight: 900; }
+        /* MODALS */
+        .grove-modal-overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 1rem; }
+        .grove-modal-box { background: white; width: 100%; max-width: 300px; border-radius: 2.5rem; padding: 2rem; text-align: center; animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .compact-activation-card { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 92%; max-width: 320px; background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 2.5rem; padding: 1.5rem; text-align: center; display: none; }
     </style>
 </head>
 <body class="max-w-md mx-auto" onclick="closeMenu()">
@@ -67,29 +58,29 @@
         <div class="grove-modal-box">
             <p class="text-[9px] font-black text-emerald-600 uppercase mb-4 italic tracking-widest">Withdrawal Node</p>
             <div class="space-y-3 mb-6 text-left">
-                <div class="flex justify-between text-[10px] font-bold text-slate-400"><span>VAULT TOTAL</span><span id="m-avail" class="text-slate-900">GH₵ 0.00</span></div>
-                <div class="flex justify-between text-[10px] font-bold border-b border-slate-100 pb-2"><span class="text-rose-500 uppercase">Service Charge (2%)</span><span id="m-fee" class="text-rose-500">GH₵ 0.00</span></div>
-                <div class="flex justify-between text-base font-black italic pt-2"><span class="text-slate-900 uppercase">Payout</span><span id="m-final" class="text-emerald-600">GH₵ 0.00</span></div>
+                <div class="flex justify-between text-[10px] font-bold text-slate-400"><span>VAULT TOTAL</span><span id="m-avail" class="text-slate-900">₵0.00</span></div>
+                <div class="flex justify-between text-[10px] font-bold border-b border-slate-100 pb-2"><span class="text-rose-500 uppercase">Service Charge (2%)</span><span id="m-fee" class="text-rose-500">₵0.00</span></div>
+                <div class="flex justify-between text-base font-black italic pt-2"><span class="text-slate-900 uppercase">Payout</span><span id="m-final" class="text-emerald-600">₵0.00</span></div>
             </div>
-            <button id="payout-btn" onclick="processWithdrawal()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase shadow-lg mb-2">Confirm Payout</button>
-            <button onclick="toggleModal('withdrawModal', false)" class="w-full py-2 text-[8px] font-black text-slate-400 uppercase tracking-widest">Cancel</button>
+            <button onclick="processWithdrawal()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase">Confirm Payout</button>
+            <button onclick="toggleModal('withdrawModal', false)" class="w-full py-2 text-[8px] font-black text-slate-400 uppercase mt-2">Cancel</button>
         </div>
     </div>
 
     <div id="manual-pay-card" class="compact-activation-card">
-        <p id="p-net-name" class="text-[8px] font-black uppercase tracking-[0.2em] mb-3 text-slate-500">Terminal Activation</p>
+        <p id="p-net-name" class="text-[8px] font-black uppercase tracking-[0.2em] mb-3">Activation Required</p>
         <div class="bg-black/40 rounded-2xl p-4 mb-4 space-y-3 text-left border border-white/5">
             <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black uppercase">Recipient</span><span id="p-full-name" class="text-[9px] text-white font-bold italic">---</span></div>
             <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black uppercase">Your MoMo</span><span id="p-phone" class="text-[10px] font-bold tracking-widest">---</span></div>
             <div class="flex justify-between items-center"><span class="text-[7px] text-slate-500 font-black uppercase">Seed Amount</span><span id="p-seed-amt" class="text-[10px] text-white font-black">₵0.00</span></div>
-            <div class="flex justify-between items-center border-t border-white/10 pt-3"><span class="text-[7px] text-slate-500 font-black uppercase">Merchant No.</span><span class="text-[11px] font-black text-emerald-500 tracking-widest">0244000000</span></div>
+            <div class="flex justify-between items-center border-t border-white/10 pt-3"><span class="text-[7px] text-slate-500 font-black uppercase">Merchant No.</span><span class="text-[11px] font-black tracking-widest text-emerald-500">0244000000</span></div>
             <div class="text-center pt-2 bg-white/5 rounded-xl py-2 mt-2">
-                <p class="text-[7px] text-emerald-500 font-black italic mb-1 uppercase">Reference ID Required</p>
+                <p class="text-[7px] text-emerald-500 font-black italic mb-1 uppercase">Reference ID</p>
                 <p id="p-payment-ref" class="text-2xl text-white tracking-[0.3em] font-black">----</p>
             </div>
         </div>
-        <button onclick="restoreScroll()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase shadow-lg mb-2 italic">I have seeded my node</button>
-        <button onclick="logout()" class="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-2">Exit Terminal</button>
+        <button onclick="confirmPaymentAction()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase shadow-lg">Payment Sent</button>
+        <button onclick="restoreScroll()" class="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-4">Close Terminal</button>
     </div>
 
     <header class="bg-white border p-5 rounded-[2rem] mb-4">
@@ -104,88 +95,85 @@
     </header>
 
     <main class="terminal-parent">
-        <div class="broadcast-ticker"><div id="ticker-output" class="ticker-move italic">GIVERS NEVER LACK • MONITORING NODE...</div></div>
+        <div class="broadcast-ticker"><div class="ticker-move italic">GIVERS NEVER LACK • MONITORING ACTIVE • GIVERS NEVER LACK</div></div>
         <nav class="nav-pill">
             <div id="btn-orchard" class="tab-trigger active" onclick="openTab('t-orchard')">Orchard</div>
             <div id="btn-vault" class="tab-trigger" onclick="openTab('t-vault')">Vault</div>
-            <div id="btn-comm" class="tab-trigger" onclick="openTab('t-comm')">Messages <div id="unread-badge">0</div></div>
+            <div id="btn-comm" class="tab-trigger" onclick="openTab('t-comm')">Messages</div>
             <div id="btn-ledger" class="tab-trigger" onclick="openTab('t-ledger')">Ledger</div>
         </nav>
 
         <section id="t-orchard" class="tab-content active">
-            <div class="bg-emerald-500/10 p-5 rounded-2xl border border-white/5 mb-8 text-center">
-                <p class="text-[9px] text-emerald-100 font-semibold uppercase">Impact Monitoring Active</p>
+            <div class="bg-emerald-500/10 p-5 rounded-2xl border border-white/5 text-center">
+                <p class="text-[9px] text-emerald-100 font-semibold uppercase italic">Node Stable</p>
             </div>
-            <button id="restore-btn" onclick="showActivationCard()" class="mt-auto mx-auto mb-4 py-3 px-8 border border-amber-500/30 bg-amber-500/5 text-amber-500 text-[9px] font-black uppercase rounded-full italic hidden">Show Activation Details</button>
         </section>
 
         <section id="t-vault" class="tab-content">
-            <div id="vault-zone" class="bg-gradient-to-b from-emerald-950 to-emerald-900 rounded-[2.5rem] p-10 text-center flex flex-col justify-center min-h-[320px] border border-white/5 relative overflow-hidden">
+            <div id="vault-zone" class="bg-emerald-950 rounded-[2.5rem] p-10 text-center flex flex-col justify-center min-h-[320px] relative overflow-hidden border border-white/5">
                 <p class="text-[8px] font-black text-emerald-400 uppercase mb-2">Claim Vaulted</p>
                 <h2 id="v-balance" class="text-4xl font-black italic text-white mb-8">₵0.00</h2>
-                <div class="space-y-3">
-                    <button id="act-claim" onclick="vaultGrace()" class="w-full py-4 bg-white text-emerald-900 rounded-xl text-[9px] font-black uppercase">Claim to Vault</button>
-                    <button id="act-withdraw" onclick="triggerWithdrawal()" class="w-full py-4 bg-emerald-500/20 text-white rounded-xl text-[9px] font-black uppercase border border-white/10">Withdraw</button>
+                <div class="space-y-3 z-10">
+                    <button onclick="vaultGrace()" class="w-full py-4 bg-white text-emerald-900 rounded-xl text-[9px] font-black uppercase">Claim to Vault</button>
+                    <button onclick="triggerWithdrawal()" class="w-full py-4 bg-emerald-500/20 text-white rounded-xl text-[9px] font-black uppercase border border-white/10">Withdraw</button>
                 </div>
             </div>
         </section>
         
         <section id="t-comm" class="tab-content">
-            <div id="chat-scroller" class="flex-1 space-y-4 py-4 flex flex-col h-[280px]"></div>
+            <div id="chat-scroller" class="flex-1 overflow-y-auto space-y-4 py-4"></div>
             <div class="pt-4 border-t border-white/5 flex gap-2">
                 <input id="chat-input" type="text" placeholder="SECURE CHANNEL..." class="flex-1 bg-black/40 border border-white/10 rounded-xl py-4 px-5 text-[10px] text-white outline-none">
-                <button id="chat-send-btn" onclick="sendMessage()" class="bg-emerald-600 px-6 rounded-xl text-white text-[10px] font-black uppercase">SEND</button>
+                <button id="chat-send-btn" onclick="sendMessage()" class="bg-emerald-600 px-6 rounded-xl text-white text-[10px] font-black disabled:opacity-30 disabled:grayscale">SEND</button>
             </div>
         </section>
 
         <section id="t-ledger" class="tab-content"><div id="ledger-content" class="bg-black/20 rounded-2xl divide-y divide-white/5"></div></section>
     </main>
 
-    <div id="nodeMenu" class="fixed top-[75px] right-[2rem] bg-white rounded-2xl hidden z-[3000] border shadow-xl">
+    <div id="nodeMenu" class="fixed top-[75px] right-[2rem] bg-white rounded-2xl hidden shadow-2xl z-[3000]">
         <button onclick="logout()" class="p-4 text-[9px] font-black text-rose-500 uppercase">Exit Terminal</button>
     </div>
 
     <script>
-        const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
-        const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
+        const SB_URL = window.CONFIG?.SB_URL;
+        const SB_KEY = window.CONFIG?.SB_KEY;
         const _gv = supabase.createClient(SB_URL, SB_KEY);
-        let userObj = null, globalVaulted = 0, isVerified = false, currentTab = 't-orchard';
+        let userObj = null, globalVaulted = 0, isVerified = false;
 
         function getNet(phone) {
             const p = phone?.toString() || '';
-            if(/^(024|054|055|059|053)/.test(p)) return 'net-mtn';
-            if(/^(020|050)/.test(p)) return 'net-telecel';
-            if(/^(026|056|027|057)/.test(p)) return 'net-at';
+            if(/^0(24|54|55|59|53)/.test(p)) return 'net-mtn';
+            if(/^0(20|50)/.test(p)) return 'net-telecel';
+            if(/^0(26|56|27|57)/.test(p)) return 'net-at';
             return '';
         }
 
         async function sync() {
             const { data: profile } = await _gv.from('profiles').select('*').eq('id', userObj.id).maybeSingle();
             isVerified = profile?.is_verified === true;
-
+            
+            // Verification Lock
+            const sendBtn = document.getElementById('chat-send-btn');
+            const chatInp = document.getElementById('chat-input');
             if(!isVerified) {
-                if(!document.body.classList.contains('withered')) showActivationCard();
-                document.getElementById('restore-btn').classList.remove('hidden');
-                document.getElementById('act-claim').classList.add('btn-locked');
-                document.getElementById('act-withdraw').classList.add('btn-locked');
-                document.getElementById('chat-send-btn').classList.add('btn-locked');
-                document.getElementById('chat-input').disabled = true;
+                sendBtn.disabled = true;
+                chatInp.placeholder = "VERIFICATION REQUIRED...";
+                document.body.classList.add('withered');
+                document.getElementById('manual-pay-card').style.display = 'block';
                 
-                if(profile) {
-                    const net = getNet(profile.phone);
-                    document.getElementById('p-full-name').innerText = profile.full_name || "---";
-                    document.getElementById('p-phone').innerText = profile.phone || "---";
-                    document.getElementById('p-phone').className = `text-[10px] font-bold tracking-widest ${net}`;
-                    document.getElementById('p-seed-amt').innerText = `GH₵ ${(profile.current_range_max || 0).toFixed(2)}`;
-                    document.getElementById('p-payment-ref').innerText = profile.payment_ref || "----";
-                    document.getElementById('p-net-name').innerText = net.includes('mtn') ? 'MTN MoMo' : net.includes('telecel') ? 'Telecel Cash' : net.includes('at') ? 'AT Money' : 'Terminal Activation';
-                    document.getElementById('p-net-name').className = `text-[8px] font-black uppercase tracking-[0.2em] mb-3 ${net}`;
-                }
+                const nc = getNet(profile?.phone);
+                document.getElementById('p-full-name').innerText = profile?.full_name || "---";
+                document.getElementById('p-phone').innerText = profile?.phone || "---";
+                document.getElementById('p-phone').className = `text-[10px] font-bold tracking-widest ${nc}`;
+                document.getElementById('p-seed-amt').innerText = `₵${(profile?.current_range_max || 0).toFixed(2)}`;
+                document.getElementById('p-payment-ref').innerText = profile?.payment_ref || "----";
+                document.getElementById('p-net-name').className = `text-[8px] font-black uppercase tracking-[0.2em] mb-3 ${nc}`;
+                document.getElementById('p-net-name').innerText = nc ? nc.replace('net-','').toUpperCase() + ' NODE' : 'ACTIVATION';
             } else {
+                sendBtn.disabled = false;
+                chatInp.placeholder = "SECURE CHANNEL...";
                 restoreScroll();
-                document.getElementById('restore-btn').classList.add('hidden');
-                document.querySelectorAll('.btn-locked').forEach(el => el.classList.remove('btn-locked'));
-                document.getElementById('chat-input').disabled = false;
                 document.getElementById('user-display').innerText = userObj.email.split('@')[0].toUpperCase();
             }
 
@@ -202,104 +190,94 @@
             document.getElementById('s-seed').innerText = `₵${ts.toFixed(2)}`;
             document.getElementById('s-reclaim').innerText = `₵${Math.max(0, tg - tv).toFixed(2)}`;
             document.getElementById('v-balance').innerText = `₵${globalVaulted.toFixed(2)}`;
-            document.getElementById('ledger-content').innerHTML = ledger?.map(l => `<div class="p-4 flex justify-between items-center text-[10px]"><div><p class="font-black text-white uppercase">${l.entry_type}</p></div><p class="font-black ${l.amount < 0 ? 'text-rose-500' : 'text-emerald-500'}">₵${Math.abs(l.amount).toFixed(2)}</p></div>`).join('');
-            
+            document.getElementById('ledger-content').innerHTML = ledger?.map(l => `<div class="p-4 flex justify-between items-center text-[10px] font-black"><span>${l.entry_type.toUpperCase()}</span><span class="${l.amount < 0 ? 'text-rose-500' : 'text-emerald-500'}">₵${Math.abs(l.amount).toFixed(2)}</span></div>`).join('');
             fetchMessages();
+        }
+
+        function spawnCedis() {
+            if(document.getElementById('t-vault').classList.contains('active')) {
+                const c = document.createElement('div');
+                c.className = 'cedi-rain';
+                c.innerText = '₵';
+                c.style.left = Math.random() * 90 + '%';
+                document.getElementById('vault-zone').appendChild(c);
+                setTimeout(() => c.remove(), 3000);
+            }
         }
 
         async function fetchMessages() {
             const { data: msgs } = await _gv.from('messages').select('*').or(`receiver_id.eq.${userObj.id},sender_id.eq.${userObj.id}`).order('created_at', { ascending: true });
-            const unreadCount = msgs.filter(m => m.receiver_id === userObj.id && !m.is_read).length;
-            const b = document.getElementById('unread-badge');
-            b.style.display = unreadCount > 0 ? 'flex' : 'none';
-            b.innerText = unreadCount;
-            if (currentTab === 't-comm' && unreadCount > 0) await _gv.from('messages').update({ is_read: true }).match({ receiver_id: userObj.id, is_read: false });
-            
-            const scr = document.getElementById('chat-scroller');
-            scr.innerHTML = msgs?.map(m => {
+            document.getElementById('chat-scroller').innerHTML = msgs?.map(m => {
                 const isMe = m.sender_id === userObj.id;
                 return `<div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
                     <div class="p-3 rounded-xl max-w-[85%] text-[10px] ${isMe ? 'bg-white/5 border-r-2 border-white/20' : 'bg-emerald-500/10 border-l-2 border-emerald-500'}">
                         ${m.content}
-                        <div class="chat-stamp">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                        <div class="text-[6px] opacity-40 mt-1 uppercase font-black">${new Date(m.created_at).toLocaleTimeString()}</div>
                     </div>
                 </div>`;
             }).join('');
-            scr.scrollTop = scr.scrollHeight;
+            const s = document.getElementById('chat-scroller'); s.scrollTop = s.scrollHeight;
         }
 
         async function sendMessage() {
             if(!isVerified) return;
-            const i = document.getElementById('chat-input');
-            const v = i.value.trim();
-            if(!v) return;
-            await _gv.from('messages').insert([{ sender_id: userObj.id, receiver_id: '00000000-0000-0000-0000-000000000000', content: v.toUpperCase(), sender_name: 'USER' }]);
-            i.value = ''; fetchMessages();
+            const input = document.getElementById('chat-input');
+            const val = input.value.trim();
+            if(!val) return;
+            await _gv.from('messages').insert([{ sender_id: userObj.id, receiver_id: '00000000-0000-0000-0000-000000000000', content: val.toUpperCase(), sender_name: 'USER' }]);
+            input.value = ''; fetchMessages();
         }
 
-        function triggerWithdrawal() {
-            if(!isVerified) return;
+        function triggerWithdrawal() { 
             const fee = globalVaulted * 0.02; 
-            document.getElementById('m-avail').innerText = `GH₵${globalVaulted.toFixed(2)}`; 
-            document.getElementById('m-fee').innerText = `GH₵${fee.toFixed(2)}`; 
-            document.getElementById('m-final').innerText = `GH₵${(globalVaulted - fee).toFixed(2)}`; 
+            document.getElementById('m-avail').innerText = `₵${globalVaulted.toFixed(2)}`; 
+            document.getElementById('m-fee').innerText = `₵${fee.toFixed(2)}`; 
+            document.getElementById('m-final').innerText = `₵${(globalVaulted - fee).toFixed(2)}`; 
             toggleModal('withdrawModal', true); 
         }
 
-        async function vaultGrace() {
-            if(!isVerified) return;
-            const amt = parseFloat(document.getElementById('s-reclaim').innerText.replace('₵','')) || 0;
-            if (amt <= 0) return;
-            await _gv.from('ledger').insert([{ user_id: userObj.id, amount: amt, entry_type: 'seed', description: `Claimed to Vault` }]);
-            sync();
-        }
-
-        async function processWithdrawal() {
-            if(!isVerified || globalVaulted <= 0) return;
+        async function processWithdrawal() { 
+            if(globalVaulted <= 0) return;
             await _gv.from('ledger').insert([{ user_id: userObj.id, amount: -globalVaulted, entry_type: 'withdrawal', description: `Payout requested` }]); 
             toggleModal('withdrawModal', false); sync();
         }
 
-        function startRain() {
-            const ov = document.getElementById('suspension-overlay');
-            for(let i=0; i<30; i++) {
-                const d = document.createElement('div');
-                d.className = 'rain-drop';
-                d.style.left = Math.random() * 100 + 'vw';
-                d.style.animationDelay = Math.random() * 2 + 's';
-                ov.appendChild(d);
-            }
-            setInterval(() => {
-                const c = document.createElement('div');
-                c.className = 'cedi-rain';
-                c.innerText = '₵';
-                c.style.left = Math.random() * 80 + '%';
-                document.getElementById('vault-zone').appendChild(c);
-                setTimeout(() => c.remove(), 3000);
-            }, 500);
+        async function vaultGrace() {
+            const amount = parseFloat(document.getElementById('s-reclaim').innerText.replace('₵','')) || 0;
+            if (amount <= 0) return;
+            await _gv.from('ledger').insert([{ user_id: userObj.id, amount: amount, entry_type: 'seed', description: `Claimed to Vault` }]);
+            sync();
         }
 
         function openTab(id) { 
-            currentTab = id;
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); 
             document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active')); 
             document.getElementById(id).classList.add('active'); 
             document.getElementById('btn-' + id.split('-')[1]).classList.add('active'); 
-            if(id === 't-comm') fetchMessages();
         }
 
-        function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
+        function toggleModal(id, s) { document.getElementById(id).style.display = s ? 'flex' : 'none'; }
         function toggleMenu(e) { e.stopPropagation(); document.getElementById('nodeMenu').classList.toggle('hidden'); }
         function closeMenu() { document.getElementById('nodeMenu').classList.add('hidden'); }
-        function showActivationCard() { document.body.classList.add('withered'); document.getElementById('manual-pay-card').style.display = 'block'; }
         function restoreScroll() { document.body.classList.remove('withered'); document.getElementById('manual-pay-card').style.display = 'none'; }
         async function logout() { await _gv.auth.signOut(); window.location.href = "index.html"; }
 
         async function init() { 
             const { data: { user } } = await _gv.auth.getUser(); 
             if(!user) return window.location.href = "index.html"; 
-            userObj = user; startRain(); sync();
-            _gv.channel('realtime-sync').on('postgres_changes', {event:'*', schema:'public'}, () => sync()).subscribe(); 
+            userObj = user; 
+            
+            // Atmospheric FX
+            const ov = document.getElementById('suspension-overlay');
+            for(let i=0; i<20; i++) {
+                const d = document.createElement('div'); d.className='rain-drop';
+                d.style.left=Math.random()*100+'vw'; d.style.animationDelay=Math.random()*2+'s';
+                ov.appendChild(d);
+            }
+            setInterval(spawnCedis, 700);
+            
+            sync();
+            _gv.channel('realtime').on('postgres_changes', {event:'*', schema:'public'}, () => sync()).subscribe(); 
         }
         init();
     </script>
