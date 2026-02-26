@@ -64,25 +64,29 @@
         .tab-trigger.active { color: var(--gold); border-bottom-color: var(--gold); }
         .gold-glow { text-shadow: 0 0 15px rgba(251, 191, 36, 0.4); }
         
+        /* THE NETWORK BADGE STYLES */
         .net-badge {
             position: absolute;
-            right: 12px;
-            top: 10px;
+            right: 10px;
+            top: 10px; /* Aligned to the top of the relative container */
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 8px;
-            border-radius: 6px;
-            background: rgba(0,0,0,0.3);
-            transition: 0.3s;
+            padding: 5px 10px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             opacity: 0;
-            transform: translateX(10px);
+            transform: scale(0.8) translateX(10px);
+            z-index: 50;
+            pointer-events: none;
         }
-        .net-badge.show { opacity: 1; transform: translateX(0); }
+        .net-badge.show { opacity: 1; transform: scale(1) translateX(0); }
         
         .net-logo { 
             width: 20px; 
-            height: 14px; 
+            height: 20px; 
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
@@ -98,6 +102,7 @@
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 1px;
+            z-index: 10;
         }
 
         .hint-text { font-size: 7px; color: #64748b; text-align: center; margin-top: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -133,7 +138,7 @@
                 <input type="tel" id="reg-phone" placeholder="MoMo Number (024...)" class="input-box" maxlength="10" oninput="detectNetwork(this.value)">
                 <div id="net-badge" class="net-badge">
                     <div id="net-logo" class="net-logo"></div>
-                    <span id="net-name" class="text-[7px] font-black uppercase"></span>
+                    <span id="net-name" class="text-[7px] font-black uppercase tracking-widest"></span>
                 </div>
             </div>
 
@@ -172,14 +177,14 @@
         const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
         const _gv = supabase.createClient(SB_URL, SB_KEY);
 
-        const MERCHANT_MTN = "024XXXXXXX";
+        const MERCHANT_MTN = "0535261448";
         const MERCHANT_TEL = "020XXXXXXX";
         const MERCHANT_AT = "026XXXXXXX";
 
         const NET_LOGOS = {
-            MTN: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/MTN_Logo.svg/1200px-MTN_Logo.svg.png",
-            TELECEL: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Telecel_Group_Logo.png/600px-Telecel_Group_Logo.png",
-            AT: "https://upload.wikimedia.org/wikipedia/commons/1/1d/AirtelTigo_Logo.png"
+            MTN: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/MTN_Logo.svg/1200px-MTN_Logo.svg.png",
+            TELECEL: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Telecel_Logo.svg/1200px-Telecel_Logo.svg.png",
+            AT: "https://upload.wikimedia.org/wikipedia/en/3/3a/AirtelTigo_logo.png"
         };
 
         function toggleAuth(mode) {
@@ -224,10 +229,9 @@
             const amt = document.getElementById('gift-slider').value;
             const ref = document.getElementById('unique-ref').innerText;
 
-            if (phone.length !== 10) {
+            if (phone.length < 3) {
                 badge.classList.remove('show');
                 merchDisp.innerText = "Awaiting Network...";
-                dialer.href = "javascript:void(0)";
                 return "UNKNOWN";
             }
 
