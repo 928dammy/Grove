@@ -83,6 +83,7 @@
     </header>
 
     <main class="p-4 max-w-4xl mx-auto">
+        
         <section id="nodes" class="tab-content active">
             <div class="mb-6 auth-card p-6">
                 <h3 class="text-xs font-black uppercase text-blue-400 mb-4 italic">Node Verification (Unlock Dash)</h3>
@@ -127,6 +128,20 @@
             </div>
         </section>
 
+        <section id="missions" class="tab-content">
+            <div class="auth-card p-6 mb-4">
+                <h3 class="text-sm font-black uppercase text-amber-500 mb-4 italic">Broadcast New Mission</h3>
+                <div class="space-y-3">
+                    <input type="text" id="missionTitle" placeholder="Mission Name (e.g. Barbershop Revamp)" class="input-box">
+                    <textarea id="missionDesc" placeholder="Describe the mission details, recycling bin locations, or plastic waste trading terms..." class="input-box h-32"></textarea>
+                    <input type="number" id="missionGoal" placeholder="Seeding Goal ₵" class="input-box">
+                    <button onclick="publishMission()" class="w-full py-4 bg-amber-600 text-white font-black rounded-2xl text-xs uppercase">Deploy Mission</button>
+                </div>
+            </div>
+            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-3 px-2 italic">Active Missions</h3>
+            <div id="missionList" class="space-y-3"></div>
+        </section>
+
         <section id="harvest" class="tab-content">
             <div class="auth-card p-6 mb-4 border-emerald-500/20">
                 <h3 class="text-sm font-black uppercase text-emerald-500 mb-4 italic">Dispatch Grace</h3>
@@ -168,6 +183,7 @@
     <nav class="fixed bottom-0 left-0 right-0 h-20 bg-slate-950/90 border-t border-white/10 backdrop-blur-lg flex justify-around items-center z-50">
         <div class="nav-link active" onclick="openTab(event, 'nodes')"><span>👥</span><span class="text-[7px] font-black uppercase mt-1">Nodes</span></div>
         <div class="nav-link" onclick="openTab(event, 'messages')"><div id="navMsgBadge" class="nav-badge view-hidden">0</div><span>💬</span><span class="text-[7px] font-black uppercase mt-1">Chat</span></div>
+        <div class="nav-link" onclick="openTab(event, 'missions')"><span>🚀</span><span class="text-[7px] font-black uppercase mt-1">Mission</span></div>
         <div class="nav-link" onclick="openTab(event, 'harvest')"><span>🌿</span><span class="text-[7px] font-black uppercase mt-1">Harvest</span></div>
         <div class="nav-link" onclick="payoutTabClick(event)"><span>💰</span><span class="text-[7px] font-black uppercase mt-1">Payouts</span></div>
         <div class="nav-link" onclick="openTab(event, 'ledger')"><span>📜</span><span class="text-[7px] font-black uppercase mt-1">Ledger</span></div>
@@ -192,6 +208,7 @@
             const { data: nodes } = await _gv.from('profiles').select('*');
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
             const { data: msgs } = await _gv.from('messages').select('*').order('created_at', { ascending: false });
+            const { data: missions } = await _gv.from('system_events').select('*').eq('type', 'mission').order('created_at', { ascending: false });
             
             allNodes = nodes || [];
             allMsgs = msgs || [];
@@ -239,10 +256,9 @@
                 const raw = Math.abs(w.amount), fee = raw * 0.02, net = raw - fee;
                 return `<div class="auth-card p-4 flex justify-between items-center mb-2"><div><p class="text-[10px] font-black text-emerald-400">DISPATCH: GH₵${net.toFixed(2)}</p><p class="text-[7px] text-slate-500 uppercase">Vault: ₵${raw} | 2% Fee: ₵${fee.toFixed(2)}</p></div><button onclick="approvePayout('${w.id}', ${raw}, '${w.user_id}')" class="px-4 py-2 bg-emerald-600 text-white text-[8px] font-black uppercase rounded-lg">Confirm</button></div>`}).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">Queue Empty</p>`;
 
-            // ENHANCED LEDGER RENDERER
+            // LEDGER RENDERER
             let dL = ledger || [];
             if(ledgerFilter !== 'all') dL = dL.filter(l => l.entry_type === ledgerFilter);
-            
             document.getElementById('ledgerTable').innerHTML = dL.map(l => {
                 const isWithdrawal = l.entry_type === 'withdrawal';
                 const isVault = l.description.includes('Vault');
@@ -250,21 +266,50 @@
                 const userName = userMap[l.user_id] || 'SYS';
                 const color = isWithdrawal ? 'text-rose-400' : (isVault ? 'text-emerald-400' : 'text-blue-400');
                 const symbol = isWithdrawal ? '↓' : '↑';
-
-                return `
-                <div class="p-4 grid grid-cols-4 items-center hover:bg-white/[0.02] transition-colors">
-                    <div class="col-span-1">
-                        <p class="text-[9px] font-black uppercase text-white truncate">${userName}</p>
-                        <p class="text-[6px] text-slate-500 uppercase">${time}</p>
-                    </div>
-                    <div class="col-span-2 text-center px-2">
-                        <p class="text-[7px] text-slate-400 uppercase font-bold tracking-tight leading-tight">${l.description}</p>
-                    </div>
-                    <div class="col-span-1 text-right">
-                        <p class="text-[10px] font-black ${color}">${symbol} ₵${Math.abs(l.amount).toFixed(0)}</p>
-                    </div>
-                </div>`;
+                return `<div class="p-4 grid grid-cols-4 items-center hover:bg-white/[0.02] transition-colors"><div class="col-span-1"><p class="text-[9px] font-black uppercase text-white truncate">${userName}</p><p class="text-[6px] text-slate-500 uppercase">${time}</p></div><div class="col-span-2 text-center px-2"><p class="text-[7px] text-slate-400 uppercase font-bold tracking-tight leading-tight">${l.description}</p></div><div class="col-span-1 text-right"><p class="text-[10px] font-black ${color}">${symbol} ₵${Math.abs(l.amount).toFixed(0)}</p></div></div>`;
             }).join('');
+
+            // MISSION RENDERER
+            document.getElementById('missionList').innerHTML = missions?.length ? missions.map(m => `
+                <div class="auth-card p-4 border border-amber-500/10">
+                    <div class="flex justify-between items-center mb-2">
+                        <p class="text-[10px] font-black text-amber-500 uppercase italic">${m.title || 'GROVE MISSION'}</p>
+                        <span class="text-[8px] font-black bg-amber-500/10 text-amber-500 px-2 py-1 rounded-md tracking-widest uppercase">ACTIVE</span>
+                    </div>
+                    <p class="text-[9px] text-slate-300 leading-relaxed mb-4">${m.description || 'No details provided.'}</p>
+                    <div class="flex justify-between items-center bg-black/40 p-3 rounded-xl border border-white/5">
+                        <div>
+                            <p class="text-[6px] text-slate-500 uppercase">Target Goal</p>
+                            <p class="text-[10px] font-black text-white italic">₵${m.value || 0}</p>
+                        </div>
+                        <button onclick="deleteMission('${m.id}')" class="text-rose-500 text-[8px] font-black uppercase">End Mission</button>
+                    </div>
+                </div>
+            `).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">No Missions Deployed</p>`;
+        }
+
+        async function publishMission() {
+            const title = document.getElementById('missionTitle').value;
+            const desc = document.getElementById('missionDesc').value;
+            const goal = document.getElementById('missionGoal').value;
+            if(!title || !desc || !goal) return alert("Fill all mission parameters.");
+            await _gv.from('system_events').insert([{ 
+                type: 'mission', 
+                title: title.toUpperCase(), 
+                description: desc, 
+                value: parseFloat(goal) 
+            }]);
+            document.getElementById('missionTitle').value = '';
+            document.getElementById('missionDesc').value = '';
+            document.getElementById('missionGoal').value = '';
+            alert("Mission Broadcasted to all Nodes.");
+            sync();
+        }
+
+        async function deleteMission(id) {
+            if(!confirm("End this mission?")) return;
+            await _gv.from('system_events').delete().eq('id', id);
+            sync();
         }
 
         async function quickUpdate(email, action) {
@@ -374,7 +419,7 @@
             document.getElementById(n).classList.add('active'); 
             if(e) e.currentTarget.classList.add('active');
             if(n === 'messages') closeChat();
-            if(n === 'ledger') sync();
+            if(n === 'ledger' || n === 'missions') sync();
         }
         
         function payoutTabClick(e) { openTab(e, 'payouts'); sync(); }
@@ -383,7 +428,9 @@
             sync(); 
             _gv.channel('realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
                 if(currentChatId) refreshChat(); else sync();
-            }).on('postgres_changes', { event: '*', schema: 'public', table: 'ledger' }, () => sync())
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'ledger' }, () => sync())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'system_events' }, () => sync())
             .subscribe();
         }
         
