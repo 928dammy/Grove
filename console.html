@@ -11,8 +11,9 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; min-height: 100vh; margin: 0; }
         .auth-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1.5rem; }
-        .nav-link { display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.4; transition: 0.3s; cursor: pointer; }
+        .nav-link { display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.4; transition: 0.3s; cursor: pointer; position: relative; }
         .nav-link.active { opacity: 1; color: #10b981; }
+        .nav-badge { position: absolute; top: 10px; right: 20%; background: #f43f5e; color: white; font-size: 7px; font-weight: 900; padding: 1px 4px; border-radius: 4px; border: 1px solid #020617; min-width: 12px; text-align: center; }
         .tab-content { display: none; padding-bottom: 120px; }
         .tab-content.active { display: block; animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -25,18 +26,17 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .slogan-badge { font-size: 8px; font-weight: 900; color: #fbbf24; letter-spacing: 2px; }
         .ref-tag { background: #10b981; color: black; font-size: 8px; padding: 2px 6px; border-radius: 4px; font-weight: 900; }
-        .filter-btn { font-size: 7px; font-weight: 900; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); cursor: pointer; }
+        .filter-btn { font-size: 7px; font-weight: 900; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); cursor: pointer; text-transform: uppercase; }
         .filter-btn.active { background: #10b981; color: black; border-color: #10b981; }
-        .mission-preview { width: 100%; height: 120px; border-radius: 1rem; object-fit: cover; background: #000; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); display: none; }
-        
-        /* Fixed Chat Alignment & Detailed View */
-        .bubble-wrapper { display: flex; flex-direction: column; width: 100%; margin-bottom: 12px; }
-        .chat-bubble { padding: 10px 14px; border-radius: 1.2rem; font-size: 11px; max-width: 85%; position: relative; line-height: 1.4; }
-        .bubble-in { background: rgba(255,255,255,0.08); color: #cbd5e1; align-self: flex-start; border-bottom-left-radius: 4px; }
-        .bubble-out { background: #10b981; color: #020617; font-weight: 600; align-self: flex-end; border-bottom-right-radius: 4px; }
-        .msg-info { font-size: 7px; text-transform: uppercase; margin-top: 4px; opacity: 0.6; }
-        
-        .unread-dot { width: 8px; height: 8px; background: #f43f5e; border-radius: 50%; box-shadow: 0 0 10px #f43f5e; }
+
+        /* Real-time Inbox Styles */
+        .bubble-wrapper { display: flex; flex-direction: column; width: 100%; margin-bottom: 8px; }
+        .chat-bubble { padding: 8px 12px; border-radius: 1rem; font-size: 10px; max-width: 82%; position: relative; line-height: 1.3; }
+        .bubble-in { background: rgba(255,255,255,0.06); color: #cbd5e1; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid rgba(255,255,255,0.05); }
+        .bubble-out { background: #10b981; color: #020617; font-weight: 700; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .msg-info { font-size: 6px; text-transform: uppercase; margin-top: 3px; opacity: 0.6; }
+        .unread-dot { width: 6px; height: 6px; background: #f43f5e; border-radius: 50%; box-shadow: 0 0 10px #f43f5e; }
+        .view-hidden { display: none !important; }
         .mute-badge { background: #f43f5e; color: white; font-size: 6px; padding: 1px 4px; border-radius: 3px; margin-left: 5px; }
     </style>
 </head>
@@ -81,10 +81,6 @@
                 <p class="text-[7px] font-black text-blue-500 uppercase">Active Nodes</p>
                 <p id="stat-nodes" class="text-[10px] font-black">0</p>
             </div>
-            <div class="auth-card p-3 min-w-[100px] flex-shrink-0 text-center">
-                <p class="text-[7px] font-black text-rose-500 uppercase">Withdrawals</p>
-                <p id="stat-withdrawn" class="text-[10px] font-black">GH₵0</p>
-            </div>
         </div>
     </header>
 
@@ -103,38 +99,47 @@
             </div>
             <div class="flex flex-col gap-2 mb-3 px-2">
                 <h3 class="text-[10px] font-black text-slate-500 uppercase">Node Management</h3>
-                <input type="text" id="nodeSearch" oninput="sync()" placeholder="Search..." class="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none text-emerald-400 w-full">
+                <input type="text" id="nodeSearch" oninput="sync()" placeholder="Search nodes..." class="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none text-emerald-400 w-full">
             </div>
             <div id="nodeList" class="space-y-3"></div>
         </section>
 
         <section id="messages" class="tab-content">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
-                <div class="auth-card overflow-y-auto no-scrollbar p-2">
-                    <h3 class="text-[9px] font-black text-slate-500 uppercase mb-3 px-2">Conversations</h3>
-                    <div id="contactList" class="space-y-1"></div>
+            <div id="inboxView" class="space-y-4">
+                <div class="flex justify-between items-center px-2">
+                    <h3 class="text-[10px] font-black text-slate-500 uppercase italic">Inbox Terminal</h3>
+                    <div class="flex gap-2">
+                        <button onclick="setMsgFilter('all')" id="msgFilterAll" class="filter-btn active">All</button>
+                        <button onclick="setMsgFilter('unread')" id="msgFilterUnread" class="filter-btn">Unread</button>
+                    </div>
                 </div>
-                <div class="md:col-span-2 auth-card flex flex-col p-4 relative">
-                    <div id="chatHeader" class="border-b border-white/5 pb-3 mb-4 flex justify-between items-center">
-                        <p id="activeChatName" class="text-[10px] font-black uppercase text-emerald-500 italic">Secure Line</p>
-                        <div id="muteControls" class="hidden flex gap-2">
-                             <button id="muteBtn" class="text-[7px] font-black uppercase px-3 py-1 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20"></button>
+                <div id="contactList" class="space-y-2"></div>
+            </div>
+
+            <div id="chatView" class="view-hidden flex flex-col h-[70vh]">
+                <div class="flex justify-between items-center bg-white/5 p-3 rounded-2xl mb-4 border border-white/5">
+                    <div class="flex items-center gap-3">
+                        <button onclick="closeChat()" class="p-2 bg-white/5 rounded-lg text-emerald-500">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"/></svg>
+                        </button>
+                        <div class="truncate">
+                            <p id="activeChatName" class="text-[10px] font-black uppercase text-white truncate w-32"></p>
+                            <p class="text-[7px] text-emerald-500 font-bold uppercase">SECURE TRANSMISSION</p>
                         </div>
                     </div>
-                    <div id="adminChatBox" class="flex-1 overflow-y-auto pr-2 flex flex-col no-scrollbar"></div>
-                    <div id="chatInputArea" class="mt-4 opacity-30 pointer-events-none">
-                        <div class="relative">
-                            <input id="adminReplyInput" type="text" placeholder="WRITE..." class="input-box text-xs">
-                            <button onclick="sendAdminReply()" class="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 font-black text-[9px] uppercase">Send</button>
-                        </div>
-                    </div>
+                    <button id="chatMuteBtn" class="text-[7px] font-black uppercase px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-500 border border-rose-500/20">Mute</button>
+                </div>
+                <div id="adminChatBox" class="flex-1 overflow-y-auto pr-2 no-scrollbar mb-4 space-y-1"></div>
+                <div class="relative mt-auto">
+                    <input id="adminReplyInput" type="text" placeholder="TYPE REPLY..." class="input-box text-[11px] pr-16 h-14">
+                    <button onclick="sendAdminReply()" class="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-500 text-black px-4 py-2 rounded-xl font-black text-[9px] uppercase shadow-lg">Send</button>
                 </div>
             </div>
         </section>
 
         <section id="missions" class="tab-content">
             <div class="auth-card p-6 border-amber-500/20 mb-4">
-                <h3 class="text-sm font-black uppercase text-amber-500 mb-4 italic">Broadcast Global Mission</h3>
+                <h3 class="text-xs font-black uppercase text-amber-500 mb-4 italic">Broadcast Global Mission</h3>
                 <div class="space-y-3">
                     <select id="mCategory" class="input-box text-xs font-black">
                         <option value="SOCIAL">SOCIAL IMPACT</option>
@@ -142,24 +147,21 @@
                         <option value="EMPOWERMENT">YOUTH EMPOWERMENT</option>
                     </select>
                     <input type="text" id="mTitle" placeholder="Mission Title" class="input-box">
-                    <textarea id="mDesc" placeholder="Description..." class="input-box h-20 text-xs"></textarea>
-                    <div class="relative">
-                        <input type="file" id="mFile" accept="image/*" class="hidden" onchange="uploadToImgBB(this)">
-                        <button onclick="document.getElementById('mFile').click()" id="uploadBtn" class="w-full py-3 border border-dashed border-white/20 rounded-xl text-[8px] font-black uppercase text-slate-400">Upload Photo</button>
-                        <input type="hidden" id="mImageUrl">
-                    </div>
-                    <img id="img-prev" class="mission-preview">
+                    <textarea id="mDesc" placeholder="Full Details..." class="input-box h-20 text-xs"></textarea>
                     <input type="number" id="mCost" placeholder="Cost (₵)" class="input-box">
-                    <button onclick="postMission()" class="w-full py-4 bg-amber-500 text-black font-black rounded-2xl text-[10px] uppercase">Broadcast</button>
+                    <div class="flex items-center gap-2 p-3 bg-white/5 rounded-xl border border-white/5">
+                        <input type="checkbox" id="pushAlert" class="accent-emerald-500">
+                        <label for="pushAlert" class="text-[9px] font-black text-slate-400 uppercase">Trigger Force Alert to All Nodes</label>
+                    </div>
+                    <button onclick="postMission()" class="w-full py-4 bg-amber-500 text-black font-black rounded-2xl text-[10px] uppercase">Broadcast Now</button>
                 </div>
             </div>
-            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-3 px-2 italic">Broadcast Log</h3>
             <div id="missionLog" class="space-y-2"></div>
         </section>
 
         <section id="harvest" class="tab-content">
             <div class="auth-card p-6 mb-4">
-                <h3 class="text-sm font-black uppercase text-emerald-500 mb-4 italic">Dispatch Grace (Orchard)</h3>
+                <h3 class="text-sm font-black uppercase text-emerald-500 mb-4 italic">Dispatch Grace</h3>
                 <input type="number" id="distAmount" placeholder="Amount (₵)" class="input-box mb-4">
                 <button onclick="broadcastGrace()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl text-xs uppercase">Release Stable Grace</button>
             </div>
@@ -174,22 +176,28 @@
         </section>
 
         <section id="payouts" class="tab-content">
-            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-3 px-2 italic">Withdrawal Queue (2% Deductible Logic)</h3>
+            <h3 class="text-[10px] font-black text-slate-500 uppercase mb-3 px-2 italic">Withdrawal Queue (2% Deductible)</h3>
             <div id="payoutList" class="space-y-2"></div>
         </section>
 
         <section id="ledger" class="tab-content">
             <div class="flex justify-between items-center mb-3 px-2">
-                <button id="btnFilterSeed" onclick="toggleSeedFilter()" class="filter-btn">ONLY SEEDS 🌱</button>
-                <button onclick="exportLedger()" class="text-[8px] font-black bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-lg uppercase">CSV</button>
+                <div class="flex gap-2">
+                    <button id="btnFilterSeed" onclick="toggleSeedFilter()" class="filter-btn">SEEDS 🌱</button>
+                    <button id="btnFilterWithdraw" onclick="toggleWithdrawFilter()" class="filter-btn">WITHDRAWALS 💰</button>
+                </div>
+                <button onclick="exportLedgerCSV()" class="text-[8px] font-black bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-lg uppercase">CSV REPORT</button>
             </div>
             <div class="auth-card overflow-hidden"><div id="ledgerTable" class="divide-y divide-white/5"></div></div>
         </section>
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 h-20 bg-slate-950/90 border-t border-white/10 backdrop-blur-lg flex justify-around items-center z-50 no-scrollbar overflow-x-auto">
+    <nav class="fixed bottom-0 left-0 right-0 h-20 bg-slate-950/90 border-t border-white/10 backdrop-blur-lg flex justify-around items-center z-50">
         <div class="nav-link active" onclick="openTab(event, 'nodes')"><span>👥</span><span class="text-[7px] font-black uppercase mt-1">Nodes</span></div>
-        <div class="nav-link" onclick="openTab(event, 'messages')"><span>💬</span><span class="text-[7px] font-black uppercase mt-1">Chat</span></div>
+        <div class="nav-link" onclick="openTab(event, 'messages')">
+            <div id="navMsgBadge" class="nav-badge view-hidden">0</div>
+            <span>💬</span><span class="text-[7px] font-black uppercase mt-1">Chat</span>
+        </div>
         <div class="nav-link" onclick="openTab(event, 'missions')"><span>🎯</span><span class="text-[7px] font-black uppercase mt-1">Missions</span></div>
         <div class="nav-link" onclick="openTab(event, 'harvest')"><span>🌿</span><span class="text-[7px] font-black uppercase mt-1">Harvest</span></div>
         <div class="nav-link" onclick="payoutTabClick(event)"><span>💰</span><span class="text-[7px] font-black uppercase mt-1">Payouts</span></div>
@@ -199,9 +207,8 @@
     <script>
         const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
         const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
-        const IMGBB_KEY = "3a0026e6f6630456184517316317b9b7";
         const _gv = supabase.createClient(SB_URL, SB_KEY);
-        let adminUser = null, allNodes = [], currentChatId = null, seedFilter = false, allMsgs = [];
+        let adminUser = null, allNodes = [], currentChatId = null, seedFilter = false, withdrawFilter = false, allMsgs = [], msgFilter = 'all', fullLedgerData = [];
 
         async function checkAdmin() {
             const { data: { user } } = await _gv.auth.getUser();
@@ -220,6 +227,7 @@
             
             allNodes = nodes || [];
             allMsgs = msgs || [];
+            fullLedgerData = ledger || [];
 
             let globalSeeded = 0, globalWithdrawn = 0, totalVaulted = 0;
             const nodeDetails = {};
@@ -237,196 +245,134 @@
                 }
             });
             Object.values(nodeDetails).forEach(u => { totalVaulted += Math.max(0, u.vaulted - u.withdrawn); });
-            const liveMissions = missions?.filter(m => m.status !== 'ARCHIVED');
-            const totalBurn = liveMissions?.reduce((sum, m) => sum + (parseFloat(m.cost_to_settle) || 0), 0) || 0;
-            const grovePool = globalSeeded - totalBurn - globalWithdrawn;
+            const grovePool = globalSeeded - globalWithdrawn;
 
             document.getElementById('stat-pool').innerText = `GH₵${grovePool.toFixed(2)}`;
             document.getElementById('stat-vaulted').innerText = `GH₵${totalVaulted.toFixed(2)}`;
             document.getElementById('stat-seeded').innerText = `GH₵${globalSeeded.toFixed(0)}`;
-            document.getElementById('stat-withdrawn').innerText = `GH₵${globalWithdrawn.toFixed(0)}`;
             document.getElementById('stat-nodes').innerText = nodes?.length || 0;
 
-            // NODE LIST
             const searchTerm = document.getElementById('nodeSearch').value.toLowerCase();
             document.getElementById('nodeList').innerHTML = nodes?.filter(n => n.email.toLowerCase().includes(searchTerm)).map(n => {
                 const stats = nodeDetails[n.id] || {seeded:0, vaulted:0, withdrawn:0};
-                return `<div class="auth-card p-4"><div class="flex justify-between items-start mb-2"><div><div class="flex items-center gap-2"><p class="text-[10px] font-black uppercase text-white">${n.full_name || 'ANON'}${n.is_muted ? '<span class="mute-badge">MUTED</span>' : ''}</p><span class="ref-tag">${n.payment_ref}</span></div><p class="text-[7px] text-slate-500 uppercase mt-1">${n.email}</p></div><span class="text-[6px] font-black px-2 py-0.5 rounded ${n.is_verified ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'} uppercase">${n.is_verified ? 'Verified' : 'Pending'}</span></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-3 rounded-xl border border-white/5"><div class="text-center"><p class="text-[6px] text-slate-500 uppercase">Seeded</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div class="text-center"><p class="text-[6px] text-rose-500 uppercase">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="grid grid-cols-4 gap-2"><button onclick="openUserChat('${n.id}')" class="btn-action btn-msg">Msg</button><button onclick="toggleSuspend('${n.id}', ${n.is_suspended})" class="btn-action btn-freeze">${n.is_suspended ? 'Rel' : 'Susp'}</button><button onclick="toggleVerify('${n.id}', ${n.is_verified})" class="btn-action bg-white/5 border border-white/10 text-white italic">Node</button><button onclick="expelNode('${n.id}')" class="btn-action btn-expel">Expel</button></div></div>`;
+                return `<div class="auth-card p-4"><div class="flex justify-between items-start mb-2"><div><div class="flex items-center gap-2"><p class="text-[10px] font-black uppercase text-white">${n.full_name || 'ANON'}</p><span class="ref-tag">${n.payment_ref}</span></div><p class="text-[7px] text-slate-500 uppercase mt-1">${n.email}</p></div></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-3 rounded-xl border border-white/5"><div class="text-center"><p class="text-[6px] text-slate-500 uppercase">Seeded</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div class="text-center border-x border-white/5"><p class="text-[6px] text-emerald-500 uppercase">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div class="text-center"><p class="text-[6px] text-rose-500 uppercase">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="grid grid-cols-4 gap-2"><button onclick="openUserChat('${n.id}')" class="btn-action btn-msg">Msg</button><button onclick="toggleSuspend('${n.id}', ${n.is_suspended})" class="btn-action btn-freeze">${n.is_suspended ? 'Rel' : 'Susp'}</button><button onclick="toggleVerify('${n.id}', ${n.is_verified})" class="btn-action bg-white/5 text-white">Node</button><button onclick="expelNode('${n.id}')" class="btn-action btn-expel">Expel</button></div></div>`;
             }).join('');
 
-            // CONVERSATIONS
-            const sortedNodes = [...nodes].sort((a, b) => {
-                const aNew = allMsgs.find(m => m.sender_id === a.id && m.receiver_id === adminUser.id);
-                const bNew = allMsgs.find(m => m.sender_id === b.id && m.receiver_id === adminUser.id);
-                return (bNew?.created_at || 0) - (aNew?.created_at || 0);
-            });
+            renderInbox();
+            updateNavBadge();
 
-            document.getElementById('contactList').innerHTML = sortedNodes.map(n => {
-                const lastUserMsg = allMsgs.find(m => m.sender_id === n.id);
-                const lastAdminMsg = allMsgs.find(m => m.receiver_id === n.id);
-                const isUnread = lastUserMsg && (!lastAdminMsg || new Date(lastUserMsg.created_at) > new Date(lastAdminMsg.created_at));
-                return `<div onclick="openUserChat('${n.id}')" class="p-3 rounded-xl cursor-pointer hover:bg-white/5 flex items-center justify-between gap-3 ${currentChatId === n.id ? 'bg-emerald-500/10 border border-emerald-500/20' : ''}">
-                    <div class="flex items-center gap-3">
-                        <div class="w-2 h-2 rounded-full ${n.is_suspended ? 'bg-rose-500' : 'bg-emerald-500'}"></div>
-                        <div><p class="text-[9px] font-black uppercase ${isUnread ? 'text-emerald-400' : ''}">${n.full_name || 'Node'} ${n.is_muted ? '🔇' : ''}</p><p class="text-[7px] text-slate-500 truncate w-32">${n.email}</p></div>
-                    </div>
-                    ${isUnread ? '<div class="unread-dot animate-pulse"></div>' : ''}
-                </div>`;
-            }).join('');
-
-            // PAYOUT LIST (2% LOGIC)
             const withdrawals = ledger?.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID'));
             document.getElementById('payoutList').innerHTML = withdrawals?.length ? withdrawals.map(w => {
                 const rawAmt = Math.abs(w.amount), fee = rawAmt * 0.02, net = rawAmt - fee;
-                return `<div class="auth-card p-4 border border-white/5 mb-2"><div class="flex justify-between items-center"><div><p class="text-[10px] font-black text-emerald-400">DISPATCH: GH₵${net.toFixed(2)}</p><p class="text-[7px] font-bold text-slate-500 uppercase">Claim Vaulted: ₵${rawAmt} | 2% Deductible: ₵${fee.toFixed(2)}</p><p class="text-[6px] text-slate-600 italic mt-1">${w.description}</p></div><button onclick="approvePayout('${w.id}', ${rawAmt}, '${w.user_id}')" class="px-4 py-2 bg-emerald-600 text-white text-[8px] font-black uppercase rounded-lg">Confirm Paid</button></div></div>`}).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">Queue Empty</p>`;
+                return `<div class="auth-card p-4 border border-white/5 mb-2"><div class="flex justify-between items-center"><div><p class="text-[10px] font-black text-emerald-400">DISPATCH: GH₵${net.toFixed(2)}</p><p class="text-[7px] font-bold text-slate-500 uppercase">Claim Vaulted: ₵${rawAmt} | 2% Deductible: ₵${fee.toFixed(2)}</p></div><button onclick="approvePayout('${w.id}', ${rawAmt}, '${w.user_id}')" class="px-4 py-2 bg-emerald-600 text-white text-[8px] font-black uppercase rounded-lg">Confirm Paid</button></div></div>`}).join('') : `<p class="text-center py-8 opacity-20 uppercase font-black text-[7px]">Queue Empty</p>`;
 
-            // MISSIONS (History Included)
-            document.getElementById('missionLog').innerHTML = missions?.length ? missions.map(m => `
-                <div class="auth-card p-4 border-l-4 ${m.status === 'ARCHIVED' ? 'border-slate-700 opacity-40' : 'border-amber-500'} mb-2">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-[6px] font-black text-amber-500 uppercase">${m.category || 'IMPACT'}</p>
-                            <p class="text-[9px] font-black uppercase text-white">${m.description}</p>
-                        </div>
-                        ${m.status !== 'ARCHIVED' ? `<button onclick="archiveMission('${m.id}')" class="text-[7px] font-black text-rose-500">Archive</button>` : `<span class="text-[7px] font-black text-slate-600 uppercase tracking-tighter">Archived Log</span>`}
-                    </div>
-                    ${m.image_url ? `<img src="${m.image_url}" class="w-full h-20 object-cover rounded-lg mt-2 border border-white/5">` : ''}
-                    <div class="flex justify-between items-center mt-2">
-                        <p class="text-[7px] font-bold text-slate-500 uppercase">Settled: GH₵${m.cost_to_settle}</p>
-                        <p class="text-[6px] text-slate-700 italic">${new Date(m.created_at).toLocaleDateString()}</p>
-                    </div>
-                </div>`).join('') : '';
-
-            // LEDGER
             let displayLedger = ledger || [];
             if(seedFilter) displayLedger = displayLedger.filter(l => l.entry_type === 'seed');
-            document.getElementById('ledgerTable').innerHTML = displayLedger.slice(0, 30).map(l => {
-                const user = nodes?.find(p => p.id === l.user_id);
-                return `<div class="p-4 flex justify-between items-center text-[10px] border-b border-white/5"><div><p class="font-black uppercase text-emerald-500 text-[8px]">${user ? user.full_name : 'SYSTEM'}</p><p class="text-[7px] text-slate-500 uppercase">${l.description || ''}</p></div><p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p></div>`;
-            }).join('');
+            if(withdrawFilter) displayLedger = displayLedger.filter(l => l.entry_type === 'withdrawal');
+            document.getElementById('ledgerTable').innerHTML = displayLedger.slice(0, 50).map(l => `<div class="p-4 flex justify-between items-center text-[10px] border-b border-white/5"><div><p class="text-[7px] text-slate-500 uppercase">${l.description}</p></div><p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p></div>`).join('');
         }
 
+        // --- CORE ACTION LOGIC ---
         async function approvePayout(id, rawAmt, userId) { 
             const fee = rawAmt * 0.02, net = rawAmt - fee;
-            if(!confirm(`Confirm dispatch of GH₵${net.toFixed(2)}? (2% deduction applied)`)) return;
-            
+            if(!confirm(`Dispatch GH₵${net.toFixed(2)}? (2% Service Charge Deducted)`)) return;
             const stamp = `PAID GH₵${net.toFixed(2)} | SERVICE FEE: ₵${fee.toFixed(2)} | AUTH: ${adminUser.email}`;
             await _gv.from('ledger').update({ description: stamp }).eq('id', id);
-
-            await _gv.from('messages').insert([{
-                sender_id: adminUser.id,
-                receiver_id: userId,
-                sender_name: "SYSTEM | PAYMENTS",
-                content: `✅ WITHDRAWAL DISPATCHED: GH₵${net.toFixed(2)} has been sent. A 2% service charge (GH₵${fee.toFixed(2)}) was applied. Givers Never Lack!`
-            }]);
-
-            alert("Payment Confirmed & User Notified");
+            await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: userId, sender_name: "SYSTEM", content: `✅ WITHDRAWAL DISPATCHED: GH₵${net.toFixed(2)} HAS BEEN SENT. A 2% SERVICE CHARGE (GH₵${fee.toFixed(2)}) WAS DEDUCTED. GIVERS NEVER LACK!` }]);
             sync(); 
-        }
-
-        async function openUserChat(userId) {
-            currentChatId = userId;
-            const node = allNodes.find(n => n.id === userId);
-            openTab(null, 'messages');
-            document.getElementById('activeChatName').innerText = `CHAT: ${node.full_name || node.email}`;
-            document.getElementById('chatInputArea').style.opacity = "1";
-            document.getElementById('chatInputArea').style.pointerEvents = "auto";
-            const mBtn = document.getElementById('muteBtn');
-            document.getElementById('muteControls').classList.remove('hidden');
-            mBtn.innerText = node.is_muted ? "Unmute Node" : "Mute Node";
-            mBtn.onclick = () => toggleMute(node.id, node.is_muted);
-            refreshChat();
-            sync(); 
-        }
-
-        async function refreshChat() {
-            if (!currentChatId || !adminUser) return;
-            const { data: msgs } = await _gv.from('messages').select('*').or(`sender_id.eq.${currentChatId},receiver_id.eq.${currentChatId}`).order('created_at', { ascending: true });
-            const box = document.getElementById('adminChatBox');
-            box.innerHTML = msgs?.map(m => {
-                const isAdmin = m.sender_id === adminUser.id;
-                return `
-                <div class="bubble-wrapper">
-                    <div class="chat-bubble ${isAdmin ? 'bubble-out' : 'bubble-in'}">
-                        <p class="text-[7px] font-black uppercase opacity-50 mb-1">${isAdmin ? 'ADMIN' : (m.sender_name || 'NODE')}</p>
-                        ${m.content}
-                        <div class="msg-info text-right">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-                    </div>
-                </div>`;
-            }).join('') || '<p class="text-center py-20 opacity-10 text-[8px] font-black uppercase">Start Transmission</p>';
-            box.scrollTop = box.scrollHeight;
-        }
-
-        async function sendAdminReply() {
-            const input = document.getElementById('adminReplyInput');
-            const val = input.value.trim();
-            if (!val || !currentChatId) return;
-            await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: currentChatId, content: val.toUpperCase(), sender_name: 'ADMIN' }]);
-            input.value = ''; refreshChat();
-        }
-
-        async function archiveMission(id) {
-            if(!confirm("Archive this mission? It will move to history log.")) return;
-            await _gv.from('settled_needs').update({ status: 'ARCHIVED' }).eq('id', id);
-            sync();
         }
 
         async function postMission() {
-            const cat = document.getElementById('mCategory').value, title = document.getElementById('mTitle').value.toUpperCase(), desc = document.getElementById('mDesc').value, img = document.getElementById('mImageUrl').value, cost = document.getElementById('mCost').value;
-            if(!title || !cost) return alert("Required Fields Empty");
-            await _gv.from('settled_needs').insert([{ description: title, cost_to_settle: parseFloat(cost), status: 'LIVE', image_url: img, category: cat, message: desc }]);
-            await _gv.from('ledger').insert([{ amount: -parseFloat(cost), entry_type: 'mission_spend', description: `MISSION: ${title} | AUTH: ${adminUser.email}` }]);
-            sync();
+            const title = document.getElementById('mTitle').value.toUpperCase(), cost = document.getElementById('mCost').value, isAlert = document.getElementById('pushAlert').checked;
+            if(!title || !cost) return;
+            const { data: mission } = await _gv.from('settled_needs').insert([{ description: title, cost_to_settle: parseFloat(cost), status: 'LIVE', category: document.getElementById('mCategory').value, message: document.getElementById('mDesc').value }]).select().single();
+            await _gv.from('ledger').insert([{ amount: -parseFloat(cost), entry_type: 'mission_spend', description: `MISSION: ${title}` }]);
+            if(isAlert) {
+                // Send system alert to every node inbox
+                allNodes.forEach(async n => {
+                    await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: n.id, sender_name: "SYSTEM", content: `🚨 NEW MISSION LIVE: "${title}" - CHECK DASHBOARD TO SUPPORT. GIVERS NEVER LACK!` }]);
+                });
+            }
+            sync(); alert("Mission Broadcasted!");
         }
 
-        async function uploadToImgBB(input) {
-            const file = input.files[0]; if (!file) return;
-            const btn = document.getElementById('uploadBtn'); btn.innerText = "UPLOADING...";
-            const formData = new FormData(); formData.append('image', file);
-            try {
-                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: formData });
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('mImageUrl').value = data.data.url;
-                    document.getElementById('img-prev').src = data.data.url;
-                    document.getElementById('img-prev').style.display = 'block';
-                    btn.innerText = "DONE ✅";
-                }
-            } catch (err) { alert("Upload failed"); btn.innerText = "RETRY"; }
+        function exportLedgerCSV() {
+            let csv = "Date,Type,Amount,Description\n";
+            fullLedgerData.forEach(l => csv += `${new Date(l.created_at).toLocaleDateString()},${l.entry_type},${l.amount},"${l.description}"\n`);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `GROVE_LEDGER_${new Date().toISOString().split('T')[0]}.csv`; a.click();
         }
 
+        // --- UI NAVIGATION & CHAT ---
+        function setMsgFilter(type) { msgFilter = type; renderInbox(); }
+        function updateNavBadge() {
+            let count = 0;
+            allNodes.forEach(n => {
+                const lastIn = allMsgs.find(m => m.sender_id === n.id);
+                const lastOut = allMsgs.find(m => m.receiver_id === n.id);
+                if (lastIn && (!lastOut || new Date(lastIn.created_at) > new Date(lastOut.created_at))) count++;
+            });
+            const b = document.getElementById('navMsgBadge');
+            if(count > 0) { b.innerText = count; b.classList.remove('view-hidden'); } else b.classList.add('view-hidden');
+        }
+        function renderInbox() {
+            const sorted = [...allNodes].sort((a,b) => {
+                const ma = allMsgs.find(m => m.sender_id === a.id || m.receiver_id === a.id);
+                const mb = allMsgs.find(m => m.sender_id === b.id || m.receiver_id === b.id);
+                return (mb?.created_at || 0) - (ma?.created_at || 0);
+            });
+            document.getElementById('contactList').innerHTML = sorted.map(n => {
+                const lastIn = allMsgs.find(m => m.sender_id === n.id);
+                const lastOut = allMsgs.find(m => m.receiver_id === n.id);
+                const isUnread = lastIn && (!lastOut || new Date(lastIn.created_at) > new Date(lastOut.created_at));
+                if(msgFilter === 'unread' && !isUnread) return '';
+                return `<div onclick="openUserChat('${n.id}')" class="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between cursor-pointer"><div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full ${isUnread ? 'bg-rose-500 animate-pulse' : 'bg-white/10'}"></div><p class="text-[10px] font-black uppercase ${isUnread ? 'text-white' : 'text-slate-500'}">${n.full_name || 'NODE'}</p></div>${isUnread ? '<div class="unread-dot"></div>' : ''}</div>`;
+            }).join('');
+        }
+        async function openUserChat(id) {
+            currentChatId = id; const n = allNodes.find(x => x.id === id);
+            openTab(null, 'messages');
+            document.getElementById('inboxView').classList.add('view-hidden');
+            document.getElementById('chatView').classList.remove('view-hidden');
+            document.getElementById('activeChatName').innerText = n.full_name || n.email;
+            refreshChat();
+        }
+        function closeChat() { currentChatId = null; document.getElementById('chatView').classList.add('view-hidden'); document.getElementById('inboxView').classList.remove('view-hidden'); sync(); }
+        async function refreshChat() {
+            if(!currentChatId) return;
+            const { data } = await _gv.from('messages').select('*').or(`sender_id.eq.${currentChatId},receiver_id.eq.${currentChatId}`).order('created_at', { ascending: true });
+            document.getElementById('adminChatBox').innerHTML = data?.map(m => `<div class="bubble-wrapper"><div class="chat-bubble ${m.sender_id === adminUser.id ? 'bubble-out' : 'bubble-in'}">${m.content}</div></div>`).join('');
+            document.getElementById('adminChatBox').scrollTop = document.getElementById('adminChatBox').scrollHeight;
+        }
+        async function sendAdminReply() {
+            const i = document.getElementById('adminReplyInput'); if(!i.value.trim()) return;
+            await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: currentChatId, content: i.value.toUpperCase(), sender_name: 'ADMIN' }]);
+            i.value = ''; refreshChat();
+        }
         async function updateRange() { 
-            const e = document.getElementById('targetEmail').value, min = document.getElementById('minRange').value, max = document.getElementById('maxRange').value; 
-            await _gv.from('profiles').update({ current_range_min: parseFloat(min), current_range_max: parseFloat(max), is_gifter: true }).eq('email', e); 
-            sync(); alert("Authorized."); 
+            const e = document.getElementById('targetEmail').value, min = document.getElementById('minRange').value, max = document.getElementById('maxRange').value;
+            await _gv.from('profiles').update({ current_range_min: parseFloat(min), current_range_max: parseFloat(max), is_gifter: true }).eq('email', e);
+            alert("Node Authorized."); sync();
         }
-
-        async function broadcastGrace() { 
-            const a = document.getElementById('distAmount').value; 
-            if(a) { await _gv.from('ledger').insert([{ amount: parseFloat(a), entry_type: 'gift_sent', description: `Stable Grace | AUTH: ${adminUser.email}` }]); sync(); } 
-        }
-
-        async function broadcastWither() { 
-            const a = document.getElementById('wAmount').value, m = document.getElementById('wMins').value; 
-            if(a && m) { await _gv.from('ledger').insert([{ amount: parseFloat(a), entry_type: 'gift_sent', description: `Wither Protocol [${m}m] | AUTH: ${adminUser.email}` }]); sync(); } 
-        }
-
-        function toggleSeedFilter() { seedFilter = !seedFilter; document.getElementById('btnFilterSeed').classList.toggle('active'); sync(); }
-
+        function toggleSeedFilter() { seedFilter = !seedFilter; withdrawFilter = false; sync(); }
+        function toggleWithdrawFilter() { withdrawFilter = !withdrawFilter; seedFilter = false; sync(); }
         function openTab(e, n) { 
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); 
             document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active')); 
             document.getElementById(n).classList.add('active'); 
-            if(e) e.currentTarget.classList.add('active'); 
+            if(e) e.currentTarget.classList.add('active');
+            if(n === 'messages') closeChat();
         }
         function payoutTabClick(e) { openTab(e, 'payouts'); sync(); }
 
         async function init() { 
             sync(); 
-            _gv.channel('admin_sync').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => sync())
+            _gv.channel('all-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+                if(currentChatId) refreshChat(); updateNavBadge(); renderInbox();
+            }).on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => sync())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'ledger' }, () => sync())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => { sync(); refreshChat(); })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'settled_needs' }, () => sync())
             .subscribe();
         }
         checkAdmin();
