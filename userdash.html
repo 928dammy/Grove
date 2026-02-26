@@ -279,7 +279,7 @@
 
         async function init() { 
             const { data: { user } } = await _gv.auth.getUser(); 
-            if(!user) return window.location.href = "consoleenter.html"; 
+            if(!user) return window.location.href = "index.html"; 
             userObj = user; 
             createRain(); createCedis(); sync(); loadMissions();
             _gv.channel('realtime-sync').on('postgres_changes', {event:'*', schema:'public'}, () => { sync(); }).subscribe(); 
