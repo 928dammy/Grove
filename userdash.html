@@ -9,101 +9,124 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --emerald: #10b981; --grove-deep: #061a14; --grove-leaf: #064e3b; --gold: #fbbf24; }
+        :root { --emerald: #10b981; --grove-deep: #020617; --grove-leaf: #064e3b; --gold: #fbbf24; }
         
-        /* SCROLL CONTROL */
-        html, body { height: 100%; margin: 0; padding: 0; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; min-height: 100vh; padding: 1rem; color: #1e293b; overflow-x: hidden; overflow-y: auto; }
-        body.withered { overflow: hidden !important; height: 100vh !important; background: #020617; }
-        body.force-scroll { overflow-y: auto !important; height: auto !important; }
+        /* SCROLL & BODY */
+        html, body { height: 100%; margin: 0; padding: 0; background: #000; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; padding: 1rem; color: #fff; overflow-x: hidden; }
+        body.withered { overflow: hidden !important; }
 
-        /* ATMOSPHERICS */
-        #suspension-overlay { display: none; position: fixed; inset: 0; z-index: 80; background: rgba(2, 6, 23, 0.4); pointer-events: none; }
-        body.withered #suspension-overlay { display: block; animation: lightning 5s infinite; }
-        @keyframes lightning { 0%, 95%, 98% { background: rgba(2, 6, 23, 0.4); } 96%, 99% { background: rgba(147, 51, 234, 0.15); } }
-        .rain-drop { position: absolute; background: rgba(255, 255, 255, 0.1); width: 1px; height: 60px; top: -100px; animation: rainFall 0.7s linear infinite; }
-        @keyframes rainFall { to { transform: translateY(110vh); } }
+        /* ANIMATIONS */
+        @keyframes slideIn { from { transform: translate(-50%, -40%); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pulse-glow { 0% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.2); } 50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); } 100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.2); } }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
 
-        /* PAYMENT CARD UI */
-        #p-net-logo { width: 100%; height: 40px; background-repeat: no-repeat; background-position: center; background-size: contain; margin-bottom: 12px; }
+        /* COMPACT PAYMENT CARD */
+        .compact-card {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 1000; width: 92%; max-width: 340px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2rem; padding: 1.5rem;
+            animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* CUSTOM MODAL POPUP */
+        .grove-modal {
+            position: fixed; inset: 0; z-index: 2000;
+            background: rgba(0,0,0,0.8);
+            display: none; align-items: center; justify-content: center;
+            padding: 1.5rem; animation: fadeIn 0.3s ease;
+        }
+        .modal-box {
+            background: #1e293b; border: 1px solid var(--emerald);
+            border-radius: 1.5rem; padding: 1.5rem; width: 100%; max-width: 280px;
+            text-align: center; position: relative;
+            animation: slideIn 0.3s ease;
+        }
+
+        /* UI ELEMENTS */
+        .terminal-parent { 
+            background: var(--grove-deep); border-radius: 2.2rem; 
+            border: 1px solid rgba(16, 185, 129, 0.1); 
+            min-height: 550px; display: flex; flex-direction: column; 
+            overflow: hidden; animation: fadeIn 1s ease;
+        }
+        .nav-pill { background: rgba(255,255,255,0.03); padding: 4px; border-radius: 1rem; display: flex; gap: 4px; margin: 0 1rem 1rem; }
+        .tab-trigger { flex: 1; color: rgba(255,255,255,0.2); font-size: 8px; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 12px 0; text-align: center; border-radius: 0.8rem; transition: 0.3s; }
+        .tab-trigger.active { color: var(--gold); background: rgba(251, 191, 36, 0.1); }
         
-        /* CORE TERMINAL UI */
-        .terminal-parent { background: var(--grove-deep); border-radius: 2.5rem; color: #ecfdf5; min-height: 580px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; z-index: 50; display: flex; flex-direction: column; }
-        .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
-        @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
-
-        .nav-pill { background: rgba(0, 0, 0, 0.3); padding: 4px; border-radius: 12px; display: flex; gap: 4px; margin: 0 1rem 1rem; }
-        .tab-trigger { flex: 1; color: rgba(255,255,255,0.3); font-size: 9px; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 10px 0; text-align: center; border-radius: 8px; }
-        .tab-trigger.active { color: #fff; background: var(--grove-leaf); }
         .tab-content { display: none; padding: 0 1rem 1rem; flex: 1; overflow-y: auto; }
-        .tab-content.active { display: flex; flex-direction: column; }
+        .tab-content.active { display: flex; flex-direction: column; animation: fadeIn 0.5s ease; }
 
-        .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; z-index: 100; }
-        .node-menu { position: fixed; top: 75px; right: 2rem; width: 180px; background: white; border-radius: 1.5rem; border: 1px solid #f1f5f9; box-shadow: 0 15px 35px rgba(0,0,0,0.15); display: none; z-index: 500; overflow: hidden; }
-        .node-menu.active { display: block; }
-        .menu-item { width: 100%; padding: 14px 20px; text-align: left; font-size: 9px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #f8fafc; color: #64748b; cursor: pointer; }
-        
-        .chat-bubble { padding: 12px 16px; border-radius: 1.25rem; max-width: 85%; font-size: 11px; line-height: 1.4; margin-bottom: 12px; }
-        .chat-admin { background: rgba(16, 185, 129, 0.15); border-left: 3px solid var(--emerald); color: white; align-self: flex-start; }
-        .chat-user { background: rgba(255, 255, 255, 0.05); color: #94a3b8; align-self: flex-end; border-right: 3px solid rgba(255,255,255,0.2); text-align: right; }
+        .chat-bubble { padding: 10px 14px; border-radius: 1rem; max-width: 85%; font-size: 10px; margin-bottom: 8px; animation: fadeIn 0.4s ease; }
+        .chat-admin { background: rgba(16, 185, 129, 0.1); border-left: 2px solid var(--emerald); align-self: flex-start; }
+        .chat-user { background: rgba(255,255,255,0.05); align-self: flex-end; border-right: 2px solid rgba(255,255,255,0.2); }
+
+        #p-net-logo { width: 60px; height: 30px; background-size: contain; background-repeat: no-repeat; background-position: center; margin: 0 auto 10px; }
     </style>
 </head>
 <body class="max-w-md mx-auto" onclick="closeMenu()">
 
-    <div id="suspension-overlay"></div>
-
-    <div id="manual-pay-card" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] w-[90%] max-w-[320px] bg-slate-900/95 border border-amber-500/30 rounded-[2.5rem] p-6 text-center shadow-2xl hidden">
-        <p class="text-[8px] font-black text-amber-500 uppercase italic mb-1">Database Sync: Pending</p>
-        <h3 class="text-lg font-black text-white italic mb-4 uppercase">Verify Node</h3>
-        
-        <div class="bg-black/40 rounded-2xl p-4 mb-4">
-            <div id="p-net-logo"></div>
-            
-            <div class="space-y-3 text-[9px] font-black uppercase text-left">
-                <div class="flex justify-between border-b border-white/5 pb-2">
-                    <span class="text-slate-500">Full Name</span>
-                    <span id="p-full-name" class="text-white italic">---</span>
-                </div>
-                <div class="flex justify-between border-b border-white/5 pb-2">
-                    <span class="text-slate-500">MoMo Number</span>
-                    <span id="p-phone" class="text-white tracking-widest">---</span>
-                </div>
-                <div class="flex justify-between border-b border-white/5 pb-2">
-                    <span class="text-slate-500">Seed Amount</span>
-                    <span id="p-seed-amt" class="text-white">GH₵ 0.00</span>
-                </div>
-                <div class="flex justify-between border-b border-white/5 pb-2">
-                    <span class="text-slate-500">Merchant</span>
-                    <span id="p-merchant" class="font-bold">---</span>
-                </div>
-                <div class="pt-2 text-center">
-                    <p class="text-[7px] text-emerald-500 mb-1 italic uppercase font-black">Required Reference ID</p>
-                    <p id="p-payment-ref" class="text-2xl text-white tracking-[0.3em] font-black">----</p>
-                </div>
-            </div>
+    <div id="grove-alert" class="grove-modal">
+        <div class="modal-box">
+            <div id="modal-icon" class="text-2xl mb-2">🌿</div>
+            <h4 id="modal-title" class="text-[10px] font-black uppercase text-emerald-400 mb-2 tracking-widest">Notification</h4>
+            <p id="modal-msg" class="text-[11px] text-slate-300 mb-5 leading-relaxed">Message here...</p>
+            <button onclick="closeGroveModal()" class="w-full py-3 bg-emerald-600/20 text-emerald-400 font-black text-[9px] uppercase rounded-xl border border-emerald-500/30">Acknowledge</button>
         </div>
-        
-        <button onclick="confirmPaymentAction()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase shadow-lg mb-3">I made the payment already</button>
-        <button onclick="restoreScroll()" class="w-full py-2 text-slate-500 font-black text-[8px] uppercase tracking-widest">Review Terminal</button>
     </div>
 
-    <header class="seed-header">
-        <div class="flex justify-between items-center mb-5">
-            <div class="flex items-center gap-3">
-                <div><h1 class="text-base font-black italic">GROVE</h1><p id="user-display" class="text-[7px] font-black text-emerald-600 uppercase">SYNCING...</p></div>
+    <div id="manual-pay-card" class="compact-card hidden">
+        <div class="flex justify-between items-start mb-4">
+            <div id="p-net-logo"></div>
+            <div class="text-right">
+                <p class="text-[7px] font-black text-amber-500 uppercase italic">Ref ID</p>
+                <p id="p-payment-ref" class="text-sm font-black text-white tracking-widest">----</p>
             </div>
-            <button onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 border px-4 py-1.5 rounded-lg bg-white relative z-[600]">ENGINE ⚙️</button>
         </div>
-        <div class="flex gap-3">
-            <div class="flex-1 bg-slate-50 p-4 rounded-2xl border"><p class="text-[8px] font-black text-slate-400 uppercase">Seed Base</p><div id="s-seed" class="text-sm font-black italic">GH₵0.00</div></div>
-            <div class="flex-1 bg-emerald-50 p-4 rounded-2xl border-b-2 border-emerald-200"><p class="text-[8px] font-black text-emerald-600 uppercase">Grace Balance</p><div id="s-reclaim" class="text-sm font-black italic">GH₵0.00</div></div>
+
+        <div class="space-y-2 mb-4">
+            <div class="flex justify-between items-center bg-black/20 p-2 rounded-lg">
+                <span class="text-[7px] text-slate-500 uppercase font-black">Full Name</span>
+                <span id="p-full-name" class="text-[9px] text-white font-bold">---</span>
+            </div>
+            <div class="flex justify-between items-center bg-black/20 p-2 rounded-lg">
+                <span class="text-[7px] text-slate-500 uppercase font-black">MoMo No.</span>
+                <span id="p-phone" class="text-[9px] font-bold">---</span>
+            </div>
+            <div class="flex justify-between items-center bg-black/20 p-2 rounded-lg">
+                <span class="text-[7px] text-slate-500 uppercase font-black">Amount</span>
+                <span id="p-seed-amt" class="text-[9px] text-white font-bold">GH₵ 0.00</span>
+            </div>
+            <div class="flex justify-between items-center bg-black/20 p-2 rounded-lg border border-white/5">
+                <span class="text-[7px] text-slate-500 uppercase font-black">Merchant</span>
+                <span id="p-merchant" class="text-[10px] font-black">---</span>
+            </div>
+        </div>
+        
+        <button onclick="confirmPaymentAction()" class="w-full py-3 bg-emerald-600 text-white font-black rounded-xl text-[9px] uppercase shadow-lg hover:scale-[1.02] transition">I made the payment</button>
+        <button onclick="restoreScroll()" class="w-full mt-2 py-1 text-slate-500 font-black text-[7px] uppercase tracking-tighter">View Dashboard</button>
+    </div>
+
+    <header class="mb-4 pt-2">
+        <div class="flex justify-between items-center bg-white/5 p-4 rounded-[1.5rem] border border-white/5">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <h1 class="text-sm font-black italic tracking-tighter">GROVE</h1>
+            </div>
+            <button onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 uppercase tracking-widest">Engine ⚙️</button>
+        </div>
+        <div class="flex gap-2 mt-2">
+            <div class="flex-1 bg-white/5 p-3 rounded-xl border border-white/5"><p class="text-[7px] font-black text-slate-500 uppercase">Seed</p><div id="s-seed" class="text-[11px] font-black">₵0.00</div></div>
+            <div class="flex-1 bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/10"><p class="text-[7px] font-black text-emerald-500 uppercase">Grace</p><div id="s-reclaim" class="text-[11px] font-black text-emerald-400">₵0.00</div></div>
         </div>
     </header>
 
     <main class="terminal-parent">
-        <div class="broadcast-ticker"><div id="ticker-output" class="ticker-move italic">GIVERS NEVER LACK • LOADING...</div></div>
-        
-        <nav class="nav-pill">
+        <nav class="nav-pill mt-4">
             <div id="btn-orchard" class="tab-trigger active" onclick="openTab('t-orchard')">Orchard</div>
             <div id="btn-vault" class="tab-trigger" onclick="openTab('t-vault')">Vault</div>
             <div id="btn-comm" class="tab-trigger" onclick="openTab('t-comm')">Messages</div>
@@ -111,39 +134,32 @@
         </nav>
 
         <section id="t-orchard" class="tab-content active">
-            <div class="bg-emerald-500/10 p-5 rounded-2xl border border-white/5 mb-8">
-                <h3 class="text-sm font-black text-white italic uppercase mb-1">Impact Hub</h3>
-                <p class="text-[9px] text-emerald-100/60 font-semibold leading-relaxed">System monitoring active.</p>
+            <div class="flex flex-col items-center justify-center py-10 opacity-40">
+                <div class="text-4xl animate-bounce">🧑‍🌾</div>
+                <p class="text-[8px] font-black uppercase tracking-[0.3em] mt-4">Node Active</p>
             </div>
-            <button id="restore-payment-btn" onclick="showActivationCard()" class="mt-auto mx-auto mb-4 py-3 px-8 border border-amber-500/30 bg-amber-500/5 text-amber-500 text-[9px] font-black uppercase rounded-full hidden italic">Show Activation Details</button>
+            <button id="restore-payment-btn" onclick="showActivationCard()" class="mt-auto mx-auto mb-4 py-2 px-6 border border-amber-500/20 text-amber-500 text-[8px] font-black uppercase rounded-full hidden">Activation Details</button>
         </section>
 
         <section id="t-vault" class="tab-content">
-             <div class="bg-gradient-to-b from-emerald-950 to-emerald-900 rounded-[2rem] min-height-[340px] flex items-center justify-center p-10 relative overflow-hidden">
-                <div class="text-center w-full relative z-20">
-                    <p class="text-[8px] font-black text-emerald-400 uppercase mb-2">Claim Vaulted</p>
-                    <h2 id="v-balance" class="text-4xl font-black italic text-white mb-8">GH₵0.00</h2>
-                    <button onclick="vaultGrace()" class="w-full py-4 bg-white text-emerald-900 rounded-2xl text-[8px] font-black mb-3 uppercase tracking-widest">Claim to Vault</button>
-                    <button onclick="triggerWithdrawal()" class="w-full py-4 bg-emerald-500/20 text-white rounded-2xl text-[8px] font-black uppercase border border-white/10">Withdraw</button>
-                </div>
-            </div>
-        </section>
-        
-        <section id="t-comm" class="tab-content h-full">
-            <div id="chat-scroller" class="flex-1 overflow-y-auto pr-2 space-y-4 min-h-[320px] py-4 flex flex-col"></div>
-            <div class="pt-4 border-t border-white/5">
-                <div class="relative">
-                    <input id="chat-input" type="text" placeholder="REPLY TO MISSION..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-5 text-[10px] text-white focus:outline-none">
-                    <button onclick="sendMessage()" class="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 font-black text-[9px] uppercase px-3">Send</button>
-                </div>
+            <div class="bg-gradient-to-br from-emerald-950/50 to-black p-8 rounded-3xl text-center border border-white/5">
+                <p class="text-[7px] font-black text-emerald-500 uppercase mb-2">Vault Balance</p>
+                <h2 id="v-balance" class="text-3xl font-black italic text-white mb-6">₵0.00</h2>
+                <button onclick="vaultGrace()" class="w-full py-4 bg-white text-black rounded-xl text-[8px] font-black mb-3 uppercase">Claim to Vault</button>
+                <button onclick="triggerWithdrawal()" class="w-full py-4 bg-emerald-900/40 text-white rounded-xl text-[8px] font-black uppercase border border-white/10">Withdraw</button>
             </div>
         </section>
 
-        <section id="t-ledger" class="tab-content"><div id="ledger-content" class="bg-black/20 rounded-2xl divide-y divide-white/5"></div></section>
+        <section id="t-comm" class="tab-content h-full">
+            <div id="chat-scroller" class="flex-1 overflow-y-auto pr-2 min-h-[300px] flex flex-col"></div>
+            <div class="pt-4"><input id="chat-input" type="text" placeholder="SECURE MESSAGE..." class="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-[9px] text-white focus:outline-none"></div>
+        </section>
+
+        <section id="t-ledger" class="tab-content"><div id="ledger-content" class="space-y-2"></div></section>
     </main>
 
-    <div id="nodeMenu" class="node-menu">
-        <button onclick="logout()" class="menu-item text-red-500 font-black">Exit Terminal</button>
+    <div id="nodeMenu" class="node-menu fixed top-16 right-4 bg-slate-900 border border-white/10 rounded-xl hidden z-[3000]">
+        <button onclick="logout()" class="p-4 text-[9px] font-black text-rose-500 uppercase">Exit Node</button>
     </div>
 
     <script>
@@ -152,45 +168,34 @@
         const _gv = supabase.createClient(SB_URL, SB_KEY);
         let userObj = null, globalVaulted = 0;
 
-        const MERCHANT_MTN = "0535261448";
-        const MERCHANT_TEL = "020XXXXXXX";
-        const MERCHANT_AT = "026XXXXXXX";
-        
-        const NET_LOGOS = {
-            MTN: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/MTN_Logo.svg/1200px-MTN_Logo.svg.png",
-            TELECEL: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Telecel_Logo.svg/1200px-Telecel_Logo.svg.png",
-            AT: "https://upload.wikimedia.org/wikipedia/en/3/3a/AirtelTigo_logo.png"
-        };
+        // MODAL SYSTEM
+        function showGroveModal(title, msg, type = 'info') {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-msg').innerText = msg;
+            document.getElementById('modal-icon').innerText = type === 'success' ? '✅' : '🌿';
+            document.getElementById('grove-alert').style.display = 'flex';
+        }
+        function closeGroveModal() { document.getElementById('grove-alert').style.display = 'none'; }
 
-        function toggleMenu(e) { e.stopPropagation(); document.getElementById('nodeMenu').classList.toggle('active'); }
-        function closeMenu() { document.getElementById('nodeMenu').classList.remove('active'); }
+        function toggleMenu(e) { e.stopPropagation(); document.getElementById('nodeMenu').classList.toggle('hidden'); }
+        function closeMenu() { document.getElementById('nodeMenu').classList.add('hidden'); }
         
         function restoreScroll() {
-            document.getElementById('manual-pay-card').style.display = 'none';
+            document.getElementById('manual-pay-card').classList.add('hidden');
             document.body.classList.remove('withered');
-            document.body.classList.add('force-scroll');
         }
 
         function showActivationCard() {
             document.body.classList.add('withered');
-            document.body.classList.remove('force-scroll');
-            document.getElementById('manual-pay-card').style.display = 'block';
+            document.getElementById('manual-pay-card').classList.remove('hidden');
         }
 
         async function confirmPaymentAction() {
             const ref = document.getElementById('p-payment-ref').innerText;
-            const amt = document.getElementById('p-seed-amt').innerText;
-            const message = `SYSTEM ALERT: User reported payment completion. [Ref: ${ref}] [Amt: ${amt}]. Awaiting verification.`;
-            
-            const { error } = await _gv.from('messages').insert([{ 
-                sender_id: userObj.id, 
-                receiver_id: '00000000-0000-0000-0000-000000000000', 
-                content: message, 
-                sender_name: 'USER_SYSTEM' 
-            }]);
-
+            const msg = `SYSTEM: User confirmed payment. Ref: ${ref}`;
+            const { error } = await _gv.from('messages').insert([{ sender_id: userObj.id, receiver_id: '00000000-0000-0000-0000-000000000000', content: msg, sender_name: 'USER' }]);
             if(!error) {
-                alert("Verification request sent to Admin.");
+                showGroveModal("Request Sent", "Admin has been notified for verification.", "success");
                 restoreScroll();
                 openTab('t-comm');
             }
@@ -199,9 +204,9 @@
         async function sync() {
             const { data: profile } = await _gv.from('profiles').select('*').eq('id', userObj.id).maybeSingle();
             
-            if(!profile || profile.is_verified !== true || profile.is_suspended) {
+            if(!profile || profile.is_verified !== true) {
                 document.getElementById('restore-payment-btn').classList.remove('hidden');
-                if(!document.body.classList.contains('force-scroll')) showActivationCard();
+                if(!document.body.classList.contains('withered')) showActivationCard();
                 
                 if(profile) {
                     document.getElementById('p-full-name').innerText = profile.full_name || "---";
@@ -214,32 +219,29 @@
                     const merchDiv = document.getElementById('p-merchant');
                     const phoneDiv = document.getElementById('p-phone');
 
+                    const NET_LOGOS = {
+                        MTN: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/MTN_Logo.svg/1200px-MTN_Logo.svg.png",
+                        TELECEL: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Telecel_Logo.svg/1200px-Telecel_Logo.svg.png",
+                        AT: "https://upload.wikimedia.org/wikipedia/en/3/3a/AirtelTigo_logo.png"
+                    };
+
                     if (NET_LOGOS[net]) {
                         logoDiv.style.backgroundImage = `url('${NET_LOGOS[net]}')`;
-                        if(net === 'MTN') {
-                            merchDiv.innerText = MERCHANT_MTN;
-                            merchDiv.style.color = "#fbbf24";
-                            phoneDiv.style.color = "#fbbf24";
-                        } else if(net === 'TELECEL') {
-                            merchDiv.innerText = MERCHANT_TEL;
-                            merchDiv.style.color = "#ef4444";
-                            phoneDiv.style.color = "#ef4444";
-                        } else if(net === 'AT') {
-                            merchDiv.innerText = MERCHANT_AT;
-                            merchDiv.style.color = "#3b82f6";
-                            phoneDiv.style.color = "#3b82f6";
-                        }
+                        let color = "#fbbf24";
+                        if(net === 'TELECEL') color = "#ef4444";
+                        if(net === 'AT') color = "#3b82f6";
+                        merchDiv.innerText = net === 'MTN' ? "0535261448" : "020XXXXXXX";
+                        merchDiv.style.color = color;
+                        phoneDiv.style.color = color;
                     }
                 }
             } else {
-                document.body.classList.remove('withered');
-                document.body.classList.add('force-scroll');
-                document.getElementById('manual-pay-card').style.display = 'none';
+                restoreScroll();
                 document.getElementById('restore-payment-btn').classList.add('hidden');
-                document.getElementById('user-display').innerText = userObj.email.split('@')[0].toUpperCase();
             }
 
-            const { data: ledger } = await _gv.from('ledger').select('*').eq('user_id', userObj.id).order('created_at', { ascending: false });
+            // Sync Balances
+            const { data: ledger } = await _gv.from('ledger').select('*').eq('user_id', userObj.id);
             let ts=0, tg=0, tv=0, tw=0;
             ledger?.forEach(l => {
                 const v = parseFloat(l.amount) || 0;
@@ -249,13 +251,13 @@
                 if(l.entry_type === 'withdrawal') tw += Math.abs(v);
             });
             globalVaulted = Math.max(0, tv - tw);
-            document.getElementById('s-seed').innerText = `GH₵${ts.toFixed(2)}`;
-            document.getElementById('s-reclaim').innerText = `GH₵${Math.max(0, tg - tv).toFixed(2)}`;
-            document.getElementById('v-balance').innerText = `GH₵${globalVaulted.toFixed(2)}`;
+            document.getElementById('s-seed').innerText = `₵${ts.toFixed(2)}`;
+            document.getElementById('s-reclaim').innerText = `₵${Math.max(0, tg - tv).toFixed(2)}`;
+            document.getElementById('v-balance').innerText = `₵${globalVaulted.toFixed(2)}`;
             
             document.getElementById('ledger-content').innerHTML = ledger?.map(l => `
-                <div class="p-4 flex justify-between items-center text-[10px]">
-                    <div><p class="font-black text-white uppercase">${l.entry_type.replace('_',' ')}</p><p class="text-[7px] text-slate-500 uppercase">${l.description || ''}</p></div>
+                <div class="p-3 bg-white/5 rounded-xl flex justify-between items-center text-[9px] border border-white/5">
+                    <div><p class="font-black text-white uppercase">${l.entry_type}</p></div>
                     <p class="font-black ${l.amount < 0 ? 'text-rose-500' : 'text-emerald-500'}">₵${Math.abs(l.amount).toFixed(2)}</p>
                 </div>
             `).join('') || '';
@@ -274,30 +276,17 @@
             scroller.scrollTop = scroller.scrollHeight;
         }
 
-        async function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const val = input.value.trim();
-            if(!val) return;
-            const { error } = await _gv.from('messages').insert([{ sender_id: userObj.id, receiver_id: '00000000-0000-0000-0000-000000000000', content: val, sender_name: 'USER' }]);
-            if(!error) { input.value = ''; fetchMessages(); }
+        function openTab(id) { 
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); 
+            document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active')); 
+            document.getElementById(id).classList.add('active'); 
+            document.getElementById('btn-' + id.split('-')[1]).classList.add('active'); 
         }
-
-        async function vaultGrace() {
-            const amount = parseFloat(document.getElementById('s-reclaim').innerText.replace('GH₵','')) || 0;
-            if (amount <= 0) return alert("Zero Balance.");
-            await _gv.from('ledger').insert([{ user_id: userObj.id, amount: amount, entry_type: 'seed', description: `Vaulted GH₵${amount.toFixed(2)}` }]);
-            sync();
-        }
-
-        function createRain() { const ov = document.getElementById('suspension-overlay'); for(let i=0; i<30; i++) { const d = document.createElement('div'); d.className = 'rain-drop'; d.style.left = Math.random() * 100 + 'vw'; d.style.animationDelay = Math.random() * 2 + 's'; ov.appendChild(d); } }
-        function openTab(id) { document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); document.getElementById('btn-' + id.split('-')[1]).classList.add('active'); }
-        async function logout() { await _gv.auth.signOut(); window.location.href = "index.html"; }
 
         async function init() { 
             const { data: { user } } = await _gv.auth.getUser(); 
             if(!user) return window.location.href = "index.html"; 
-            userObj = user; 
-            createRain(); sync();
+            userObj = user; sync();
             _gv.channel('realtime-sync').on('postgres_changes', {event:'*', schema:'public'}, () => { sync(); }).subscribe(); 
         }
         init();
