@@ -10,183 +10,111 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --emerald: #10b981; --grove-deep: #061a14; --grove-leaf: #064e3b; --gold: #fbbf24; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; min-height: 100vh; padding: 1rem; margin: 0; overflow-x: hidden; color: #1e293b; transition: filter 0.5s ease; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; min-height: 100vh; padding: 1rem; margin: 0; overflow-x: hidden; color: #1e293b; }
         
-        /* THE STORM STATE */
+        /* THE STORM (SUSPENSION/PENDING STATE) */
         body.withered { overflow: hidden !important; background: #020617; }
-        
-        #suspension-overlay { 
-            display: none; 
-            position: fixed; 
-            inset: 0; 
-            z-index: 80; 
-            background: rgba(2, 6, 23, 0.4); 
-            pointer-events: none; 
-            transition: backdrop-filter 0.4s ease;
-        }
+        #suspension-overlay { display: none; position: fixed; inset: 0; z-index: 80; background: rgba(2, 6, 23, 0.4); pointer-events: none; }
         body.withered #suspension-overlay { display: block; animation: lightning 5s infinite; }
-        body.withered #suspension-overlay.blurred { backdrop-filter: blur(10px); }
-
-        @keyframes lightning {
-            0%, 95%, 98% { background: rgba(2, 6, 23, 0.4); }
-            96%, 99% { background: rgba(147, 51, 234, 0.15); }
-        }
-
+        @keyframes lightning { 0%, 95%, 98% { background: rgba(2, 6, 23, 0.4); } 96%, 99% { background: rgba(147, 51, 234, 0.15); } }
         .rain-drop { position: absolute; background: rgba(255, 255, 255, 0.1); width: 1px; height: 60px; top: -100px; animation: rainFall 0.7s linear infinite; }
         @keyframes rainFall { to { transform: translateY(110vh); } }
 
-        /* PAYMENT INFO CARD */
+        /* ACTIVATION CARD */
         #manual-pay-card {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1000; 
-            width: 85%;
-            max-width: 290px;
-            background: rgba(15, 23, 42, 0.98);
-            border: 1px solid rgba(251, 191, 36, 0.4);
-            border-radius: 2rem;
-            padding: 1.5rem;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.8);
-            text-align: center;
-            pointer-events: auto !important;
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 1000; width: 85%; max-width: 290px; background: rgba(15, 23, 42, 0.98);
+            border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 2rem; padding: 1.5rem;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.8); text-align: center;
         }
         body.withered #manual-pay-card.active { display: block; }
 
-        #p-net-logo { width: 70px; height: 45px; margin: 0 auto 10px; background-size: contain; background-position: center; background-repeat: no-repeat; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); }
-
-        #restore-pay-btn {
-            display: none;
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1001;
-            background: var(--gold);
-            color: black;
-            font-size: 8px;
-            font-weight: 900;
-            padding: 10px 20px;
-            border-radius: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-        }
-        body.withered #restore-pay-btn.visible { display: block; }
-
-        /* HEADER & UI */
-        .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; box-shadow: 0 4px 15px rgba(0,0,0,0.02); z-index: 100; }
-        
+        /* HEADER UI */
+        .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; z-index: 100; }
         .node-menu { position: fixed; top: 75px; right: 2rem; width: 180px; background: white; border-radius: 1.5rem; border: 1px solid #f1f5f9; box-shadow: 0 15px 35px rgba(0,0,0,0.15); display: none; z-index: 500; overflow: hidden; }
-        .node-menu.active { display: block; animation: menuFade 0.2s ease-out; }
-        @keyframes menuFade { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .node-menu.active { display: block; }
         .menu-item { width: 100%; padding: 14px 20px; text-align: left; font-size: 9px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #f8fafc; color: #64748b; cursor: pointer; }
 
-        .soul-container { position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        /* ANIMATIONS */
+        .soul-container { position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
         .soul-core { width: 6px; height: 6px; background: var(--emerald); border-radius: 50%; box-shadow: 0 0 10px var(--emerald); animation: breathe 3s infinite; }
         .soul-aura { position: absolute; inset: 0; border: 1.5px solid rgba(16, 185, 129, 0.2); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; animation: morph 8s infinite linear; }
-        @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.3); opacity: 1; } }
-        @keyframes morph { 0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+        @keyframes morph { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .terminal-parent { background: var(--grove-deep); border-radius: 2rem; color: #ecfdf5; min-height: 540px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; z-index: 50; }
-        
-        .broadcast-ticker { position: relative; height: 40px; overflow: hidden; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(16, 185, 129, 0.05); }
         .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
         @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
 
+        /* GARDENER */
         .gardener-zone { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem 0; }
         .garden-plot { position: relative; width: 200px; height: 80px; }
-        .gardener-emoji { position: absolute; font-size: 40px; bottom: 0; animation: walkAndSowEmoji 8s infinite ease-in-out; z-index: 10; }
+        .gardener-emoji { position: absolute; font-size: 40px; bottom: 0; animation: walkAndSowEmoji 8s infinite ease-in-out; }
         .tree-stage { position: absolute; bottom: 0; left: 130px; font-size: 0px; opacity: 0; animation: growthCycleEmoji 8s infinite; }
-        @keyframes walkAndSowEmoji { 0% { transform: translateX(0) scaleX(1); } 30% { transform: translateX(80px) scaleX(1); } 40% { transform: translateX(80px) rotate(25deg); } 55% { transform: translateX(80px) rotate(0deg); } 75% { transform: translateX(0) scaleX(-1); } 100% { transform: translateX(0) scaleX(-1); } }
-        @keyframes growthCycleEmoji { 0%, 40% { font-size: 0px; opacity: 0; } 50% { font-size: 24px; opacity: 1; } 65% { font-size: 32px; } 80% { font-size: 55px; transform: translateY(-10px); } 95% { opacity: 0; } 100% { opacity: 0; } }
+        @keyframes walkAndSowEmoji { 0% { transform: translateX(0); } 30%, 55% { transform: translateX(80px); } 75%, 100% { transform: translateX(0); } }
+        @keyframes growthCycleEmoji { 0%, 40% { font-size: 0px; opacity: 0; } 80% { font-size: 55px; opacity: 1; } 95%, 100% { opacity: 0; } }
 
-        .vault-bg { position: relative; background: linear-gradient(to bottom, #061a14, #064e3b); border-radius: 2.5rem; overflow: hidden; min-height: 300px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .cedis-rain { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
-        .cedi-symbol { position: absolute; color: rgba(16, 185, 129, 0.15); font-weight: 900; font-size: 24px; animation: fall linear infinite; }
-        @keyframes fall { from { transform: translateY(-50px) rotate(0deg); opacity: 1; } to { transform: translateY(350px) rotate(360deg); opacity: 0; } }
+        /* VAULT LOGIC */
+        .vault-bg { position: relative; background: linear-gradient(to bottom, #061a14, #064e3b); border-radius: 2.5rem; overflow: hidden; min-height: 380px; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .cedis-rain { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+        .cedi-symbol { position: absolute; color: rgba(16, 185, 129, 0.15); font-weight: 900; animation: fall linear infinite; }
+        @keyframes fall { from { transform: translateY(-50px); opacity: 1; } to { transform: translateY(350px); opacity: 0; } }
 
-        .nav-pill { background: rgba(0, 0, 0, 0.3); padding: 4px; border-radius: 12px; display: flex; width: 100%; gap: 4px; }
+        .nav-pill { background: rgba(0, 0, 0, 0.3); padding: 4px; border-radius: 12px; display: flex; gap: 4px; }
         .tab-trigger { flex: 1; color: rgba(255,255,255,0.3); font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 10px 0; text-align: center; border-radius: 8px; }
         .tab-trigger.active { color: #fff; background: var(--grove-leaf); }
-        .tab-content { display: none; padding-top: 5px; }
+        .tab-content { display: none; }
         .tab-content.active { display: block; }
-
-        .mission-img { width: 100%; height: 160px; object-fit: cover; border-radius: 1rem; margin: 10px 0; border: 1px solid rgba(255,255,255,0.1); }
         
-        .msg-bubble { background: rgba(16, 185, 129, 0.05); border-left: 3px solid var(--emerald); padding: 12px; border-radius: 0 12px 12px 12px; margin-bottom: 10px; }
+        .msg-bubble { background: rgba(16, 185, 129, 0.1); border-left: 3px solid var(--emerald); padding: 12px; border-radius: 0 12px 12px 12px; margin-bottom: 10px; }
         .unread-dot { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #fb7185; border-radius: 50%; border: 2px solid white; display: none; }
         .unread-dot.active { display: block; }
     </style>
 </head>
 <body class="max-w-md mx-auto" onclick="closeMenu()">
 
-    <div id="suspension-overlay" class="blurred"></div>
-    <button id="restore-pay-btn" onclick="togglePayCard(true)">Restore Payment Card</button>
+    <div id="suspension-overlay"></div>
+    <button id="restore-pay-btn" onclick="togglePayCard(true)" style="display:none; position:fixed; bottom:2rem; left:50%; transform:translateX(-50%); z-index:1001; background:var(--gold); padding:10px 20px; border-radius:1rem; font-size:8px; font-weight:900;">RESTORE CARD</button>
 
     <div id="manual-pay-card" class="active">
-        <p class="text-[8px] font-black text-amber-500 uppercase tracking-[0.2em] mb-1 italic">Activation Required</p>
-        <h3 class="text-lg font-black text-white italic tracking-tighter mb-4">NODE LOCKOUT</h3>
+        <p class="text-[8px] font-black text-amber-500 uppercase mb-1 italic">Activation Required</p>
+        <h3 class="text-lg font-black text-white italic mb-4">NODE LOCKOUT</h3>
         <div class="bg-black/40 rounded-xl p-4 border border-white/5 mb-4 text-center">
-            <div id="p-net-logo"></div>
+            <div id="p-net-logo" style="width:70px; height:45px; margin:0 auto 10px; background-size:contain; background-repeat:no-repeat; background-position:center;"></div>
             <div class="space-y-3">
-                <div class="flex justify-between items-end border-b border-white/5 pb-2">
-                    <p class="text-[7px] font-bold text-slate-400 uppercase italic">Min. Seed</p>
-                    <p class="text-lg font-black text-white italic">₵<span id="p-amount">0.00</span></p>
-                </div>
-                <div class="flex justify-between items-end border-b border-white/5 pb-2">
-                    <p class="text-[7px] font-bold text-slate-400 uppercase italic">Merchant</p>
-                    <p id="p-merch" class="text-sm font-black text-amber-400 tracking-wider">0535261448</p>
-                </div>
-                <div class="pt-1">
-                    <p class="text-[7px] font-bold text-emerald-500 uppercase mb-0.5 tracking-widest">Reference</p>
-                    <p id="p-ref" class="text-xl font-black text-white tracking-[0.2em]">----</p>
-                </div>
+                <div class="flex justify-between border-b border-white/5 pb-2 text-[9px] font-black uppercase"><span class="text-slate-400">Gifter Range</span><span class="text-white">₵<span id="p-range-min">0</span> - ₵<span id="p-range-max">0</span></span></div>
+                <div class="flex justify-between border-b border-white/5 pb-2 text-[9px] font-black uppercase"><span class="text-slate-400">Merchant</span><span class="text-amber-400">0535261448</span></div>
+                <div class="pt-1"><p class="text-[7px] text-emerald-500 uppercase tracking-widest">Reference</p><p id="p-ref" class="text-xl font-black text-white tracking-widest">----</p></div>
             </div>
         </div>
-        <button onclick="togglePayCard(false)" class="w-full py-3 bg-emerald-600 text-white font-black rounded-xl text-[9px] uppercase tracking-widest shadow-lg">Hide Info</button>
+        <button onclick="togglePayCard(false)" class="w-full py-3 bg-emerald-600 text-white font-black rounded-xl text-[9px] uppercase">View Grove</button>
     </div>
 
     <div id="nodeMenu" class="node-menu">
-        <button onclick="sendSupportRequest('EMAIL UPDATE')" class="menu-item">Request Email Change</button>
-        <button onclick="sendSupportRequest('PHONE UPDATE')" class="menu-item">Add Phone</button>
+        <button onclick="sendSupportRequest('EMAIL UPDATE')" class="menu-item">Change Email</button>
+        <button onclick="sendSupportRequest('PHONE UPDATE')" class="menu-item">Update Phone</button>
         <button onclick="logout()" class="menu-item text-red-500 font-black">Exit Terminal</button>
     </div>
 
     <header class="seed-header">
-        <div class="relative z-10 flex justify-between items-center mb-5">
+        <div class="flex justify-between items-center mb-5">
             <div class="flex items-center gap-3">
                 <div class="soul-container"><div class="soul-aura"></div><div class="soul-core"></div></div>
-                <div>
-                    <h1 class="text-base font-black tracking-tighter italic text-slate-900">GROVE</h1>
-                    <p id="user-display" class="text-[7px] font-black text-emerald-600 uppercase italic">NODE ACTIVE</p>
-                </div>
+                <div><h1 class="text-base font-black italic">GROVE</h1><p id="user-display" class="text-[7px] font-black text-emerald-600 uppercase">NODE ACTIVE</p></div>
             </div>
             <div class="relative">
                 <div id="msg-dot" class="unread-dot"></div>
-                <button id="engine-toggle" onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 uppercase border border-slate-100 px-4 py-1.5 rounded-lg bg-white relative z-[600]">
-                    ENGINE ROOM ⚙️
-                </button>
+                <button onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 border px-4 py-1.5 rounded-lg bg-white relative z-[600]">ENGINE ROOM ⚙️</button>
             </div>
         </div>
-        <div class="relative z-10 flex gap-3">
-            <div class="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Total Seeded</p>
-                <div class="text-sm font-black text-slate-900 tracking-tighter" id="s-seed">GH₵0.00</div>
-            </div>
-            <div class="flex-1 bg-emerald-50 p-4 rounded-2xl border-b-2 border-emerald-200">
-                <p class="text-[8px] font-black text-emerald-600 uppercase mb-1">Available Grace</p>
-                <p id="s-reclaim" class="text-sm font-black text-emerald-600 tracking-tighter">GH₵0.00</p>
-            </div>
+        <div class="flex gap-3">
+            <div class="flex-1 bg-slate-50 p-4 rounded-2xl border"><p class="text-[8px] font-black text-slate-400 uppercase">Seed Base</p><div id="s-seed" class="text-sm font-black italic">GH₵0.00</div></div>
+            <div class="flex-1 bg-emerald-50 p-4 rounded-2xl border-b-2 border-emerald-200"><p class="text-[8px] font-black text-emerald-600 uppercase">Grace Balance</p><div id="s-reclaim" class="text-sm font-black italic">GH₵0.00</div></div>
         </div>
     </header>
 
     <main class="terminal-parent">
-        <div class="broadcast-ticker">
-            <div id="ticker-output" class="ticker-move italic">GIVERS NEVER LACK • LOADING...</div>
-        </div>
+        <div class="broadcast-ticker"><div id="ticker-output" class="ticker-move italic">GIVERS NEVER LACK • LOADING...</div></div>
         <div class="p-4">
             <nav class="nav-pill mb-6">
                 <div id="btn-orchard" class="tab-trigger active" onclick="openTab('t-orchard')">Orchard</div>
@@ -196,57 +124,54 @@
             </nav>
 
             <section id="t-orchard" class="tab-content active">
-                <div id="mission-highlight" class="bg-emerald-500/10 border border-white/5 p-5 rounded-2xl mb-4">
-                    <span class="text-[7px] font-black text-amber-500 uppercase bg-amber-500/10 px-2 py-1 rounded">Global Impact</span>
-                    <h3 id="m-title-hero" class="text-sm font-black text-white uppercase mt-3 mb-1 italic">Grove Impact</h3>
-                    <p id="m-desc-hero" class="text-[9px] text-emerald-100/60 leading-relaxed font-semibold">Your seeds are fulfilling needs. Check missions for photos.</p>
+                <div class="bg-emerald-500/10 p-5 rounded-2xl mb-4 border border-white/5">
+                    <h3 id="m-title-hero" class="text-sm font-black text-white italic uppercase tracking-tighter">Impact Hub</h3>
+                    <p id="m-desc-hero" class="text-[9px] text-emerald-100/60 font-semibold leading-relaxed">Seeds fulfilling needs. Givers Never Lack.</p>
                 </div>
-                <div class="gardener-zone">
-                    <div class="garden-plot">
-                        <div class="gardener-emoji">🧑‍🌾</div>
-                        <div class="tree-stage">🌳</div>
-                    </div>
-                    <p class="text-[7px] font-black text-emerald-500/40 uppercase tracking-[0.3em] mt-4">Givers Never Lack</p>
-                </div>
+                <div class="gardener-zone"><div class="garden-plot"><div class="gardener-emoji">🧑‍🌾</div><div class="tree-stage">🌳</div></div></div>
             </section>
 
             <section id="t-vault" class="tab-content">
-                <div class="vault-bg p-12 text-center" onclick="triggerWithdrawal()">
-                    <div class="cedis-rain" id="cedis-box"></div>
-                    <div class="relative z-10">
-                        <p class="text-[8px] font-black text-emerald-400 uppercase mb-2 italic">Claim Vaulted</p>
+                <div class="vault-bg">
+                    <div class="cedis-rain" id="cedis-box" style="pointer-events: none;"></div>
+                    <div class="relative z-30 text-center w-full px-8">
+                        <p class="text-[8px] font-black text-emerald-400 uppercase mb-2">Claim Vaulted</p>
                         <h2 id="v-balance" class="text-4xl font-black italic text-white mb-8 tracking-tighter">GH₵0.00</h2>
-                        <div class="py-2 px-6 bg-white/10 rounded-full inline-block border border-white/20">
-                            <p class="text-[7px] font-black text-white uppercase tracking-widest">Withdraw Funds</p>
+                        
+                        <div class="flex flex-col gap-3">
+                            <button onclick="vaultGrace()" class="w-full py-3.5 bg-white text-emerald-900 rounded-2xl text-[8px] font-black uppercase tracking-widest shadow-xl">
+                                Claim Grace to Vault
+                            </button>
+                            
+                            <button onclick="triggerWithdrawal()" class="w-full py-3.5 bg-emerald-500/20 text-white rounded-2xl text-[8px] font-black uppercase tracking-widest border border-emerald-500/30">
+                                Withdraw Funds
+                            </button>
                         </div>
+                        
+                        <p class="text-[7px] font-bold text-emerald-500/40 uppercase mt-8 tracking-[0.3em]">GIVERS NEVER LACK</p>
                     </div>
                 </div>
             </section>
 
             <section id="t-comm" class="tab-content">
-                <div id="inbox-area" class="mb-6 hidden">
-                    <h3 class="text-[8px] font-black text-emerald-500 uppercase mb-2">Management Inbox</h3>
-                    <div id="msg-list" class="space-y-2"></div>
-                </div>
+                <div id="inbox-area" class="mb-6 hidden"><h3 class="text-[8px] font-black text-emerald-500 uppercase mb-2 tracking-widest">Inbox</h3><div id="msg-list" class="space-y-2"></div></div>
                 <div id="comm-list" class="space-y-4"></div>
             </section>
             
-            <section id="t-ledger" class="tab-content">
-                <div id="ledger-content" class="bg-black/20 rounded-2xl divide-y divide-white/5 overflow-hidden"></div>
-            </section>
+            <section id="t-ledger" class="tab-content"><div id="ledger-content" class="bg-black/20 rounded-2xl divide-y divide-white/5"></div></section>
         </div>
     </main>
 
     <div id="withdrawModal" class="fixed inset-0 bg-black/95 hidden z-[700] items-center justify-center p-6">
         <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-xs text-center">
-            <p class="text-[10px] font-black uppercase text-emerald-600 mb-1">Claim Vaulted</p>
+            <p class="text-[10px] font-black uppercase text-emerald-600 mb-1 italic">Withdrawal Terminal</p>
             <div class="space-y-4 my-6">
-                <div class="flex justify-between text-[9px] font-black uppercase"><span class="text-slate-400">Available</span><span id="m-avail" class="text-slate-900">GH₵0.00</span></div>
-                <div class="flex justify-between text-[9px] font-black uppercase border-b border-slate-100 pb-2"><span class="text-rose-500">Fee (2%)</span><span id="m-fee" class="text-rose-500">-GH₵0.00</span></div>
-                <div class="flex justify-between text-base font-black italic tracking-tighter"><span class="text-slate-900">Payout</span><span id="m-final" class="text-emerald-600">GH₵0.00</span></div>
+                <div class="flex justify-between text-[9px] font-black uppercase"><span class="text-slate-400">Vault Total</span><span id="m-avail">GH₵0.00</span></div>
+                <div class="flex justify-between text-[9px] font-black uppercase border-b pb-2 text-rose-500"><span>Service Charge (2%)</span><span id="m-fee">-GH₵0.00</span></div>
+                <div class="flex justify-between text-base font-black italic"><span>Payout</span><span id="m-final" class="text-emerald-600">GH₵0.00</span></div>
             </div>
-            <button onclick="processWithdrawal()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl text-[9px] uppercase tracking-widest mb-2 shadow-lg">Confirm</button>
-            <button onclick="toggleModal('withdrawModal', false)" class="w-full text-[8px] font-black text-slate-400 uppercase py-2">Close</button>
+            <button onclick="processWithdrawal()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl text-[9px] uppercase tracking-widest mb-2 shadow-lg">Confirm Claim</button>
+            <button onclick="toggleModal('withdrawModal', false)" class="w-full text-[8px] font-black text-slate-400 uppercase py-2">Go Back</button>
         </div>
     </div>
 
@@ -256,20 +181,27 @@
         const _gv = supabase.createClient(SB_URL, SB_KEY);
         let userObj = null, globalVaulted = 0;
 
-        const NET_LOGOS = { MTN: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/MTN_Logo.svg/1200px-MTN_Logo.svg.png", TELECEL: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Telecel_Group_Logo.png/600px-Telecel_Group_Logo.png", VODAFONE: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Telecel_Group_Logo.png/600px-Telecel_Group_Logo.png", AT: "https://upload.wikimedia.org/wikipedia/commons/1/1d/AirtelTigo_Logo.png" };
+        const NET_LOGOS = { MTN: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/MTN_Logo.svg/1200px-MTN_Logo.svg.png", TELECEL: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Telecel_Group_Logo.png/600px-Telecel_Group_Logo.png", AT: "https://upload.wikimedia.org/wikipedia/commons/1/1d/AirtelTigo_Logo.png" };
 
         function toggleMenu(e) { e.stopPropagation(); document.getElementById('nodeMenu').classList.toggle('active'); }
         function closeMenu() { document.getElementById('nodeMenu').classList.remove('active'); }
         function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
-        function togglePayCard(show) { const card = document.getElementById('manual-pay-card'), btn = document.getElementById('restore-pay-btn'), ov = document.getElementById('suspension-overlay'); if(show) { card.classList.add('active'); btn.classList.remove('visible'); ov.classList.add('blurred'); } else { card.classList.remove('active'); btn.classList.add('visible'); ov.classList.remove('blurred'); } }
+        
+        function togglePayCard(show) { 
+            const card = document.getElementById('manual-pay-card'), btn = document.getElementById('restore-pay-btn'), ov = document.getElementById('suspension-overlay'); 
+            if(show) { card.classList.add('active'); btn.style.display = 'none'; } 
+            else { card.classList.remove('active'); btn.style.display = 'block'; } 
+        }
 
         async function sync() {
             const { data: profile } = await _gv.from('profiles').select('*').eq('id', userObj.id).maybeSingle();
             const isLock = !profile || profile.is_verified !== true || profile.is_suspended === true;
+            
             if (isLock) {
                 document.body.classList.add('withered');
                 if(profile) {
-                    document.getElementById('p-amount').innerText = parseFloat(profile.current_range_min || 0).toFixed(2);
+                    document.getElementById('p-range-min').innerText = profile.current_range_min || 0;
+                    document.getElementById('p-range-max').innerText = profile.current_range_max || 0;
                     document.getElementById('p-ref').innerText = profile.payment_ref || "GROVE";
                     const net = (profile.network || "MTN").toUpperCase();
                     document.getElementById('p-net-logo').style.backgroundImage = `url('${NET_LOGOS[net] || NET_LOGOS.MTN}')`;
@@ -291,22 +223,68 @@
                 if(l.entry_type === 'withdrawal') tw += Math.abs(v);
             });
             globalVaulted = Math.max(0, tv - tw);
+            const graceBalance = Math.max(0, tg - tv);
+            
             document.getElementById('s-seed').innerText = `GH₵${ts.toFixed(2)}`;
-            document.getElementById('s-reclaim').innerText = `GH₵${Math.max(0, tg - tv).toFixed(2)}`;
+            document.getElementById('s-reclaim').innerText = `GH₵${graceBalance.toFixed(2)}`;
             document.getElementById('v-balance').innerText = `GH₵${globalVaulted.toFixed(2)}`;
-            document.getElementById('ledger-content').innerHTML = ledger?.map(l => `<div class="p-4 flex justify-between items-center text-[10px]"><div><p class="font-black text-white uppercase">${l.entry_type.replace('_',' ')}</p><p class="text-[7px] text-slate-500 uppercase">${l.description || ''}</p></div><p class="font-black ${l.amount < 0 ? 'text-rose-500' : 'text-emerald-500'}">₵${Math.abs(l.amount).toFixed(2)}</p></div>`).join('') || '';
+            
+            document.getElementById('ledger-content').innerHTML = ledger?.map(l => `
+                <div class="p-4 flex justify-between items-center text-[10px]">
+                    <div><p class="font-black text-white uppercase">${l.entry_type.replace('_',' ')}</p><p class="text-[7px] text-slate-500 uppercase tracking-tighter">${l.description || ''}</p></div>
+                    <p class="font-black ${l.amount < 0 ? 'text-rose-500' : 'text-emerald-500'}">₵${Math.abs(l.amount).toFixed(2)}</p>
+                </div>
+            `).join('') || '<p class="p-4 text-[7px] text-slate-500 uppercase font-black text-center">Awaiting Activity...</p>';
+            
             await checkMessages();
+        }
+
+        async function vaultGrace() {
+            const graceText = document.getElementById('s-reclaim').innerText;
+            const amount = parseFloat(graceText.replace('GH₵','')) || 0;
+            if (amount <= 0) return alert("No Grace Balance available to vault.");
+
+            const { error } = await _gv.from('ledger').insert([{ 
+                user_id: userObj.id, amount: amount, entry_type: 'seed', 
+                description: `Vault Deposit: Secured GH₵${amount.toFixed(2)}` 
+            }]);
+            if(!error) { alert("Vault Secured."); sync(); }
+        }
+
+        function triggerWithdrawal() { 
+            if(globalVaulted <= 0) return alert("Vault Empty."); 
+            const fee = globalVaulted * 0.02; 
+            document.getElementById('m-avail').innerText = `GH₵${globalVaulted.toFixed(2)}`; 
+            document.getElementById('m-fee').innerText = `-GH₵${fee.toFixed(2)}`; 
+            document.getElementById('m-final').innerText = `GH₵${(globalVaulted - fee).toFixed(2)}`; 
+            toggleModal('withdrawModal', true); 
+        }
+        
+        async function processWithdrawal() { 
+            const fee = globalVaulted * 0.02; 
+            const { error } = await _gv.from('ledger').insert([{ 
+                user_id: userObj.id, amount: -globalVaulted, entry_type: 'withdrawal', 
+                description: `Manual Payout (2% deductible applied)` 
+            }]); 
+            if(!error) { toggleModal('withdrawModal', false); sync(); alert("Request Logged."); }
         }
 
         async function loadMissions() {
             const { data: missions } = await _gv.from('settled_needs').select('*').neq('status', 'ARCHIVED').order('created_at', { ascending: false });
             if(!missions) return;
-            document.getElementById('ticker-output').innerText = missions.map(m => m.description.toUpperCase()).join(' • ');
+            document.getElementById('ticker-output').innerText = missions.map(m => m.description.toUpperCase()).join(' • GIVERS NEVER LACK • ');
             if(missions[0]) {
                 document.getElementById('m-title-hero').innerText = missions[0].description;
-                document.getElementById('m-desc-hero').innerText = missions[0].message || "Transforming lives.";
+                document.getElementById('m-desc-hero').innerText = missions[0].message || "Funded by Givers.";
             }
-            document.getElementById('comm-list').innerHTML = missions.map(m => `<div class="bg-black/20 p-5 rounded-2xl border border-white/5"><div class="flex justify-between items-center mb-2"><span class="text-[7px] font-black text-emerald-400 uppercase tracking-widest">${m.category}</span><span class="text-[7px] font-black text-slate-500 uppercase">${new Date(m.created_at).toLocaleDateString()}</span></div><h4 class="text-[11px] font-black text-white uppercase mb-2">${m.description}</h4>${m.image_url ? `<img src="${m.image_url}" class="mission-img">` : ''}<p class="text-[9px] text-slate-400 font-semibold leading-relaxed">${m.message || ''}</p></div>`).join('');
+            document.getElementById('comm-list').innerHTML = missions.map(m => `
+                <div class="bg-black/20 p-5 rounded-2xl border border-white/5">
+                    <div class="flex justify-between items-center mb-2"><span class="text-[7px] font-black text-emerald-400 uppercase tracking-widest">${m.category}</span><span class="text-[7px] font-black text-slate-500 uppercase">${new Date(m.created_at).toLocaleDateString()}</span></div>
+                    <h4 class="text-[11px] font-black text-white uppercase mb-2">${m.description}</h4>
+                    ${m.image_url ? `<img src="${m.image_url}" class="w-full h-40 object-cover rounded-xl my-2 border border-white/5">` : ''}
+                    <p class="text-[9px] text-slate-400 font-semibold leading-relaxed">${m.message || ''}</p>
+                </div>
+            `).join('');
         }
 
         async function checkMessages() {
@@ -315,14 +293,13 @@
             if(msgs?.length) {
                 if(msgs.some(m => !m.is_read)) dot.classList.add('active'); else dot.classList.remove('active');
                 inbox.classList.remove('hidden');
-                list.innerHTML = msgs.map(m => `<div class="msg-bubble" onclick="markRead('${m.id}')"><div class="flex justify-between mb-1"><span class="text-[6px] font-black text-emerald-500">${m.sender_name}</span></div><p class="text-[9px] text-white leading-tight">${m.content}</p></div>`).join('');
+                list.innerHTML = msgs.map(m => `<div class="msg-bubble" onclick="markRead('${m.id}')"><div class="flex justify-between mb-1"><span class="text-[6px] font-black text-emerald-500 uppercase tracking-widest">${m.sender_name}</span></div><p class="text-[9px] text-white leading-tight font-bold">${m.content}</p></div>`).join('');
             }
         }
 
         async function markRead(id) { await _gv.from('messages').update({ is_read: true }).eq('id', id); sync(); }
-        async function sendSupportRequest(type) { const detail = prompt(`ENTER ${type} DETAILS:`); if(!detail) return; await _gv.from('ledger').insert([{ user_id: userObj.id, amount: 0, entry_type: 'support_req', description: `${type}: ${detail}` }]); alert("Sent to Management."); closeMenu(); }
-        function triggerWithdrawal() { if(globalVaulted <= 0) return; const fee = globalVaulted * 0.02; document.getElementById('m-avail').innerText = `GH₵${globalVaulted.toFixed(2)}`; document.getElementById('m-fee').innerText = `-GH₵${fee.toFixed(2)}`; document.getElementById('m-final').innerText = `GH₵${(globalVaulted - fee).toFixed(2)}`; toggleModal('withdrawModal', true); }
-        async function processWithdrawal() { const fee = globalVaulted * 0.02; await _gv.from('ledger').insert([{ user_id: userObj.id, amount: -globalVaulted, entry_type: 'withdrawal', description: `Manual Claim GH₵${(globalVaulted-fee).toFixed(2)} (2% Deducted)` }]); toggleModal('withdrawModal', false); sync(); alert("Request Dispatched."); }
+        async function sendSupportRequest(type) { const detail = prompt(`ENTER ${type} DETAILS:`); if(!detail) return; await _gv.from('ledger').insert([{ user_id: userObj.id, amount: 0, entry_type: 'support_req', description: `${type}: ${detail}` }]); alert("Request Logged in Engine Room."); closeMenu(); }
+        
         function createRain() { const ov = document.getElementById('suspension-overlay'); for(let i=0; i<40; i++) { const d = document.createElement('div'); d.className = 'rain-drop'; d.style.left = Math.random() * 100 + 'vw'; d.style.animationDelay = Math.random() * 2 + 's'; ov.appendChild(d); } }
         function createCedis() { const box = document.getElementById('cedis-box'); for(let i=0; i<15; i++) { const s = document.createElement('div'); s.className = 'cedi-symbol'; s.innerText = '₵'; s.style.left = Math.random() * 100 + '%'; s.style.animationDuration = (Math.random() * 3 + 2) + 's'; box.appendChild(s); } }
         function openTab(id) { if(document.body.classList.contains('withered')) return; document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); document.getElementById('btn-' + id.split('-')[1]).classList.add('active'); }
