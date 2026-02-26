@@ -46,7 +46,7 @@
         .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
         @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
 
-        /* GARDENER */
+        /* GARDENER ANIMATION */
         .gardener-zone { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem 0; }
         .garden-plot { position: relative; width: 200px; height: 80px; }
         .gardener-emoji { position: absolute; font-size: 40px; bottom: 0; animation: walkAndSowEmoji 8s infinite ease-in-out; }
@@ -159,7 +159,9 @@
                 <div id="comm-list" class="space-y-4"></div>
             </section>
             
-            <section id="t-ledger" class="tab-content"><div id="ledger-content" class="bg-black/20 rounded-2xl divide-y divide-white/5"></div></section>
+            <section id="t-ledger" class="tab-content">
+                <div id="ledger-content" class="bg-black/20 rounded-2xl divide-y divide-white/5"></div>
+            </section>
         </div>
     </main>
 
@@ -177,6 +179,7 @@
     </div>
 
     <script>
+        // CORE CONFIG
         const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
         const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
         const _gv = supabase.createClient(SB_URL, SB_KEY);
@@ -194,6 +197,7 @@
             else { card.classList.remove('active'); btn.style.display = 'block'; } 
         }
 
+        // REAL-TIME SYNC ENGINE
         async function sync() {
             const { data: profile } = await _gv.from('profiles').select('*').eq('id', userObj.id).maybeSingle();
             const isLock = !profile || profile.is_verified !== true || profile.is_suspended === true;
@@ -214,6 +218,7 @@
                 document.getElementById('user-display').innerText = userObj.email.split('@')[0].toUpperCase();
             }
 
+            // Ledger Summation Algorithm (No Cached Figures)
             const { data: ledger } = await _gv.from('ledger').select('*').eq('user_id', userObj.id).order('created_at', { ascending: false });
             let ts=0, tg=0, tv=0, tw=0;
             ledger?.forEach(l => {
@@ -240,6 +245,7 @@
             await checkMessages();
         }
 
+        // VAULTING LOGIC
         async function vaultGrace() {
             const graceText = document.getElementById('s-reclaim').innerText;
             const amount = parseFloat(graceText.replace('GH₵','')) || 0;
@@ -252,6 +258,7 @@
             if(!error) { alert("Vault Secured."); sync(); }
         }
 
+        // WITHDRAWAL LOGIC (PROTECTED)
         function triggerWithdrawal() { 
             if(globalVaulted <= 0) return alert("Vault Empty."); 
             const fee = globalVaulted * 0.02; 
@@ -263,6 +270,7 @@
         
         async function processWithdrawal() { 
             const fee = globalVaulted * 0.02; 
+            // The full balance is moved from the vault to the withdrawal state in the database.
             const { error } = await _gv.from('ledger').insert([{ 
                 user_id: userObj.id, amount: -globalVaulted, entry_type: 'withdrawal', 
                 description: `Manual Payout (2% deductible applied)` 
@@ -270,6 +278,7 @@
             if(!error) { toggleModal('withdrawModal', false); sync(); alert("Request Logged."); }
         }
 
+        // MISSIONS
         async function loadMissions() {
             const { data: missions } = await _gv.from('settled_needs').select('*').neq('status', 'ARCHIVED').order('created_at', { ascending: false });
             if(!missions) return;
@@ -288,6 +297,7 @@
             `).join('');
         }
 
+        // MESSAGES
         async function checkMessages() {
             const { data: msgs } = await _gv.from('messages').select('*').eq('receiver_id', userObj.id).order('created_at', { ascending: false });
             const dot = document.getElementById('msg-dot'), inbox = document.getElementById('inbox-area'), list = document.getElementById('msg-list');
@@ -301,11 +311,23 @@
         async function markRead(id) { await _gv.from('messages').update({ is_read: true }).eq('id', id); sync(); }
         async function sendSupportRequest(type) { const detail = prompt(`ENTER ${type} DETAILS:`); if(!detail) return; await _gv.from('ledger').insert([{ user_id: userObj.id, amount: 0, entry_type: 'support_req', description: `${type}: ${detail}` }]); alert("Request Logged in Engine Room."); closeMenu(); }
         
+        // ANIMATION INITIALIZERS
         function createRain() { const ov = document.getElementById('suspension-overlay'); for(let i=0; i<40; i++) { const d = document.createElement('div'); d.className = 'rain-drop'; d.style.left = Math.random() * 100 + 'vw'; d.style.animationDelay = Math.random() * 2 + 's'; ov.appendChild(d); } }
         function createCedis() { const box = document.getElementById('cedis-box'); for(let i=0; i<15; i++) { const s = document.createElement('div'); s.className = 'cedi-symbol'; s.innerText = '₵'; s.style.left = Math.random() * 100 + '%'; s.style.animationDuration = (Math.random() * 3 + 2) + 's'; box.appendChild(s); } }
         function openTab(id) { if(document.body.classList.contains('withered')) return; document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); document.getElementById('btn-' + id.split('-')[1]).classList.add('active'); }
         async function logout() { await _gv.auth.signOut(); window.location.href = "consoleenter.html"; }
-        async function init() { const { data: { user } } = await _gv.auth.getUser(); if(!user) return window.location.href = "consoleenter.html"; userObj = user; createRain(); createCedis(); sync(); loadMissions(); _gv.channel('db-sync').on('postgres_changes', {event:'*', schema:'public'}, () => { sync(); loadMissions(); }).subscribe(); }
+        
+        // SYSTEM BOOT
+        async function init() { 
+            const { data: { user } } = await _gv.auth.getUser(); 
+            if(!user) return window.location.href = "consoleenter.html"; 
+            userObj = user; 
+            createRain(); 
+            createCedis(); 
+            sync(); 
+            loadMissions(); 
+            _gv.channel('db-sync').on('postgres_changes', {event:'*', schema:'public'}, () => { sync(); loadMissions(); }).subscribe(); 
+        }
         init();
     </script>
 </body>
