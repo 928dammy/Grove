@@ -29,10 +29,14 @@
         .bubble-in { background: rgba(255,255,255,0.08); color: #f1f5f9; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid rgba(255,255,255,0.05); }
         .bubble-out { background: #10b981; color: #020617; font-weight: 800; align-self: flex-end; border-bottom-right-radius: 2px; }
         .msg-time { font-size: 7px; opacity: 0.5; margin-top: 4px; display: block; }
-        .unread-dot { width: 8px; height: 8px; background: #f43f5e; border-radius: 50%; box-shadow: 0 0 12px #f43f5e; }
         .view-hidden { display: none !important; }
         .filter-btn { font-size: 7px; font-weight: 900; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); cursor: pointer; text-transform: uppercase; }
         .filter-btn.active { background: #10b981; color: black; border-color: #10b981; }
+
+        /* Custom Scroll for Chat */
+        #adminChatBox::-webkit-scrollbar { width: 3px; }
+        #adminChatBox::-webkit-scrollbar-track { background: transparent; }
+        #adminChatBox::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.3); border-radius: 10px; }
     </style>
 </head>
 <body class="bg-slate-950">
@@ -114,13 +118,13 @@
                         </button>
                         <div>
                             <p id="activeChatName" class="text-[10px] font-black uppercase text-white truncate w-32"></p>
-                            <p class="text-[7px] text-emerald-500 font-bold uppercase">Real-time Syncing</p>
+                            <p class="text-[7px] text-emerald-500 font-bold uppercase">SECURE SESSION</p>
                         </div>
                     </div>
                 </div>
-                <div id="adminChatBox" class="flex-1 overflow-y-auto pr-2 no-scrollbar mb-4 space-y-2 flex flex-col"></div>
+                <div id="adminChatBox" class="flex-1 overflow-y-auto pr-2 mb-4 space-y-2 flex flex-col"></div>
                 <div class="relative">
-                    <input id="adminReplyInput" type="text" placeholder="TYPE MESSAGE..." class="input-box text-[12px] pr-16 h-14">
+                    <input id="adminReplyInput" type="text" placeholder="TYPE MESSAGE..." class="input-box text-[12px] pr-16 h-14" onkeydown="if(event.key==='Enter') sendAdminReply()">
                     <button onclick="sendAdminReply()" class="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-500 text-black px-4 py-2 rounded-xl font-black text-[9px] uppercase">Send</button>
                 </div>
             </div>
@@ -170,12 +174,9 @@
         </section>
 
         <section id="ledger" class="tab-content">
-            <div class="flex justify-between items-center mb-3">
-                <div class="flex gap-2">
-                    <button onclick="toggleSeedFilter()" id="btnFilterSeed" class="filter-btn">Seeds 🌱</button>
-                    <button onclick="toggleWithdrawFilter()" id="btnFilterWithdraw" class="filter-btn">Withdrawals 💰</button>
-                </div>
-                <button onclick="exportLedgerCSV()" class="text-[8px] font-black bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-lg">CSV REPORT</button>
+            <div class="flex gap-2 mb-3">
+                <button onclick="toggleSeedFilter()" id="btnFilterSeed" class="filter-btn">Seeds 🌱</button>
+                <button onclick="toggleWithdrawFilter()" id="btnFilterWithdraw" class="filter-btn">Withdrawals 💰</button>
             </div>
             <div class="auth-card overflow-hidden"><div id="ledgerTable" class="divide-y divide-white/5"></div></div>
         </section>
@@ -242,7 +243,7 @@
             const term = document.getElementById('nodeSearch').value.toLowerCase();
             document.getElementById('nodeList').innerHTML = nodes?.filter(n => n.email.toLowerCase().includes(term)).map(n => {
                 const stats = nodeDetails[n.id] || {seeded:0, vaulted:0, withdrawn:0};
-                return `<div class="auth-card p-4"><div class="flex justify-between items-center mb-2"><div><p class="text-[10px] font-black uppercase text-white">${n.full_name || 'ANON'}</p><p class="text-[7px] text-slate-500">${n.email}</p></div><span class="ref-tag">${n.payment_ref}</span></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-2 rounded-xl text-center"><div class="border-r border-white/5"><p class="text-[6px] uppercase">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div><p class="text-[6px] uppercase">Seed</p><p class="text-[9px] font-black">₵${stats.seeded.toFixed(0)}</p></div><div class="border-l border-white/5"><p class="text-[6px] uppercase">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="flex gap-2"><button onclick="openUserChat('${n.id}')" class="btn-action btn-msg flex-1">Message</button></div></div>`;
+                return `<div class="auth-card p-4"><div class="flex justify-between items-center mb-2"><div><p class="text-[10px] font-black uppercase text-white">${n.full_name || 'ANON'}</p><p class="text-[7px] text-slate-500">${n.email}</p></div><span class="ref-tag text-[7px] opacity-30 font-bold">${n.payment_ref}</span></div><div class="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-2 rounded-xl text-center"><div class="border-r border-white/5"><p class="text-[6px] uppercase text-slate-400">Vault</p><p class="text-[9px] font-black text-emerald-400">₵${Math.max(0, stats.vaulted-stats.withdrawn).toFixed(2)}</p></div><div><p class="text-[6px] uppercase text-slate-400">Seed</p><p class="text-[9px] font-black text-white">₵${stats.seeded.toFixed(0)}</p></div><div class="border-l border-white/5"><p class="text-[6px] uppercase text-slate-400">Taken</p><p class="text-[9px] font-black text-rose-400">₵${stats.withdrawn.toFixed(0)}</p></div></div><div class="flex gap-2"><button onclick="openUserChat('${n.id}')" class="btn-action btn-msg flex-1">Message</button></div></div>`;
             }).join('');
 
             renderInbox();
@@ -261,43 +262,24 @@
             document.getElementById('ledgerTable').innerHTML = dL.slice(0, 30).map(l => `<div class="p-4 flex justify-between items-center text-[10px]"><div><p class="text-[7px] text-slate-500 uppercase">${l.description}</p></div><p class="font-black">₵${Math.abs(l.amount).toFixed(2)}</p></div>`).join('');
         }
 
-        // --- AUTOMATIC MARK AS READ LOGIC ---
         async function markAsRead(nodeId) {
             if(!nodeId) return;
-            // Updates all messages sent BY the user TO the admin that are currently unread
-            await _gv.from('messages')
-                .update({ is_read: true })
-                .match({ sender_id: nodeId, receiver_id: adminUser.id, is_read: false });
+            await _gv.from('messages').update({ is_read: true }).match({ sender_id: nodeId, receiver_id: adminUser.id, is_read: false });
         }
 
         async function refreshChat() {
             if(!currentChatId) return;
-            
-            const { data, error } = await _gv.from('messages')
-                .select('*')
-                .or(`sender_id.eq.${currentChatId},receiver_id.eq.${currentChatId}`)
-                .order('created_at', { ascending: true });
-            
-            if(error) return;
-
+            const { data } = await _gv.from('messages').select('*').or(`sender_id.eq.${currentChatId},receiver_id.eq.${currentChatId}`).order('created_at', { ascending: true });
             const box = document.getElementById('adminChatBox');
-            if(!data || data.length === 0) {
+            if(!data?.length) {
                 box.innerHTML = `<p class="text-center py-10 opacity-20 text-[9px] font-black">START CONVERSATION</p>`;
             } else {
                 box.innerHTML = data.map(m => {
                     const isAdmin = m.sender_name === 'ADMIN' || m.sender_name === 'SYSTEM' || m.sender_id === adminUser.id;
-                    return `
-                    <div class="bubble-wrapper">
-                        <div class="chat-bubble ${isAdmin ? 'bubble-out' : 'bubble-in'}">
-                            ${m.content}
-                            <span class="msg-time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                        </div>
-                    </div>`;
+                    return `<div class="bubble-wrapper"><div class="chat-bubble ${isAdmin ? 'bubble-out' : 'bubble-in'}">${m.content}<span class="msg-time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div>`;
                 }).join('');
             }
             box.scrollTop = box.scrollHeight;
-            
-            // Trigger automatic read update
             markAsRead(currentChatId);
         }
 
@@ -306,13 +288,7 @@
             if(!i.value.trim() || !currentChatId) return;
             const content = i.value.toUpperCase();
             i.value = '';
-            await _gv.from('messages').insert([{ 
-                sender_id: adminUser.id, 
-                receiver_id: currentChatId, 
-                content: content, 
-                sender_name: 'ADMIN',
-                is_read: true // Admin's own messages are read by default
-            }]);
+            await _gv.from('messages').insert([{ sender_id: adminUser.id, receiver_id: currentChatId, content: content, sender_name: 'ADMIN', is_read: true }]);
             refreshChat();
         }
 
@@ -325,17 +301,8 @@
             document.getElementById('contactList').innerHTML = sorted.map(n => {
                 const unreads = allMsgs.filter(m => m.sender_id === n.id && m.receiver_id === adminUser.id && !m.is_read);
                 const hasUnread = unreads.length > 0;
-                
                 if(msgFilter === 'unread' && !hasUnread) return '';
-                
-                return `
-                <div onclick="openUserChat('${n.id}')" class="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between cursor-pointer">
-                    <div class="flex items-center gap-3">
-                        <div class="w-2 h-2 rounded-full ${hasUnread ? 'bg-rose-500 animate-pulse' : 'bg-white/10'}"></div>
-                        <p class="text-[10px] font-black uppercase ${hasUnread ? 'text-white' : 'text-slate-500'}">${n.full_name || 'NODE'}</p>
-                    </div>
-                    ${hasUnread ? `<div class="bg-rose-500 text-[7px] font-black px-2 py-1 rounded-full">${unreads.length}</div>` : ''}
-                </div>`;
+                return `<div onclick="openUserChat('${n.id}')" class="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between cursor-pointer"><div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full ${hasUnread ? 'bg-rose-500 animate-pulse' : 'bg-white/10'}"></div><p class="text-[10px] font-black uppercase ${hasUnread ? 'text-white' : 'text-slate-500'}">${n.full_name || 'NODE'}</p></div>${hasUnread ? `<div class="bg-rose-500 text-[7px] font-black px-2 py-1 rounded-full">${unreads.length}</div>` : ''}</div>`;
             }).join('');
         }
 
@@ -350,7 +317,6 @@
 
         function closeChat() { currentChatId = null; document.getElementById('chatView').classList.add('view-hidden'); document.getElementById('inboxView').classList.remove('view-hidden'); sync(); }
 
-        // --- GLOBAL SYSTEM ACTIONS ---
         async function broadcastGrace() {
             const amt = parseFloat(document.getElementById('distAmount').value);
             if(amt) { await _gv.from('system_events').insert([{ type: 'grace', value: amt }]); alert("Grace Sent."); sync(); }
@@ -384,7 +350,6 @@
             alert("Node Updated."); sync();
         }
 
-        // --- INTERFACE CONTROL ---
         function setMsgFilter(t) { msgFilter = t; renderInbox(); }
         function updateNavBadge() {
             const unreadCount = allMsgs.filter(m => m.receiver_id === adminUser.id && !m.is_read).length;
