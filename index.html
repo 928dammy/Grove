@@ -3,360 +3,334 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GROVE | Givers Never Lack</title>
+    <title>GROVE | Master Terminal</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --emerald: #10b981; --gold: #fbbf24; --slate-dark: #020617; }
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: radial-gradient(circle at top left, #064e3b, #022c22, #000000); 
-            background-attachment: fixed; min-height: 100vh; color: white; 
-            display: flex; align-items: center; justify-content: center; padding: 1rem;
-            margin: 0;
-        }
-        .glass { 
-            background: rgba(255, 255, 255, 0.03); 
-            backdrop-filter: blur(25px); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            border-radius: 2rem; 
-            width: 100%; 
-            max-width: 420px; 
-            padding: 2.5rem; 
-            position: relative; 
-            overflow: hidden; 
-        }
-        .input-box { 
-            background: rgba(0, 0, 0, 0.4); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            color: white; 
-            border-radius: 0.75rem; 
-            padding: 0.85rem; 
-            width: 100%; 
-            margin-bottom: 1.25rem; 
-            outline: none; 
-            transition: 0.3s; 
-            font-size: 0.9rem; 
-        }
-        .input-box:focus { border-color: var(--gold); box-shadow: 0 0 15px rgba(251, 191, 36, 0.1); }
-        .btn-gold { 
-            background: var(--gold); 
-            color: black; 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            width: 100%; 
-            padding: 1rem; 
-            border-radius: 0.85rem; 
-            transition: 0.3s; 
-            letter-spacing: 0.05em; 
-            font-size: 0.75rem; 
-            border: none;
-            cursor: pointer;
-        }
-        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3); }
-        .tab-trigger { 
-            color: #64748b; font-size: 0.7rem; font-weight: 800; cursor: pointer; 
-            text-transform: uppercase; letter-spacing: 0.1em; transition: 0.3s; 
-            padding-bottom: 4px; border-bottom: 2px solid transparent; 
-        }
-        .tab-trigger.active { color: var(--gold); border-bottom-color: var(--gold); }
-        .gold-glow { text-shadow: 0 0 15px rgba(251, 191, 36, 0.4); }
+        :root { --emerald: #10b981; --grove-deep: #061a14; --grove-leaf: #064e3b; --gold: #fbbf24; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; min-height: 100vh; padding: 1rem; margin: 0; overflow-x: hidden; color: #1e293b; }
         
-        /* THE NETWORK BADGE STYLES */
-        .net-badge {
-            position: absolute;
-            right: 10px;
-            top: 10px; /* Aligned to the top of the relative container */
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 10px;
-            border-radius: 8px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            opacity: 0;
-            transform: scale(0.8) translateX(10px);
-            z-index: 50;
-            pointer-events: none;
-        }
-        .net-badge.show { opacity: 1; transform: scale(1) translateX(0); }
+        /* THE STORM (SUSPENSION/PENDING) */
+        body.withered { overflow: hidden !important; background: #020617; }
+        /* This class is added via JS to restore scrolling without removing the 'withered' visual state */
+        body.withered.is-scrolling { overflow-y: auto !important; }
+
+        #suspension-overlay { display: none; position: fixed; inset: 0; z-index: 80; background: rgba(2, 6, 23, 0.4); pointer-events: none; }
+        body.withered #suspension-overlay { display: block; animation: lightning 5s infinite; }
+        @keyframes lightning { 0%, 95%, 98% { background: rgba(2, 6, 23, 0.4); } 96%, 99% { background: rgba(147, 51, 234, 0.15); } }
+        .rain-drop { position: absolute; background: rgba(255, 255, 255, 0.1); width: 1px; height: 60px; top: -100px; animation: rainFall 0.7s linear infinite; }
+        @keyframes rainFall { to { transform: translateY(110vh); } }
+
+        /* SOUL AURA */
+        .soul-container { position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+        .soul-core { width: 6px; height: 6px; background: var(--emerald); border-radius: 50%; box-shadow: 0 0 10px var(--emerald); animation: breathe 3s infinite; }
+        .soul-aura { position: absolute; inset: 0; border: 1.5px solid rgba(16, 185, 129, 0.2); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; animation: morph 8s infinite linear; }
+        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+        @keyframes morph { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* TERMINAL INTERFACE */
+        .terminal-parent { background: var(--grove-deep); border-radius: 2.5rem; color: #ecfdf5; min-height: 580px; border: 1px solid rgba(16, 185, 129, 0.1); position: relative; overflow: hidden; z-index: 50; display: flex; flex-direction: column; }
+        .ticker-move { display: inline-block; animation: ticker 25s linear infinite; font-size: 9px; font-weight: 800; color: var(--gold); padding: 12px 0; white-space: nowrap; }
+        @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
+
+        /* NAVIGATION & TABS */
+        .nav-pill { background: rgba(0, 0, 0, 0.3); padding: 4px; border-radius: 12px; display: flex; gap: 4px; margin: 0 1rem 1rem; }
+        .tab-trigger { flex: 1; color: rgba(255,255,255,0.3); font-size: 9px; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 10px 0; text-align: center; border-radius: 8px; }
+        .tab-trigger.active { color: #fff; background: var(--grove-leaf); }
+        .tab-content { display: none; padding: 0 1rem 1rem; flex: 1; overflow-y: auto; }
+        .tab-content.active { display: flex; flex-direction: column; }
+
+        /* MESSAGING UI */
+        .chat-bubble { padding: 12px 16px; border-radius: 1.25rem; max-width: 85%; font-size: 11px; line-height: 1.4; margin-bottom: 12px; }
+        .chat-admin { background: rgba(16, 185, 129, 0.15); border-left: 3px solid var(--emerald); color: white; align-self: flex-start; }
+        .chat-user { background: rgba(255, 255, 255, 0.05); color: #94a3b8; align-self: flex-end; border-right: 3px solid rgba(255,255,255,0.2); text-align: right; }
+        .unread-dot { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #fb7185; border-radius: 50%; border: 2px solid white; display: none; }
+        .unread-dot.active { display: block; }
+
+        /* GARDENER & VAULT */
+        .gardener-emoji { position: absolute; font-size: 40px; bottom: 0; animation: walkAndSowEmoji 8s infinite ease-in-out; }
+        @keyframes walkAndSowEmoji { 0% { transform: translateX(0); } 30%, 55% { transform: translateX(80px); } 75%, 100% { transform: translateX(0); } }
+        .vault-bg { background: linear-gradient(to bottom, #061a14, #064e3b); border-radius: 2rem; min-height: 340px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; width: 100%; }
+        .cedi-symbol { position: absolute; color: rgba(16, 185, 129, 0.15); font-weight: 900; animation: fall linear infinite; }
+        @keyframes fall { from { transform: translateY(-50px); opacity: 1; } to { transform: translateY(350px); opacity: 0; } }
         
-        .net-logo { 
-            width: 20px; 
-            height: 20px; 
+        /* HEADER & ENGINE ROOM */
+        .seed-header { position: relative; background: white; border-radius: 2rem; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; z-index: 100; }
+        .node-menu { position: fixed; top: 75px; right: 2rem; width: 180px; background: white; border-radius: 1.5rem; border: 1px solid #f1f5f9; box-shadow: 0 15px 35px rgba(0,0,0,0.15); display: none; z-index: 500; overflow: hidden; }
+        .node-menu.active { display: block; }
+        .menu-item { width: 100%; padding: 14px 20px; text-align: left; font-size: 9px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #f8fafc; color: #64748b; cursor: pointer; }
+
+        /* PAYMENT CARD BANNER LOGO FIX */
+        #p-net-logo {
+            display: block;
+            height: 40px;
+            width: 100%;
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
+            margin-bottom: 12px;
         }
-
-        .show-pass-btn {
-            position: absolute;
-            right: 12px;
-            top: 13px;
-            font-size: 10px;
-            font-weight: 900;
-            color: rgba(255, 255, 255, 0.2);
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            z-index: 10;
-        }
-
-        .hint-text { font-size: 7px; color: #64748b; text-align: center; margin-top: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
     </style>
 </head>
-<body>
+<body class="max-w-md mx-auto" onclick="closeMenu()">
 
-    <div class="glass">
-        <div class="text-center mb-10">
-            <h1 class="text-4xl font-black italic text-amber-400 tracking-tighter gold-glow">GROVE</h1>
-            <p class="text-[9px] font-black text-emerald-400 uppercase tracking-[0.4em] mt-2 italic">"Givers Never Lack"</p>
-        </div>
+    <div id="suspension-overlay"></div>
 
-        <div class="flex gap-8 mb-8 justify-center">
-            <span id="t-login" class="tab-trigger active" onclick="toggleAuth('login')">Access Node</span>
-            <span id="t-signup" class="tab-trigger" onclick="toggleAuth('signup')">Initialize</span>
-        </div>
-
-        <div id="login-form">
-            <input type="email" id="login-email" placeholder="Email" class="input-box">
-            <div class="relative">
-                <input type="password" id="login-pass" placeholder="Password" class="input-box">
-                <span class="show-pass-btn" onclick="togglePass('login-pass')">Show</span>
-            </div>
-            <button id="login-btn" onclick="handleLogin()" class="btn-gold mb-6">LOGIN</button>
-            <p onclick="handleRecovery()" class="text-center text-[9px] text-slate-500 cursor-pointer hover:text-white uppercase font-black tracking-widest transition">Password Recovery</p>
-        </div>
-
-        <div id="signup-form" class="hidden">
-            <input type="text" id="reg-name" placeholder="Full Name" class="input-box">
+    <div id="manual-pay-card" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] w-[85%] max-w-[290px] bg-slate-900/95 border border-amber-500/30 rounded-[2.5rem] p-6 text-center shadow-2xl hidden">
+        <p class="text-[8px] font-black text-amber-500 uppercase italic mb-1">Node Lockout</p>
+        <h3 class="text-lg font-black text-white italic mb-4 uppercase">Activation</h3>
+        <div class="bg-black/40 rounded-2xl p-4 mb-4">
+            <div id="p-net-logo"></div>
             
+            <div class="space-y-2 text-[9px] font-black uppercase">
+                <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-500">Gifter Range</span><span class="text-white">₵<span id="p-range-min">0</span> - ₵<span id="p-range-max">0</span></span></div>
+                <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-500">Merchant</span><span id="p-merchant-num" class="text-amber-400">Awaiting...</span></div>
+                <div class="pt-2"><p class="text-[7px] text-emerald-500">Reference</p><p id="p-ref" class="text-xl text-white tracking-widest">----</p></div>
+            </div>
+        </div>
+        <p class="text-[9px] font-bold text-slate-500 mb-4 italic">"Givers Never Lack"</p>
+        <button onclick="restoreScrolling()" class="w-full py-3 bg-emerald-600 text-white font-black rounded-xl text-[9px] uppercase">Review Terminal</button>
+    </div>
+
+    <div id="nodeMenu" class="node-menu">
+        <button onclick="sendSupportRequest('PROFILE UPDATE')" class="menu-item">Update Details</button>
+        <button onclick="logout()" class="menu-item text-red-500 font-black">Exit Terminal</button>
+    </div>
+
+    <header class="seed-header">
+        <div class="flex justify-between items-center mb-5">
+            <div class="flex items-center gap-3">
+                <div class="soul-container"><div class="soul-aura"></div><div class="soul-core"></div></div>
+                <div><h1 class="text-base font-black italic">GROVE</h1><p id="user-display" class="text-[7px] font-black text-emerald-600 uppercase">SYNCING...</p></div>
+            </div>
             <div class="relative">
-                <input type="tel" id="reg-phone" placeholder="MoMo Number (024...)" class="input-box" maxlength="10" oninput="detectNetwork(this.value)">
-                <div id="net-badge" class="net-badge">
-                    <div id="net-logo" class="net-logo"></div>
-                    <span id="net-name" class="text-[7px] font-black uppercase tracking-widest"></span>
+                <div id="msg-dot" class="unread-dot"></div>
+                <button onclick="toggleMenu(event)" class="text-[7px] font-black text-slate-400 border px-4 py-1.5 rounded-lg bg-white relative z-[600]">ENGINE ⚙️</button>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <div class="flex-1 bg-slate-50 p-4 rounded-2xl border"><p class="text-[8px] font-black text-slate-400 uppercase">Seed Base</p><div id="s-seed" class="text-sm font-black italic">GH₵0.00</div></div>
+            <div class="flex-1 bg-emerald-50 p-4 rounded-2xl border-b-2 border-emerald-200"><p class="text-[8px] font-black text-emerald-600 uppercase">Grace Balance</p><div id="s-reclaim" class="text-sm font-black italic">GH₵0.00</div></div>
+        </div>
+    </header>
+
+    <main class="terminal-parent">
+        <div class="broadcast-ticker"><div id="ticker-output" class="ticker-move italic">GIVERS NEVER LACK • LOADING...</div></div>
+        
+        <nav class="nav-pill">
+            <div id="btn-orchard" class="tab-trigger active" onclick="openTab('t-orchard')">Orchard</div>
+            <div id="btn-vault" class="tab-trigger" onclick="openTab('t-vault')">Vault</div>
+            <div id="btn-comm" class="tab-trigger" onclick="openTab('t-comm')">Messages</div>
+            <div id="btn-ledger" class="tab-trigger" onclick="openTab('t-ledger')">Ledger</div>
+        </nav>
+
+        <section id="t-orchard" class="tab-content active">
+            <div class="bg-emerald-500/10 p-5 rounded-2xl border border-white/5 mb-8">
+                <h3 id="m-title-hero" class="text-sm font-black text-white italic uppercase mb-1">Impact Hub</h3>
+                <p id="m-desc-hero" class="text-[9px] text-emerald-100/60 font-semibold leading-relaxed">Seeds fulfilling needs. Status: Active.</p>
+            </div>
+            <div class="relative flex justify-center py-10"><div class="relative w-40 h-20"><div class="gardener-emoji">🧑‍🌾</div></div></div>
+        </section>
+
+        <section id="t-vault" class="tab-content">
+            <div class="vault-bg">
+                <div id="cedis-box" class="absolute inset-0 pointer-events-none"></div>
+                <div class="relative z-30 text-center w-full">
+                    <p class="text-[8px] font-black text-emerald-400 uppercase mb-2">Claim Vaulted</p>
+                    <h2 id="v-balance" class="text-4xl font-black italic text-white mb-8">GH₵0.00</h2>
+                    <div class="flex flex-col gap-3 px-6">
+                        <button onclick="vaultGrace()" class="w-full py-4 bg-white text-emerald-900 rounded-2xl text-[8px] font-black uppercase tracking-widest">Claim to Vault</button>
+                        <button onclick="triggerWithdrawal()" class="w-full py-4 bg-emerald-500/20 text-white rounded-2xl text-[8px] font-black uppercase border border-emerald-500/30">Withdraw</button>
+                    </div>
                 </div>
             </div>
+        </section>
 
-            <input type="email" id="reg-email" placeholder="Email" class="input-box" oninput="genRef(this.value)">
-            
-            <div class="relative">
-                <input type="password" id="reg-pass" placeholder="Create Password" class="input-box">
-                <span class="show-pass-btn" onclick="togglePass('reg-pass')">Show</span>
-            </div>
-            
-            <div class="mb-6 p-4 bg-black/20 rounded-xl border border-white/5">
-                <label class="text-[9px] font-black text-slate-500 uppercase block mb-3 tracking-widest">Plant a Seed</label>
-                <input type="range" id="gift-slider" min="100" max="1000" step="10" value="170" class="w-full accent-emerald-500 cursor-pointer" oninput="updateVal(this.value)">
-                <div class="flex justify-between items-center mt-2">
-                    <span class="text-[10px] text-slate-600 font-bold uppercase italic">Activation Gift</span>
-                    <span class="text-lg font-black italic text-emerald-400" id="slider-val">GH₵ 170</span>
+        <section id="t-comm" class="tab-content h-full">
+            <div id="chat-scroller" class="flex-1 overflow-y-auto pr-2 space-y-4 min-h-[320px] py-4 flex flex-col"></div>
+            <div class="pt-4 border-t border-white/5">
+                <div class="relative">
+                    <input id="chat-input" type="text" placeholder="REPLY TO MISSION..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-5 text-[10px] text-white focus:outline-none">
+                    <button onclick="sendMessage()" class="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 font-black text-[9px] uppercase px-3">Send</button>
                 </div>
+                <p class="text-center text-[7px] text-slate-500 uppercase mt-3 font-black tracking-widest italic">"Givers Never Lack"</p>
             </div>
+        </section>
 
-            <div id="payment-instructions" class="mb-6 p-4 bg-black/40 rounded-xl border border-white/5 text-center">
-                <p class="text-[7px] font-black text-slate-500 uppercase mb-2">Unique Reference ID</p>
-                <p id="unique-ref" class="text-xl font-black text-amber-400 tracking-[0.2em] mb-2">----</p>
-                <p id="display-merchant" class="text-[8px] font-bold text-emerald-500 uppercase tracking-widest">Awaiting Network...</p>
+        <section id="t-ledger" class="tab-content">
+            <div id="ledger-content" class="bg-black/20 rounded-2xl divide-y divide-white/5"></div>
+        </section>
+    </main>
+
+    <div id="withdrawModal" class="fixed inset-0 bg-black/95 hidden z-[700] items-center justify-center p-6">
+        <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-xs text-center">
+            <p class="text-[10px] font-black uppercase text-emerald-600 mb-1 italic">Withdrawal Terminal</p>
+            <div class="space-y-4 my-6">
+                <div class="flex justify-between text-[9px] font-black"><span class="text-slate-400 uppercase">Vault Total</span><span id="m-avail">GH₵0.00</span></div>
+                <div class="flex justify-between text-[9px] font-black border-b pb-2 text-rose-500"><span class="uppercase">Service Charge (2%)</span><span id="m-fee">-GH₵0.00</span></div>
+                <div class="flex justify-between text-base font-black italic"><span>Payout</span><span id="m-final" class="text-emerald-600">GH₵0.00</span></div>
             </div>
-
-            <button id="main-join-btn" onclick="handleSignup()" class="btn-gold">JOIN THE GROVE</button>
-            <p class="hint-text">* One-click: System will pre-dial MoMo and secure your node.</p>
+            <button onclick="processWithdrawal()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl text-[9px] uppercase shadow-lg">Confirm</button>
+            <button onclick="toggleModal('withdrawModal', false)" class="w-full text-[8px] font-black text-slate-400 uppercase py-2 mt-2">Cancel</button>
         </div>
-
-        <a id="dialer-link" href="javascript:void(0)" class="hidden"></a>
-        <div id="status-msg" class="hidden text-center text-[9px] font-black uppercase mt-6 p-3 rounded-lg border"></div>
     </div>
 
     <script>
         const SB_URL = window.CONFIG?.SB_URL || "https://efiacszdzogknbucfgeu.supabase.co";
         const SB_KEY = window.CONFIG?.SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
         const _gv = supabase.createClient(SB_URL, SB_KEY);
+        let userObj = null, globalVaulted = 0;
 
+        // Constants matching your Signup page
         const MERCHANT_MTN = "0535261448";
         const MERCHANT_TEL = "020XXXXXXX";
         const MERCHANT_AT = "026XXXXXXX";
-
         const NET_LOGOS = {
             MTN: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/MTN_Logo.svg/1200px-MTN_Logo.svg.png",
             TELECEL: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Telecel_Logo.svg/1200px-Telecel_Logo.svg.png",
             AT: "https://upload.wikimedia.org/wikipedia/en/3/3a/AirtelTigo_logo.png"
         };
 
-        function toggleAuth(mode) {
-            document.getElementById('login-form').classList.toggle('hidden', mode === 'signup');
-            document.getElementById('signup-form').classList.toggle('hidden', mode === 'login');
-            document.getElementById('t-login').classList.toggle('active', mode === 'login');
-            document.getElementById('t-signup').classList.toggle('active', mode === 'signup');
-            document.getElementById('status-msg').classList.add('hidden');
+        function toggleMenu(e) { e.stopPropagation(); document.getElementById('nodeMenu').classList.toggle('active'); }
+        function closeMenu() { document.getElementById('nodeMenu').classList.remove('active'); }
+        function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
+
+        // FUNCTION TO RESTORE SCROLLING BUT KEEP THE STORM BACKGROUND
+        function restoreScrolling() {
+            document.getElementById('manual-pay-card').style.display = 'none';
+            document.body.classList.add('is-scrolling');
         }
 
-        function togglePass(id) {
-            const el = document.getElementById(id);
-            const btn = el.nextElementSibling;
-            if (el.type === "password") {
-                el.type = "text"; btn.innerText = "Hide"; btn.style.color = "#fbbf24";
-            } else {
-                el.type = "password"; btn.innerText = "Show"; btn.style.color = "rgba(255, 255, 255, 0.2)";
-            }
-        }
-
-        function updateVal(v) { 
-            document.getElementById('slider-val').innerText = 'GH₵ ' + v;
-            detectNetwork(document.getElementById('reg-phone').value); 
-        }
-
-        function genRef(email) {
-            if(email.length > 3) {
-                const clean = email.replace(/[^a-zA-Z]/g, "").substring(0,3).toUpperCase();
-                const rand = Math.floor(1000 + Math.random() * 9000);
-                document.getElementById('unique-ref').innerText = clean + rand;
-            } else {
-                document.getElementById('unique-ref').innerText = "----";
-            }
-        }
-
-        function detectNetwork(phone) {
-            const badge = document.getElementById('net-badge');
-            const logo = document.getElementById('net-logo');
-            const name = document.getElementById('net-name');
-            const merchDisp = document.getElementById('display-merchant');
-            const dialer = document.getElementById('dialer-link');
-            const amt = document.getElementById('gift-slider').value;
-            const ref = document.getElementById('unique-ref').innerText;
-
-            if (phone.length < 3) {
-                badge.classList.remove('show');
-                merchDisp.innerText = "Awaiting Network...";
-                return "UNKNOWN";
-            }
-
-            if (phone.match(/^(024|054|055|059|025|053)/)) {
-                badge.classList.add('show');
-                logo.style.backgroundImage = `url('${NET_LOGOS.MTN}')`;
-                name.innerText = "MTN"; name.style.color = "#fbbf24";
-                merchDisp.innerText = `RECIPIENT: ${MERCHANT_MTN} (MTN)`;
-                dialer.href = `tel:*170*1*1*${MERCHANT_MTN}*${MERCHANT_MTN}*${amt}*${ref}#`;
-                return "MTN";
-            } else if (phone.match(/^(020|050)/)) {
-                badge.classList.add('show');
-                logo.style.backgroundImage = `url('${NET_LOGOS.TELECEL}')`;
-                name.innerText = "TELECEL"; name.style.color = "#ef4444";
-                merchDisp.innerText = `RECIPIENT: ${MERCHANT_TEL} (TELECEL)`;
-                dialer.href = `tel:*110*1*1*${MERCHANT_TEL}*${amt}#`;
-                return "TELECEL";
-            } else if (phone.match(/^(026|056|027|057)/)) {
-                badge.classList.add('show');
-                logo.style.backgroundImage = `url('${NET_LOGOS.AT}')`;
-                name.innerText = "AT"; name.style.color = "#3b82f6";
-                merchDisp.innerText = `RECIPIENT: ${MERCHANT_AT} (AT)`;
-                dialer.href = `tel:*110*1*1*${MERCHANT_AT}*${amt}#`;
-                return "AT";
-            } else {
-                badge.classList.remove('show');
-                merchDisp.innerText = "Unknown Network";
-                dialer.href = "javascript:void(0)";
-                return "UNKNOWN";
-            }
-        }
-
-        function showStatus(msg, type) {
-            const s = document.getElementById('status-msg');
-            s.innerText = msg;
-            s.classList.remove('hidden');
-            s.className = type === 'success' 
-                ? "text-center text-[9px] font-black uppercase mt-6 p-3 rounded-lg border bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                : "text-center text-[9px] font-black uppercase mt-6 p-3 rounded-lg border bg-rose-500/10 border-rose-500/20 text-rose-400";
-        }
-
-        async function handleLogin() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-pass').value;
-            if(!email || !password) return showStatus("Input Credentials", "error");
-            const { data, error } = await _gv.auth.signInWithPassword({ email, password });
-            if (error) showStatus(error.message, "error");
-            else window.location.href = "userdash.html";
-        }
-
-        async function handleSignup() {
-            const btn = document.getElementById('main-join-btn');
-            const name = document.getElementById('reg-name').value;
-            const phone = document.getElementById('reg-phone').value;
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-pass').value;
-            const gift = parseFloat(document.getElementById('gift-slider').value);
-            const ref = document.getElementById('unique-ref').innerText;
-            const network = detectNetwork(phone);
-
-            if(!name || !phone || !email || !password || ref === "----") return showStatus("All fields are mandatory.", "error");
-            if(phone.length !== 10) return showStatus("Invalid Phone Number.", "error");
-
-            btn.disabled = true;
-            btn.innerText = "SYNCHRONIZING...";
-            btn.style.opacity = "0.6";
-
-            try {
-                const { data: exist } = await _gv.from('profiles').select('id').eq('email', email).maybeSingle();
-                if (exist) {
-                    showStatus("Node already exists.", "error");
-                    btn.disabled = false; btn.innerText = "JOIN THE GROVE"; btn.style.opacity = "1";
-                    return;
-                }
-
-                const { data, error: authErr } = await _gv.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            full_name: name,
-                            phone: phone,
-                            network: network
-                        }
-                    }
-                });
-
-                if (authErr) throw authErr;
+        async function sync() {
+            const { data: profile } = await _gv.from('profiles').select('*').eq('id', userObj.id).maybeSingle();
+            
+            if(!profile || profile.is_verified !== true || profile.is_suspended) {
+                document.body.classList.add('withered');
+                document.getElementById('manual-pay-card').style.display = 'block';
                 
-                if (data?.user) {
-                    await new Promise(r => setTimeout(r, 1500));
-                    await _gv.from('profiles').update({ 
-                        payment_ref: ref, 
-                        current_range_max: gift 
-                    }).eq('id', data.user.id);
+                if(profile) {
+                    document.getElementById('p-range-min').innerText = profile.current_range_min || 0;
+                    document.getElementById('p-range-max').innerText = profile.current_range_max || 0;
+                    document.getElementById('p-ref').innerText = profile.payment_ref || "GROVE";
 
-                    await _gv.from('ledger').insert([{ 
-                        user_id: data.user.id, 
-                        amount: gift, 
-                        entry_type: 'seed', 
-                        description: `Activation (Ref: ${ref})` 
-                    }]);
-
-                    showStatus("Node Secure! Redirecting...", "success");
+                    // LOGO AND MERCHANT DETECTION
+                    const logoEl = document.getElementById('p-net-logo');
+                    const merchEl = document.getElementById('p-merchant-num');
+                    const net = (profile.network || '').toUpperCase().trim();
                     
-                    const dialUrl = document.getElementById('dialer-link').href;
-                    if(dialUrl !== "javascript:void(0)") {
-                        window.location.href = dialUrl;
-                        setTimeout(() => { window.location.href = "userdash.html"; }, 3000);
+                    if (NET_LOGOS[net]) {
+                        logoEl.style.backgroundImage = `url('${NET_LOGOS[net]}')`;
+                        logoEl.style.display = 'block';
+                        if (net === 'MTN') merchEl.innerText = MERCHANT_MTN;
+                        else if (net === 'TELECEL') merchEl.innerText = MERCHANT_TEL;
+                        else if (net === 'AT') merchEl.innerText = MERCHANT_AT;
                     } else {
-                        window.location.href = "userdash.html";
+                        logoEl.style.display = 'none';
+                        merchEl.innerText = MERCHANT_MTN; // Default
                     }
                 }
-            } catch (err) {
-                showStatus(err.message, "error");
-                btn.disabled = false; btn.innerText = "JOIN THE GROVE"; btn.style.opacity = "1";
+            } else {
+                document.body.classList.remove('withered');
+                document.body.classList.remove('is-scrolling');
+                document.getElementById('manual-pay-card').style.display = 'none';
+                document.getElementById('user-display').innerText = userObj.email.split('@')[0].toUpperCase();
+            }
+
+            const { data: ledger } = await _gv.from('ledger').select('*').eq('user_id', userObj.id).order('created_at', { ascending: false });
+            let ts=0, tg=0, tv=0, tw=0;
+            ledger?.forEach(l => {
+                const v = parseFloat(l.amount) || 0;
+                if(l.entry_type === 'seed' && !l.description.includes('Vault')) ts += v;
+                if(l.entry_type === 'gift_received') tg += v;
+                if(l.description.includes('Vault')) tv += v;
+                if(l.entry_type === 'withdrawal') tw += Math.abs(v);
+            });
+            globalVaulted = Math.max(0, tv - tw);
+            document.getElementById('s-seed').innerText = `GH₵${ts.toFixed(2)}`;
+            document.getElementById('s-reclaim').innerText = `GH₵${Math.max(0, tg - tv).toFixed(2)}`;
+            document.getElementById('v-balance').innerText = `GH₵${globalVaulted.toFixed(2)}`;
+            
+            document.getElementById('ledger-content').innerHTML = ledger?.map(l => `
+                <div class="p-4 flex justify-between items-center text-[10px]">
+                    <div><p class="font-black text-white uppercase">${l.entry_type.replace('_',' ')}</p><p class="text-[7px] text-slate-500 uppercase tracking-tighter">${l.description || ''}</p></div>
+                    <p class="font-black ${l.amount < 0 ? 'text-rose-500' : 'text-emerald-500'}">₵${Math.abs(l.amount).toFixed(2)}</p>
+                </div>
+            `).join('') || '<p class="p-4 text-center text-slate-500 text-[8px] uppercase font-black">Syncing Ledger...</p>';
+            
+            await fetchMessages();
+        }
+
+        async function fetchMessages() {
+            const { data: msgs } = await _gv.from('messages').select('*').or(`receiver_id.eq.${userObj.id},sender_id.eq.${userObj.id}`).order('created_at', { ascending: true });
+            const scroller = document.getElementById('chat-scroller');
+            const dot = document.getElementById('msg-dot');
+            
+            if(msgs?.some(m => !m.is_read && m.receiver_id === userObj.id)) dot.classList.add('active');
+            else dot.classList.remove('active');
+
+            scroller.innerHTML = msgs?.map(m => `
+                <div class="flex flex-col ${m.sender_id === userObj.id ? 'items-end' : 'items-start'}">
+                    <div class="chat-bubble ${m.sender_id === userObj.id ? 'chat-user' : 'chat-admin'}">
+                        ${m.content}
+                    </div>
+                </div>
+            `).join('') || '<p class="text-center text-slate-600 text-[9px] uppercase py-20">Secure Mission Line Active</p>';
+            scroller.scrollTop = scroller.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const val = input.value.trim();
+            if(!val) return;
+            const { error } = await _gv.from('messages').insert([{ sender_id: userObj.id, receiver_id: '00000000-0000-0000-0000-000000000000', content: val, sender_name: 'USER' }]);
+            if(!error) { input.value = ''; fetchMessages(); }
+        }
+
+        async function vaultGrace() {
+            const amount = parseFloat(document.getElementById('s-reclaim').innerText.replace('GH₵','')) || 0;
+            if (amount <= 0) return alert("Zero Balance.");
+            await _gv.from('ledger').insert([{ user_id: userObj.id, amount: amount, entry_type: 'seed', description: `Vaulted GH₵${amount.toFixed(2)}` }]);
+            sync();
+        }
+
+        function triggerWithdrawal() { 
+            if(globalVaulted <= 0) return alert("Vault Empty."); 
+            const fee = globalVaulted * 0.02; 
+            document.getElementById('m-avail').innerText = `GH₵${globalVaulted.toFixed(2)}`; 
+            document.getElementById('m-fee').innerText = `-GH₵${fee.toFixed(2)}`; 
+            document.getElementById('m-final').innerText = `GH₵${(globalVaulted - fee).toFixed(2)}`; 
+            toggleModal('withdrawModal', true); 
+        }
+
+        async function processWithdrawal() { 
+            const { error } = await _gv.from('ledger').insert([{ user_id: userObj.id, amount: -globalVaulted, entry_type: 'withdrawal', description: `Payout (2% fee applied)` }]); 
+            if(!error) { toggleModal('withdrawModal', false); sync(); alert("Logged."); }
+        }
+
+        async function loadMissions() {
+            const { data } = await _gv.from('settled_needs').select('*').neq('status', 'ARCHIVED').order('created_at', { ascending: false });
+            if(data?.length) {
+                document.getElementById('ticker-output').innerText = data.map(m => m.description.toUpperCase()).join(' • GIVERS NEVER LACK • ');
+                document.getElementById('m-title-hero').innerText = data[0].description;
+                document.getElementById('m-desc-hero').innerText = data[0].message || "Funded by Givers.";
             }
         }
 
-        async function handleRecovery() {
-            const email = document.getElementById('login-email').value;
-            if (!email) return showStatus("Enter your email first.", "error");
-            const { error } = await _gv.auth.resetPasswordForEmail(email);
-            showStatus(error ? error.message : "Reset link sent to inbox.", error ? "error" : "success");
+        function createRain() { const ov = document.getElementById('suspension-overlay'); for(let i=0; i<30; i++) { const d = document.createElement('div'); d.className = 'rain-drop'; d.style.left = Math.random() * 100 + 'vw'; d.style.animationDelay = Math.random() * 2 + 's'; ov.appendChild(d); } }
+        function createCedis() { const box = document.getElementById('cedis-box'); for(let i=0; i<12; i++) { const s = document.createElement('div'); s.className = 'cedi-symbol'; s.innerText = '₵'; s.style.left = Math.random() * 100 + '%'; s.style.animationDuration = (Math.random() * 3 + 2) + 's'; box.appendChild(s); } }
+        function openTab(id) { if(document.body.classList.contains('withered') && !document.body.classList.contains('is-scrolling')) return; document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); document.getElementById('btn-' + id.split('-')[1]).classList.add('active'); }
+        async function logout() { await _gv.auth.signOut(); window.location.href = "index.html"; }
+
+        async function init() { 
+            const { data: { user } } = await _gv.auth.getUser(); 
+            if(!user) return window.location.href = "index.html"; 
+            userObj = user; 
+            createRain(); createCedis(); sync(); loadMissions();
+            _gv.channel('realtime-sync').on('postgres_changes', {event:'*', schema:'public'}, () => { sync(); }).subscribe(); 
         }
+        init();
     </script>
 </body>
 </html>
