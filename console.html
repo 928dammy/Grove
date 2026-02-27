@@ -72,14 +72,18 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
-            <div class="flex justify-between items-center bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+        <div class="grid grid-cols-3 gap-2">
+            <div class="flex flex-col items-center justify-center bg-white/5 p-2 rounded-lg border border-white/5">
                 <p class="text-[5px] font-black text-slate-500 uppercase">Total Seeded</p>
-                <p id="stat-sunk" class="text-[9px] font-black text-white">₵0.00</p>
+                <p id="stat-sunk" class="text-[10px] font-black text-white">₵0.00</p>
             </div>
-            <div class="flex justify-between items-center bg-blue-500/5 px-3 py-1.5 rounded-lg border border-blue-500/20">
-                <p class="text-[5px] font-black text-blue-500 uppercase">Grove Pool (Health)</p>
-                <p id="stat-pool" class="text-[9px] font-black text-blue-400">₵0.00</p>
+            <div class="flex flex-col items-center justify-center bg-blue-500/5 p-2 rounded-lg border border-blue-500/20">
+                <p class="text-[5px] font-black text-blue-500 uppercase">Grove Pool</p>
+                <p id="stat-pool" class="text-[10px] font-black text-blue-400">₵0.00</p>
+            </div>
+            <div class="flex flex-col items-center justify-center bg-rose-500/5 p-2 rounded-lg border border-rose-500/20">
+                <p class="text-[5px] font-black text-rose-500 uppercase">Total Fees</p>
+                <p id="stat-fees" class="text-[10px] font-black text-rose-400">₵0.00</p>
             </div>
         </div>
     </header>
@@ -125,6 +129,7 @@
                     <button onclick="publishMission()" class="w-full py-3 bg-amber-600 rounded-xl font-black text-[10px] uppercase">Initialize Broadcast</button>
                 </div>
             </div>
+            <p class="text-[9px] font-black uppercase text-slate-500 mb-4 tracking-widest">Live Missions</p>
             <div id="missionList" class="space-y-3"></div>
         </section>
 
@@ -189,7 +194,7 @@
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
         const _gv = supabase.createClient(SB_URL, SB_KEY);
         const SYSTEM_ADMIN_ID = "00000000-0000-0000-0000-000000000000";
-        let allNodes=[], allMsgs=[], allLedger=[], currentChatId=null;
+        let allNodes=[], allMsgs=[], allLedger=[], allMissions=[], currentChatId=null;
 
         function showModal(title, message, confirmAction = null) {
             document.getElementById('modalTitle').innerText = title;
@@ -217,21 +222,27 @@
             const { data: profiles } = await _gv.from('profiles').select('*');
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
             const { data: messages } = await _gv.from('messages').select('*');
+            const { data: missions } = await _gv.from('missions').select('*').order('created_at', { ascending: false });
             
             allNodes = profiles || []; 
             allMsgs = messages || [];
             allLedger = ledger || [];
+            allMissions = missions || [];
 
             let totalSeeded = 0;
             let currentPool = 0;
+            let totalFees = 0;
 
             allLedger.forEach(l => {
                 if(l.entry_type === 'seed') totalSeeded += Math.abs(l.amount);
+                if(l.entry_type === 'service_charge') totalFees += Math.abs(l.amount);
                 currentPool += l.amount;
             });
 
             document.getElementById('stat-sunk').innerText = `₵${totalSeeded.toFixed(2)}`;
             document.getElementById('stat-pool').innerText = `₵${currentPool.toFixed(2)}`;
+            document.getElementById('stat-fees').innerText = `₵${totalFees.toFixed(2)}`;
+            
             document.getElementById('total-nodes-count').innerText = allNodes.length;
             document.getElementById('active-nodes-count').innerText = allNodes.filter(n=>n.is_verified).length;
             document.getElementById('pending-nodes-count').innerText = allNodes.filter(n=>!n.is_verified).length;
@@ -265,6 +276,21 @@
                     </div>
                 </div>`;
             }).join('');
+
+            // Render Missions
+            document.getElementById('missionList').innerHTML = allMissions.map(m => `
+                <div class="auth-card p-4 border-l-2 ${m.active ? 'border-amber-500' : 'border-slate-700'}">
+                    <div class="flex justify-between mb-2">
+                        <p class="text-[10px] font-black uppercase text-white">${m.title}</p>
+                        <p class="text-[8px] font-black text-amber-400">₵${m.goal.toFixed(2)}</p>
+                    </div>
+                    <p class="text-[8px] text-slate-400 mb-3">${m.description}</p>
+                    <div class="flex gap-2">
+                        <button onclick="toggleMission('${m.id}', ${m.active})" class="btn-action ${m.active ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-500'}">${m.active ? 'Deactivate' : 'Activate'}</button>
+                        <button onclick="deleteMission('${m.id}')" class="btn-action bg-rose-500/10 text-rose-500">Delete</button>
+                    </div>
+                </div>
+            `).join('');
 
             const pendingPayouts = allLedger.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID'));
             document.getElementById('payoutList').innerHTML = pendingPayouts.map(w => {
@@ -310,10 +336,25 @@
             
             showModal("Confirm", "Broadcast this mission?", async () => {
                 await _gv.from('missions').insert([{ title, description: desc, goal: parseFloat(goal), active: true }]);
-                // Missions automatically populate impact hub via database trigger/view
+                
+                // Record mission creation in ledger
+                await _gv.from('ledger').insert([{ user_id: SYSTEM_ADMIN_ID, amount: 0, entry_type: 'mission_created', description: `Mission: ${title}` }]);
+                
                 document.getElementById('missionTitle').value = '';
                 document.getElementById('missionDesc').value = '';
                 document.getElementById('missionGoal').value = '';
+                sync();
+            });
+        }
+
+        async function toggleMission(id, currentStatus) {
+            await _gv.from('missions').update({ active: !currentStatus }).eq('id', id);
+            sync();
+        }
+
+        async function deleteMission(id) {
+            showModal("Danger", "Delete this mission?", async () => {
+                await _gv.from('missions').delete().eq('id', id);
                 sync();
             });
         }
@@ -479,6 +520,7 @@
             document.getElementById('admin-session-email').innerText = `Session: ${session.user.email}`;
             sync();
             
+            // Realtime subscriptions
             _gv.channel('realtime').on('postgres_changes', { event: '*', schema: 'public' }, () => sync()).subscribe();
         }
         init();
