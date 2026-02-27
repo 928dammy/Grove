@@ -211,8 +211,11 @@
             if (confirmAction) {
                 document.getElementById('modalActions').classList.remove('hidden');
                 document.getElementById('modalOkBtn').classList.add('hidden');
-                // Assign action to confirm button and add closing functionality
-                document.getElementById('modalConfirmBtn').setAttribute('onclick', confirmAction + '; closeModal();');
+                // Assign action directly to confirm button
+                document.getElementById('modalConfirmBtn').onclick = async () => {
+                    await confirmAction();
+                    closeModal();
+                };
             } else {
                 document.getElementById('modalActions').classList.add('hidden');
                 document.getElementById('modalOkBtn').classList.remove('hidden');
@@ -229,7 +232,7 @@
             const { data: messages } = await _gv.from('messages').select('*');
             
             allNodes = profiles || []; 
-            allMsgs = messages || []; // FIX: Added this line to initialize messages
+            allMsgs = messages || []; 
 
             let totalSeeded = 0;
             let currentPool = 0;
@@ -394,7 +397,6 @@
             const desc = type === 'stable' ? 'STABLE GRACE' : 'WITHER GRACE';
             const totalAmount = amt * allNodes.length;
             
-            // FIX: Changed from confirm() to showModal()
             showModal("Distribute Grace", `Distribute ${desc} (₵${amt.toFixed(2)}) to ALL ${allNodes.length} nodes?\nTotal Pool Impact: ₵${totalAmount.toFixed(2)}`, async () => {
                 // Log the master distribution
                 await _gv.from('ledger').insert([{
@@ -504,10 +506,24 @@
         async function logout() { await _gv.auth.signOut(); location.href = 'consoleenter.html'; }
 
         async function init() {
+            // FIX: Listen for auth state changes to handle loading sessions properly
+            _gv.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_OUT' || !session) {
+                    location.href = 'consoleenter.html';
+                }
+            });
+
+            // Initial check
             const { data: { user } } = await _gv.auth.getUser();
-            if(!user) location.href = 'consoleenter.html';
+            if(!user) {
+                location.href = 'consoleenter.html';
+                return;
+            }
+            
             document.getElementById('admin-session-email').innerText = `Session: ${user.email}`;
             sync();
+            
+            // Realtime subscriptions
             _gv.channel('realtime').on('postgres_changes', { event: '*', schema: 'public' }, () => sync()).subscribe();
         }
         init();
