@@ -22,9 +22,24 @@
         .bubble-out { background: #10b981; color: #020617; align-self: flex-end; border-radius: 1.2rem; border-bottom-right-radius: 4px; padding: 12px; max-width: 80%; font-size: 12px; font-weight: 700; }
         .view-hidden { display: none !important; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        /* Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 100; display: none; justify-content: center; align-items: center; }
+        .modal-content { background: #0f172a; border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 1.5rem; padding: 2rem; width: 90%; max-width: 400px; text-align: center; }
     </style>
 </head>
 <body class="bg-slate-950">
+
+    <div id="customModal" class="modal-overlay" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 id="modalTitle" class="text-xl font-black text-white mb-2"></h3>
+            <p id="modalMessage" class="text-sm text-slate-300 mb-6"></p>
+            <div id="modalActions" class="grid grid-cols-2 gap-2">
+                <button onclick="closeModal()" class="bg-white/10 text-white w-full py-3 rounded-xl font-black text-xs uppercase">Cancel</button>
+                <button id="modalConfirmBtn" onclick="" class="bg-emerald-600 text-white w-full py-3 rounded-xl font-black text-xs uppercase">Confirm</button>
+            </div>
+            <button id="modalOkBtn" onclick="closeModal()" class="bg-emerald-600 text-white w-full py-3 rounded-xl font-black text-xs uppercase hidden">Understand</button>
+        </div>
+    </div>
 
     <header class="p-4 sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md border-b border-white/5">
         <div class="flex justify-between items-center mb-3">
@@ -175,6 +190,29 @@
         const SYSTEM_ADMIN_ID = "00000000-0000-0000-0000-000000000000";
         let allNodes=[], allMsgs=[], currentChatId=null;
 
+        // --- Custom Modal Functionality ---
+        function showModal(title, message, confirmAction = null) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            document.getElementById('customModal').style.display = 'flex';
+            
+            if (confirmAction) {
+                document.getElementById('modalActions').classList.remove('hidden');
+                document.getElementById('modalOkBtn').classList.add('hidden');
+                document.getElementById('modalConfirmBtn').onclick = async () => {
+                    await confirmAction();
+                    closeModal();
+                };
+            } else {
+                document.getElementById('modalActions').classList.add('hidden');
+                document.getElementById('modalOkBtn').classList.remove('hidden');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('customModal').style.display = 'none';
+        }
+
         async function sync() {
             const { data: profiles } = await _gv.from('profiles').select('*');
             const { data: ledger } = await _gv.from('ledger').select('*').order('created_at', { ascending: false });
@@ -232,7 +270,7 @@
                 const node = allNodes.find(n => n.id === w.user_id);
                 const charge = Math.abs(w.amount) * 0.02;
                 const net = Math.abs(w.amount) - charge;
-                return `<div class="auth-card p-4 flex justify-between items-center">
+                return `<div class="auth-card p-4 flex justify-between items-center border-l-2 border-amber-500">
                     <div>
                         <p class="text-[9px] font-black uppercase text-white">${node?.full_name || 'NODE'}</p>
                         <p class="text-[7px] text-emerald-500 font-black">₵${net.toFixed(2)} NET (-2%)</p>
@@ -257,57 +295,58 @@
 
         async function distributeGrace(type) {
             const verifiedNodes = allNodes.filter(n => n.is_verified);
-            if (verifiedNodes.length === 0) return alert("No verified nodes.");
+            if (verifiedNodes.length === 0) { showModal("Error", "No verified nodes."); return; }
             
             const inserts = [];
             let amt = 0;
 
             if (type === 'stable') {
                 amt = parseFloat(document.getElementById('stableAmt').value);
-                if (!amt || amt <= 0) return alert("Enter valid amount");
-                if (!confirm(`Deduct ₵${(amt * verifiedNodes.length).toFixed(2)} from pool now?`)) return;
-
-                verifiedNodes.forEach(n => {
-                    // Immediate Pool Deduction
-                    inserts.push({ user_id: SYSTEM_ADMIN_ID, amount: -amt, entry_type: 'distribution', description: `STABLE GRACE OUTFLOW` });
-                    // User Vault
-                    inserts.push({ user_id: n.id, amount: amt, entry_type: 'grace', description: `Vaulted: STABLE GRACE` });
+                if (!amt || amt <= 0) { showModal("Error", "Enter valid amount"); return; }
+                
+                showModal("Confirm", `Deduct ₵${(amt * verifiedNodes.length).toFixed(2)} from pool now?`, async () => {
+                    verifiedNodes.forEach(n => {
+                        inserts.push({ user_id: SYSTEM_ADMIN_ID, amount: -amt, entry_type: 'distribution', description: `STABLE GRACE OUTFLOW` });
+                        inserts.push({ user_id: n.id, amount: amt, entry_type: 'grace', description: `Vaulted: STABLE GRACE` });
+                    });
+                    const { error } = await _gv.from('ledger').insert(inserts);
+                    if(!error) { 
+                        document.getElementById('stableAmt').value = '';
+                        sync(); 
+                    }
                 });
             } else {
                 const pct = parseFloat(document.getElementById('withersPct').value);
-                if (!pct || pct <= 0) return alert("Enter valid percentage");
+                if (!pct || pct <= 0) { showModal("Error", "Enter valid percentage"); return; }
                 
                 const currentPool = parseFloat(document.getElementById('stat-pool').innerText.replace('₵',''));
                 amt = (currentPool * (pct/100)) / verifiedNodes.length;
-                if (!confirm(`Distribute ₵${amt.toFixed(2)} per node? No pool deduction until claim.`)) return;
 
-                verifiedNodes.forEach(n => {
-                    // User Vault Only (No Pool Deduction Entry)
-                    inserts.push({ user_id: n.id, amount: amt, entry_type: 'grace', description: `Vaulted: WITHERS GRACE` });
+                showModal("Confirm", `Distribute ₵${amt.toFixed(2)} per node? No pool deduction until claim.`, async () => {
+                    verifiedNodes.forEach(n => {
+                        inserts.push({ user_id: n.id, amount: amt, entry_type: 'grace', description: `Vaulted: WITHERS GRACE` });
+                    });
+                    const { error } = await _gv.from('ledger').insert(inserts);
+                    if(!error) {
+                        document.getElementById('withersPct').value = '';
+                        sync(); 
+                    }
                 });
-            }
-
-            const { error } = await _gv.from('ledger').insert(inserts);
-            if(!error) { 
-                alert("DISTRIBUTION INITIALIZED"); 
-                document.getElementById('stableAmt').value = '';
-                document.getElementById('withersPct').value = '';
-                sync(); 
             }
         }
 
         async function deleteNode(id) {
-            if(confirm("PERMANENTLY TERMINATE THIS NODE? This cannot be undone.")) {
+            showModal("Danger", "PERMANENTLY TERMINATE THIS NODE? This cannot be undone.", async () => {
                 await _gv.from('profiles').delete().eq('id', id);
                 sync();
-            }
+            });
         }
 
         async function purgeSystem() {
-            if(confirm("DANGER: WIPE ALL TRANSACTION LOGS? This clears the Global Ledger but keeps profiles.")) {
+            showModal("Danger", "DANGER: WIPE ALL TRANSACTION LOGS? This clears the Global Ledger but keeps profiles.", async () => {
                 await _gv.from('ledger').delete().neq('id', '00000000-0000-0000-0000-000000000000');
                 sync();
-            }
+            });
         }
 
         async function injectSystemFunds() {
@@ -316,15 +355,31 @@
             await _gv.from('ledger').insert([{ user_id: SYSTEM_ADMIN_ID, amount: amt, entry_type: 'sli', description: `SYSTEM LIQUIDITY INJECTION (SLI)` }]);
             document.getElementById('injectAmt').value = '';
             sync();
+            showModal("Success", "Funds Injected");
         }
 
+        // --- Optimized Payout with 2% Logic ---
         async function approvePayout(ledgerId, userId, fullAmount) {
             const charge = fullAmount * 0.02;
-            if(confirm(`Approve payout? Net will be sent, 2% (₵${charge.toFixed(2)}) stays in Pool.`)) {
-                await _gv.from('ledger').update({ description: 'CLAIM PAID & COMPLETED' }).eq('id', ledgerId);
-                await _gv.from('ledger').insert([{ user_id: SYSTEM_ADMIN_ID, amount: charge, entry_type: 'service_charge', description: `SERVICE CHARGE FROM WITHDRAWAL` }]);
+            const net = fullAmount - charge;
+            const node = allNodes.find(n => n.id === userId);
+            
+            showModal("Process Payout", `User Receives: ₵${net.toFixed(2)}\nService Charge: ₵${charge.toFixed(2)}`, async () => {
+                // 1. Update original withdrawal to "PAID"
+                await _gv.from('ledger').update({ 
+                    description: `CLAIM PAID | NET: ₵${net.toFixed(2)} | FEE: ₵${charge.toFixed(2)}` 
+                }).eq('id', ledgerId);
+
+                // 2. Log the 2% service charge
+                await _gv.from('ledger').insert([{ 
+                    user_id: SYSTEM_ADMIN_ID, 
+                    amount: charge, 
+                    entry_type: 'service_charge', 
+                    description: `FEE FROM: ${node?.full_name || userId.slice(0,8)}` 
+                }]);
+
                 sync();
-            }
+            });
         }
 
         async function verifyNodeManual() {
@@ -333,8 +388,13 @@
             if(data) {
                 await _gv.from('profiles').update({ is_verified: true }).eq('id', data.id);
                 sync();
+                showModal("Success", "Node Verified");
+            } else {
+                showModal("Error", "Node not found");
             }
         }
+
+        // --- Chat Functions ---
 
         async function openUserChat(id) {
             currentChatId = id; 
@@ -361,6 +421,7 @@
 
         function closeChat() { currentChatId = null; document.getElementById('chatView').classList.add('view-hidden'); document.getElementById('inboxView').classList.remove('view-hidden'); }
         async function nodeOp(id, type) { await _gv.from('profiles').update({ is_verified: type === 'verify' }).eq('id', id); sync(); }
+        
         function openTab(e, n) { 
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); 
             document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active')); 
@@ -387,11 +448,20 @@
 
         async function logout() { await _gv.auth.signOut(); location.href = 'consoleenter.html'; }
 
+        // --- Optimized Init Function to stop redirect loop ---
         async function init() {
-            const { data: { user } } = await _gv.auth.getUser();
-            if(!user) location.href = 'consoleenter.html';
-            document.getElementById('admin-session-email').innerText = `Session: ${user.email}`;
+            // Check session directly
+            const { data: { session } } = await _gv.auth.getSession();
+            
+            if(!session) {
+                location.href = 'consoleenter.html';
+                return;
+            }
+            
+            document.getElementById('admin-session-email').innerText = `Session: ${session.user.email}`;
             sync();
+            
+            // Realtime subscriptions
             _gv.channel('realtime').on('postgres_changes', { event: '*', schema: 'public' }, () => sync()).subscribe();
         }
         init();
