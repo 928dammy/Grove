@@ -57,14 +57,18 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
-            <div class="flex justify-between items-center bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+        <div class="grid grid-cols-3 gap-1">
+            <div class="flex flex-col items-center bg-white/5 p-2 rounded-lg border border-white/5">
                 <p class="text-[5px] font-black text-slate-500 uppercase">Total Seeded</p>
                 <p id="stat-sunk" class="text-[9px] font-black text-white">₵0.00</p>
             </div>
-            <div class="flex justify-between items-center bg-blue-500/5 px-3 py-1.5 rounded-lg border border-blue-500/20">
-                <p class="text-[5px] font-black text-blue-500 uppercase">Grove Pool (Health)</p>
+            <div class="flex flex-col items-center bg-blue-500/5 p-2 rounded-lg border border-blue-500/20">
+                <p class="text-[5px] font-black text-blue-500 uppercase text-center">Pool Health</p>
                 <p id="stat-pool" class="text-[9px] font-black text-blue-400">₵0.00</p>
+            </div>
+            <div class="flex flex-col items-center bg-emerald-500/5 p-2 rounded-lg border border-emerald-500/20">
+                <p class="text-[5px] font-black text-emerald-500 uppercase text-center">Service Charge</p>
+                <p id="stat-service" class="text-[9px] font-black text-emerald-400">₵0.00</p>
             </div>
         </div>
     </header>
@@ -122,25 +126,6 @@
                         <button onclick="injectSystemFunds()" class="bg-blue-600 px-6 rounded-xl font-black text-[9px]">INJECT</button>
                     </div>
                 </div>
-
-                <div class="auth-card p-5 border-l-4 border-emerald-500">
-                    <p class="text-[9px] font-black uppercase text-emerald-500 mb-1">Stable Grace</p>
-                    <p class="text-[6px] text-slate-500 uppercase mb-3">Instant Pool Deduction / Fixed Amount</p>
-                    <div class="flex gap-2">
-                        <input type="number" id="stableAmt" placeholder="₵ Amount" class="input-box flex-1">
-                        <button onclick="distributeGrace('stable')" class="bg-emerald-600 px-6 rounded-xl font-black text-[9px]">RELEASE</button>
-                    </div>
-                </div>
-
-                <div class="auth-card p-5 border-l-4 border-amber-500">
-                    <p class="text-[9px] font-black uppercase text-amber-500 mb-1">Withers Grace</p>
-                    <p class="text-[6px] text-slate-500 uppercase mb-3">Deduct from pool ONLY on claim</p>
-                    <div class="flex gap-2">
-                        <input type="number" id="withersPct" placeholder="Pool %" class="input-box flex-1">
-                        <button onclick="distributeGrace('withers')" class="bg-amber-600 px-6 rounded-xl font-black text-[9px]">WITHER</button>
-                    </div>
-                </div>
-
                 <div class="auth-card p-5 border-l-4 border-rose-500">
                     <p class="text-[9px] font-black uppercase text-rose-500 mb-3">Emergency System Purge</p>
                     <button onclick="purgeSystem()" class="w-full py-3 bg-rose-600/20 text-rose-500 border border-rose-500/30 rounded-xl font-black text-[9px]">WIPE ALL TRANSACTION LOGS</button>
@@ -149,8 +134,19 @@
         </section>
 
         <section id="payouts" class="tab-content">
-            <p class="text-[9px] font-black uppercase text-slate-500 mb-4 tracking-widest">Withdrawal Queue (-2% SERVICE FEE)</p>
-            <div id="payoutList" class="space-y-3"></div>
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-[9px] font-black uppercase text-slate-500 tracking-widest">Withdrawal Queue</p>
+                    <button onclick="withdrawAllFees()" class="bg-emerald-500 text-black px-3 py-1.5 rounded-full text-[7px] font-black uppercase">Withdraw All Fees</button>
+                </div>
+                <div id="payoutList" class="space-y-3"></div>
+            </div>
+
+            <div class="border-t border-white/10 pt-6">
+                <p class="text-[9px] font-black uppercase text-emerald-500 mb-4 tracking-widest">Service Charge History</p>
+                <div id="serviceChargeHistory" class="bg-white/5 rounded-2xl overflow-hidden text-[8px]">
+                    </div>
+            </div>
         </section>
 
         <section id="ledger" class="tab-content">
@@ -185,14 +181,24 @@
 
             let totalSeeded = 0;
             let currentPool = 0;
+            let totalServiceCharge = 0;
 
             ledger?.forEach(l => {
                 if(l.entry_type === 'seed') totalSeeded += Math.abs(l.amount);
-                currentPool += l.amount;
+                
+                if(l.entry_type === 'service_charge') {
+                    totalServiceCharge += Math.abs(l.amount);
+                } else if (l.entry_type === 'admin_withdraw') {
+                    // Do nothing for withdrawn admin fees in pool calc
+                } else {
+                    currentPool += l.amount;
+                }
             });
 
             document.getElementById('stat-sunk').innerText = `₵${totalSeeded.toFixed(2)}`;
             document.getElementById('stat-pool').innerText = `₵${currentPool.toFixed(2)}`;
+            document.getElementById('stat-service').innerText = `₵${totalServiceCharge.toFixed(2)}`;
+
             document.getElementById('total-nodes-count').innerText = allNodes.length;
             document.getElementById('active-nodes-count').innerText = allNodes.filter(n=>n.is_verified).length;
             document.getElementById('pending-nodes-count').innerText = allNodes.filter(n=>!n.is_verified).length;
@@ -227,19 +233,33 @@
                 </div>`;
             }).join('');
 
+            // PAYOUT QUEUE RENDERING
             const pendingPayouts = ledger?.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID')) || [];
             document.getElementById('payoutList').innerHTML = pendingPayouts.map(w => {
                 const node = allNodes.find(n => n.id === w.user_id);
                 const charge = Math.abs(w.amount) * 0.02;
                 const net = Math.abs(w.amount) - charge;
-                return `<div class="auth-card p-4 flex justify-between items-center">
+                return `<div class="auth-card p-4 flex justify-between items-center border-l-2 border-amber-500">
                     <div>
-                        <p class="text-[9px] font-black uppercase text-white">${node?.full_name || 'NODE'}</p>
-                        <p class="text-[7px] text-emerald-500 font-black">₵${net.toFixed(2)} NET (-2%)</p>
+                        <p class="text-[9px] font-black uppercase text-white">${node?.full_name || 'UNKNOWN NODE'}</p>
+                        <p class="text-[7px] text-slate-400 font-bold">${node?.email}</p>
+                        <p class="text-[8px] text-emerald-500 font-black mt-1">PAYOUT: ₵${net.toFixed(2)} <span class="text-slate-500 text-[6px]">(₵${charge.toFixed(2)} FEE)</span></p>
                     </div>
-                    <button onclick="approvePayout('${w.id}','${w.user_id}',${Math.abs(w.amount)})" class="bg-emerald-600 px-4 py-2 rounded-lg text-[8px] font-black">APPROVE</button>
+                    <button onclick="approvePayout('${w.id}','${w.user_id}',${Math.abs(w.amount)})" class="bg-emerald-600 text-black px-4 py-2 rounded-lg text-[8px] font-black uppercase">Approve</button>
                 </div>`;
-            }).join('') || '<p class="text-center py-10 text-[8px] opacity-30 font-black uppercase">Queue Empty</p>';
+            }).join('') || '<p class="text-center py-5 text-[8px] opacity-30 font-black uppercase">No pending withdrawals</p>';
+
+            // SERVICE CHARGE HISTORY RENDERING
+            const serviceCharges = ledger?.filter(l => l.entry_type === 'service_charge' || l.entry_type === 'admin_withdraw') || [];
+            document.getElementById('serviceChargeHistory').innerHTML = serviceCharges.map(sc => `
+                <div class="flex justify-between items-center p-3 border-b border-white/5">
+                    <div>
+                        <p class="font-black ${sc.entry_type === 'admin_withdraw' ? 'text-rose-400' : 'text-white'} uppercase text-[7px]">${sc.description}</p>
+                        <p class="text-[5px] text-slate-500">${new Date(sc.created_at).toLocaleString()}</p>
+                    </div>
+                    <p class="font-black ${sc.entry_type === 'admin_withdraw' ? 'text-rose-400' : 'text-emerald-400'}">${sc.entry_type === 'admin_withdraw' ? '' : '+'}${sc.amount.toFixed(2)}</p>
+                </div>
+            `).join('') || '<p class="p-4 text-center opacity-30">No charges collected yet</p>';
 
             document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 30).map(l => `
                 <div class="flex justify-between items-center p-3 border-b border-white/5">
@@ -255,44 +275,50 @@
             updateNavBadge();
         }
 
-        async function distributeGrace(type) {
-            const verifiedNodes = allNodes.filter(n => n.is_verified);
-            if (verifiedNodes.length === 0) return alert("No verified nodes.");
+        // --- Core Functions ---
+
+        async function approvePayout(ledgerId, userId, fullAmount) {
+            const charge = fullAmount * 0.02;
+            const net = fullAmount - charge;
+            const node = allNodes.find(n => n.id === userId);
             
-            const inserts = [];
-            let amt = 0;
+            if(confirm(`PROCESS PAYOUT?\n\nUser Receives: ₵${net.toFixed(2)}\nService Charge: ₵${charge.toFixed(2)}`)) {
+                // 1. Update the original withdrawal to "PAID"
+                await _gv.from('ledger').update({ 
+                    description: `CLAIM PAID | NET: ₵${net.toFixed(2)} | FEE: ₵${charge.toFixed(2)}` 
+                }).eq('id', ledgerId);
 
-            if (type === 'stable') {
-                amt = parseFloat(document.getElementById('stableAmt').value);
-                if (!amt || amt <= 0) return alert("Enter valid amount");
-                if (!confirm(`Deduct ₵${(amt * verifiedNodes.length).toFixed(2)} from pool now?`)) return;
+                // 2. Automatically log the 2% into your Service Charge vault
+                await _gv.from('ledger').insert([{ 
+                    user_id: SYSTEM_ADMIN_ID, 
+                    amount: charge, 
+                    entry_type: 'service_charge', 
+                    description: `FEE FROM: ${node?.full_name || userId.slice(0,8)}` 
+                }]);
 
-                verifiedNodes.forEach(n => {
-                    // Immediate Pool Deduction
-                    inserts.push({ user_id: SYSTEM_ADMIN_ID, amount: -amt, entry_type: 'distribution', description: `STABLE GRACE OUTFLOW` });
-                    // User Vault
-                    inserts.push({ user_id: n.id, amount: amt, entry_type: 'grace', description: `Vaulted: STABLE GRACE` });
-                });
-            } else {
-                const pct = parseFloat(document.getElementById('withersPct').value);
-                if (!pct || pct <= 0) return alert("Enter valid percentage");
-                
-                const currentPool = parseFloat(document.getElementById('stat-pool').innerText.replace('₵',''));
-                amt = (currentPool * (pct/100)) / verifiedNodes.length;
-                if (!confirm(`Distribute ₵${amt.toFixed(2)} per node? No pool deduction until claim.`)) return;
+                sync();
+            }
+        }
 
-                verifiedNodes.forEach(n => {
-                    // User Vault Only (No Pool Deduction Entry)
-                    inserts.push({ user_id: n.id, amount: amt, entry_type: 'grace', description: `Vaulted: WITHERS GRACE` });
-                });
+        async function withdrawAllFees() {
+            const currentFees = parseFloat(document.getElementById('stat-service').innerText.replace('₵',''));
+            
+            if(currentFees <= 0) {
+                alert("No fees to withdraw.");
+                return;
             }
 
-            const { error } = await _gv.from('ledger').insert(inserts);
-            if(!error) { 
-                alert("DISTRIBUTION INITIALIZED"); 
-                document.getElementById('stableAmt').value = '';
-                document.getElementById('withersPct').value = '';
-                sync(); 
+            if(confirm(`Withdraw ₵${currentFees.toFixed(2)} in accumulated fees?`)) {
+                // Insert a negative entry representing the withdrawal of funds
+                await _gv.from('ledger').insert([{
+                    user_id: SYSTEM_ADMIN_ID,
+                    amount: -currentFees,
+                    entry_type: 'admin_withdraw',
+                    description: `ADMIN WITHDRAWAL: Accumulated Fees`
+                }]);
+                
+                alert(`₵${currentFees.toFixed(2)} withdrawn to external wallet.`);
+                sync();
             }
         }
 
@@ -318,15 +344,6 @@
             sync();
         }
 
-        async function approvePayout(ledgerId, userId, fullAmount) {
-            const charge = fullAmount * 0.02;
-            if(confirm(`Approve payout? Net will be sent, 2% (₵${charge.toFixed(2)}) stays in Pool.`)) {
-                await _gv.from('ledger').update({ description: 'CLAIM PAID & COMPLETED' }).eq('id', ledgerId);
-                await _gv.from('ledger').insert([{ user_id: SYSTEM_ADMIN_ID, amount: charge, entry_type: 'service_charge', description: `SERVICE CHARGE FROM WITHDRAWAL` }]);
-                sync();
-            }
-        }
-
         async function verifyNodeManual() {
             const email = document.getElementById('targetEmail').value;
             const { data } = await _gv.from('profiles').select('id').eq('email', email).single();
@@ -335,6 +352,8 @@
                 sync();
             }
         }
+
+        // --- Chat Functions ---
 
         async function openUserChat(id) {
             currentChatId = id; 
@@ -361,6 +380,9 @@
 
         function closeChat() { currentChatId = null; document.getElementById('chatView').classList.add('view-hidden'); document.getElementById('inboxView').classList.remove('view-hidden'); }
         async function nodeOp(id, type) { await _gv.from('profiles').update({ is_verified: type === 'verify' }).eq('id', id); sync(); }
+        
+        // --- Navigation ---
+        
         function openTab(e, n) { 
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); 
             document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active')); 
