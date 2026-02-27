@@ -170,6 +170,7 @@
 
         <section id="ledger" class="tab-content">
             <p class="text-[9px] font-black uppercase text-slate-500 mb-4 tracking-widest">Global Transaction Log</p>
+            <input type="text" id="ledgerSearch" oninput="sync()" placeholder="Search logs (type, user, date)..." class="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm w-full mb-4 outline-none">
             <div id="ledgerTable" class="bg-white/5 rounded-2xl overflow-hidden"></div>
         </section>
     </main>
@@ -188,9 +189,8 @@
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWFjc3pkem9na25idWNmZ2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjYyMDYsImV4cCI6MjA4NjQwMjIwNn0.F_fle-dOk-g1Pvh5ezDinOAzGWwlIBhLYvZkNAc2Ouc";
         const _gv = supabase.createClient(SB_URL, SB_KEY);
         const SYSTEM_ADMIN_ID = "00000000-0000-0000-0000-000000000000";
-        let allNodes=[], allMsgs=[], currentChatId=null;
+        let allNodes=[], allMsgs=[], allLedger=[], currentChatId=null;
 
-        // --- Custom Modal Functionality ---
         function showModal(title, message, confirmAction = null) {
             document.getElementById('modalTitle').innerText = title;
             document.getElementById('modalMessage').innerText = message;
@@ -220,11 +220,12 @@
             
             allNodes = profiles || []; 
             allMsgs = messages || [];
+            allLedger = ledger || [];
 
             let totalSeeded = 0;
             let currentPool = 0;
 
-            ledger?.forEach(l => {
+            allLedger.forEach(l => {
                 if(l.entry_type === 'seed') totalSeeded += Math.abs(l.amount);
                 currentPool += l.amount;
             });
@@ -238,7 +239,7 @@
 
             const search = document.getElementById('nodeSearch').value.toLowerCase();
             document.getElementById('nodeList').innerHTML = allNodes.filter(n => n.email?.toLowerCase().includes(search) || n.full_name?.toLowerCase().includes(search)).map(n => {
-                const userLedger = ledger?.filter(l => l.user_id === n.id) || [];
+                const userLedger = allLedger.filter(l => l.user_id === n.id);
                 const seeds = userLedger.filter(l => l.entry_type === 'seed').reduce((a,b)=>a+b.amount,0);
                 const vault = userLedger.filter(l => l.description.includes('Vaulted')).reduce((a,b)=>a+Math.abs(b.amount),0);
                 const claims = userLedger.filter(l => l.description.includes('PAID')).reduce((a,b)=>a+Math.abs(b.amount),0);
@@ -265,7 +266,7 @@
                 </div>`;
             }).join('');
 
-            const pendingPayouts = ledger?.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID')) || [];
+            const pendingPayouts = allLedger.filter(l => l.entry_type === 'withdrawal' && !l.description.includes('PAID'));
             document.getElementById('payoutList').innerHTML = pendingPayouts.map(w => {
                 const node = allNodes.find(n => n.id === w.user_id);
                 const charge = Math.abs(w.amount) * 0.02;
@@ -279,18 +280,42 @@
                 </div>`;
             }).join('') || '<p class="text-center py-10 text-[8px] opacity-30 font-black uppercase">Queue Empty</p>';
 
-            document.getElementById('ledgerTable').innerHTML = ledger?.slice(0, 30).map(l => `
+            // Ledger Search and Rendering
+            const ledgerSearch = document.getElementById('ledgerSearch').value.toLowerCase();
+            document.getElementById('ledgerTable').innerHTML = allLedger.filter(l => 
+                l.description.toLowerCase().includes(ledgerSearch) || 
+                l.entry_type.toLowerCase().includes(ledgerSearch) ||
+                l.user_id.toLowerCase().includes(ledgerSearch)
+            ).slice(0, 100).map(l => `
                 <div class="flex justify-between items-center p-3 border-b border-white/5">
                     <div>
-                        <p class="text-[8px] font-black uppercase text-slate-200">${l.description}</p>
+                        <p class="text-[8px] font-black uppercase ${l.amount < 0 ? 'text-rose-400' : 'text-slate-200'}">${l.description}</p>
                         <p class="text-[5px] text-slate-500">${new Date(l.created_at).toLocaleString()}</p>
                     </div>
-                    <p class="text-[9px] font-black ${l.amount < 0 ? 'text-rose-500' : 'text-emerald-500'}">₵${Math.abs(l.amount).toFixed(2)}</p>
+                    <p class="text-[9px] font-black ${l.amount < 0 ? 'text-rose-500' : 'text-emerald-500'}">
+                        ${l.amount < 0 ? '-' : '+'}₵${Math.abs(l.amount).toFixed(2)}
+                    </p>
                 </div>
             `).join('');
 
             renderInbox(); 
             updateNavBadge();
+        }
+
+        async function publishMission() {
+            const title = document.getElementById('missionTitle').value;
+            const desc = document.getElementById('missionDesc').value;
+            const goal = document.getElementById('missionGoal').value;
+            if(!title || !goal) { showModal("Error", "Enter Title and Goal"); return; }
+            
+            showModal("Confirm", "Broadcast this mission?", async () => {
+                await _gv.from('missions').insert([{ title, description: desc, goal: parseFloat(goal), active: true }]);
+                // Missions automatically populate impact hub via database trigger/view
+                document.getElementById('missionTitle').value = '';
+                document.getElementById('missionDesc').value = '';
+                document.getElementById('missionGoal').value = '';
+                sync();
+            });
         }
 
         async function distributeGrace(type) {
@@ -358,19 +383,16 @@
             showModal("Success", "Funds Injected");
         }
 
-        // --- Optimized Payout with 2% Logic ---
         async function approvePayout(ledgerId, userId, fullAmount) {
             const charge = fullAmount * 0.02;
             const net = fullAmount - charge;
             const node = allNodes.find(n => n.id === userId);
             
             showModal("Process Payout", `User Receives: ₵${net.toFixed(2)}\nService Charge: ₵${charge.toFixed(2)}`, async () => {
-                // 1. Update original withdrawal to "PAID"
                 await _gv.from('ledger').update({ 
                     description: `CLAIM PAID | NET: ₵${net.toFixed(2)} | FEE: ₵${charge.toFixed(2)}` 
                 }).eq('id', ledgerId);
 
-                // 2. Log the 2% service charge
                 await _gv.from('ledger').insert([{ 
                     user_id: SYSTEM_ADMIN_ID, 
                     amount: charge, 
@@ -393,8 +415,6 @@
                 showModal("Error", "Node not found");
             }
         }
-
-        // --- Chat Functions ---
 
         async function openUserChat(id) {
             currentChatId = id; 
@@ -448,9 +468,7 @@
 
         async function logout() { await _gv.auth.signOut(); location.href = 'consoleenter.html'; }
 
-        // --- Optimized Init Function to stop redirect loop ---
         async function init() {
-            // Check session directly
             const { data: { session } } = await _gv.auth.getSession();
             
             if(!session) {
@@ -461,7 +479,6 @@
             document.getElementById('admin-session-email').innerText = `Session: ${session.user.email}`;
             sync();
             
-            // Realtime subscriptions
             _gv.channel('realtime').on('postgres_changes', { event: '*', schema: 'public' }, () => sync()).subscribe();
         }
         init();
